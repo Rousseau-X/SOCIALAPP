@@ -15,7 +15,7 @@
         <div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600;font-size:15px;"><%= group.nom %></div>
         <div style="font-size:11px;font-weight:400;color:var(--text-secondary);"><%= group.membres.length %> membre(s)</div>
       </div>
-      <div style="flex-shrink:0;display:flex;gap:6px;align-items:center;">
+      <div style="flex-shrink:0;display:flex;gap:12px;align-items:center;">
         <!-- Voice Room -->
         <button id="voiceRoomBtn" title="Salon vocal" class="chat-icon-btn" style="color:var(--text-secondary);"><i class="fa-solid fa-microphone-lines"></i></button>
         <!-- Watch Party -->
@@ -264,6 +264,15 @@
     <% } %>
   </div>
 
+</div>
+
+<!-- LIGHTBOX PHOTO -->
+<div id="photoLightbox" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:99999;align-items:center;justify-content:center;flex-direction:column;gap:20px;">
+  <button id="lightboxClose" style="position:absolute;top:16px;right:20px;background:rgba(255,255,255,0.12);border:none;color:#fff;width:44px;height:44px;border-radius:50%;cursor:pointer;font-size:22px;display:flex;align-items:center;justify-content:center;transition:background .2s;"><i class="fa-solid fa-xmark"></i></button>
+  <img id="lightboxImg" src="" alt="" style="max-width:92vw;max-height:78vh;border-radius:14px;object-fit:contain;box-shadow:0 8px 40px rgba(0,0,0,0.6);">
+  <a id="lightboxDownload" href="" download style="display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,0.13);color:#fff;padding:10px 28px;border-radius:24px;text-decoration:none;font-size:14px;font-weight:600;border:1px solid rgba(255,255,255,0.18);backdrop-filter:blur(10px);transition:background .2s;">
+    <i class="fa-solid fa-download"></i> Télécharger
+  </a>
 </div>
 
 <script src="/socket.io/socket.io.js"></script>
@@ -916,6 +925,28 @@ function renderBadges(badges){if(!badges||!badges.length)return'';const cfg={ver
 function escapeHtml(str){const d=document.createElement("div");d.innerText=str||"";return d.innerHTML;}
 function esc(s){return escapeHtml(s);}
 function formatMentions(str){return str.replace(/@(\w+)/g,'<span class="mention">@$1</span>');}
+// === LIGHTBOX PHOTO ===
+(function(){
+  const lb=document.getElementById("photoLightbox");
+  const lbImg=document.getElementById("lightboxImg");
+  const lbDl=document.getElementById("lightboxDownload");
+  const lbClose=document.getElementById("lightboxClose");
+  if(!lb) return;
+  function openLightbox(src){
+    lbImg.src=src;
+    lbDl.href=src;
+    lbDl.download=src.split("/").pop().split("?")[0]||"photo.jpg";
+    lb.style.display="flex";
+  }
+  lbClose.addEventListener("click",()=>{lb.style.display="none";});
+  lb.addEventListener("click",e=>{if(e.target===lb)lb.style.display="none";});
+  document.addEventListener("keydown",e=>{if(e.key==="Escape")lb.style.display="none";});
+  chatMessages.addEventListener("click",e=>{
+    const img=e.target.closest(".chat-img:not(.sticker-img)");
+    if(img){e.stopPropagation();openLightbox(img.src);}
+  });
+})();
+
 document.addEventListener("click",e=>{
   if(!e.target.closest(".emoji-picker")&&!e.target.closest(".react-btn")){document.querySelectorAll(".emoji-picker.active").forEach(p=>p.classList.remove("active"));}
   if(!e.target.closest("#mentionList")&&!e.target.closest("#messageInput")){const ml=document.getElementById("mentionList");if(ml)ml.style.display="none";}

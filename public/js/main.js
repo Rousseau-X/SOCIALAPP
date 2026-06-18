@@ -40,15 +40,6 @@ document.addEventListener('DOMContentLoaded', function() {
     initNotifications();
     updateNotificationBadge();
 
-    document.querySelectorAll('.ajax-link').forEach(link => {
-        link.addEventListener('click', function(e) {
-            const href = this.getAttribute('href');
-            if (!href || href.startsWith('http') || href === '#' || href === '/logout') return;
-            e.preventDefault();
-            navigateTo(href);
-        });
-    });
-
     initSocketNotifications();
 });
 
@@ -235,35 +226,85 @@ window.updateNotificationBadge = updateNotificationBadge;
 window.notificationEnabled = notificationEnabled;
 
 // =====================================================
-// 9. NAVIGATION AJAX
+// 9. NAVIGATION AJAX (SPA)
 // =====================================================
-async function navigateTo(url) {
+let _spaScripts = [];
+
+async function navigateTo(url, pushState = true) {
+    if (!url || url === window.location.href) return;
+    if (url.includes('/logout')) { window.location.href = url; return; }
+
     try {
-        document.body.classList.add('loading');
+        document.body.classList.add('page-loading');
+
         const response = await fetch(url);
+        if (!response.ok) { window.location.href = url; return; }
+
         const html = await response.text();
         const parser = new DOMParser();
         const doc = parser.parseFromString(html, 'text/html');
-        const newContent = doc.querySelector('main.feed, .main-container');
-        const oldContent = document.querySelector('main.feed, .main-container');
-        if (newContent && oldContent) {
-            oldContent.innerHTML = newContent.innerHTML;
-            const title = doc.querySelector('title');
-            if (title) document.title = title.textContent;
-            history.pushState({}, '', url);
-        } else {
+
+        // Pages de chat → rechargement complet (socket.io, WebRTC complexes)
+        if (doc.body && doc.body.classList.contains('chat-page')) {
             window.location.href = url;
+            return;
         }
+
+        const newMain = doc.querySelector('.main-container');
+        const curMain = document.querySelector('.main-container');
+        if (!newMain || !curMain) { window.location.href = url; return; }
+
+        // Nettoyer les scripts injectés précédemment
+        _spaScripts.forEach(s => { try { s.remove(); } catch(e) {} });
+        _spaScripts = [];
+
+        // Remplacer le contenu principal
+        curMain.innerHTML = newMain.innerHTML;
+
+        // Mettre à jour le titre
+        const newTitle = doc.querySelector('title');
+        if (newTitle) document.title = newTitle.textContent;
+
+        // Ré-exécuter les scripts inline de la nouvelle page (dans un scope isolé)
+        doc.querySelectorAll('body script:not([src])').forEach(oldScript => {
+            const content = oldScript.textContent.trim();
+            if (!content) return;
+            const s = document.createElement('script');
+            s.textContent = '(()=>{\n' + content + '\n})();';
+            document.body.appendChild(s);
+            _spaScripts.push(s);
+        });
+
+        if (pushState) history.pushState({ url }, '', url);
+        window.scrollTo(0, 0);
+
     } catch (err) {
-        console.log('Erreur de navigation AJAX:', err);
+        console.log('Erreur navigation AJAX:', err);
         window.location.href = url;
     } finally {
-        document.body.classList.remove('loading');
+        document.body.classList.remove('page-loading');
     }
 }
 
-window.addEventListener('popstate', function() {
-    navigateTo(window.location.pathname);
+// Délégation globale — intercepte tous les liens internes
+document.addEventListener('click', function(e) {
+    const a = e.target.closest('a[href]');
+    if (!a) return;
+    const href = a.getAttribute('href');
+    if (!href || href === '#' || href === '/logout') return;
+    if (href.startsWith('http') || href.startsWith('//') || href.startsWith('mailto:') || href.startsWith('tel:')) return;
+    if (a.hasAttribute('download')) return;
+    if (a.getAttribute('target') && a.getAttribute('target') !== '_self') return;
+    e.preventDefault();
+    navigateTo(new URL(href, location.origin).href);
+});
+
+window.addEventListener('popstate', function(e) {
+    if (e.state && e.state.url) {
+        navigateTo(e.state.url, false);
+    } else {
+        navigateTo(window.location.href, false);
+    }
 });
 
 // =====================================================
