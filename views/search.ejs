@@ -60,7 +60,9 @@
                                     <div class="user-item-name"><%= u.nom %></div>
                                 </a>
                                 <% if (u.bio) { %>
-                                    <div class="user-item-sub"><%= u.bio %></div>
+                                    <div class="user-item-sub" style="word-wrap: break-word; white-space: normal; overflow-wrap: break-word; word-break: break-word;">
+                                        <%= u.bio %>
+                                    </div>
                                 <% } %>
                             </div>
 
@@ -113,7 +115,9 @@
                                     <div class="user-item-name"><%= u.nom %></div>
                                 </a>
                                 <% if (u.bio) { %>
-                                    <div class="user-item-sub"><%= u.bio %></div>
+                                    <div class="user-item-sub" style="word-wrap: break-word; white-space: normal; overflow-wrap: break-word; word-break: break-word;">
+                                        <%= u.bio %>
+                                    </div>
                                 <% } %>
                             </div>
 
