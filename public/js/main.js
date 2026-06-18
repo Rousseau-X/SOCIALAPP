@@ -265,7 +265,7 @@ async function navigateTo(url, pushState = true) {
         const newTitle = doc.querySelector('title');
         if (newTitle) document.title = newTitle.textContent;
 
-        // Ré-exécuter les scripts inline de la nouvelle page (dans un scope isolé)
+        // ✅ Exécuter les scripts inline de la nouvelle page
         doc.querySelectorAll('body script:not([src])').forEach(oldScript => {
             const content = oldScript.textContent.trim();
             if (!content) return;
@@ -275,7 +275,22 @@ async function navigateTo(url, pushState = true) {
             _spaScripts.push(s);
         });
 
-        // ✅ Sauvegarder l'URL dans l'historique
+        // ✅ Charger les scripts externes (boutique, etc.)
+        doc.querySelectorAll('body script[src]').forEach(oldScript => {
+            const src = oldScript.getAttribute('src');
+            if (!src) return;
+            // Éviter les doublons
+            if (document.querySelector(`script[src="${src}"]`)) return;
+            const s = document.createElement('script');
+            s.src = src;
+            s.async = true;
+            document.body.appendChild(s);
+            _spaScripts.push(s);
+        });
+
+        // ✅ Déclencher un événement pour dire que la page est chargée
+        document.dispatchEvent(new CustomEvent('page-loaded'));
+
         if (pushState) {
             history.pushState({ url: url, scroll: window.scrollY }, '', url);
         }
@@ -303,18 +318,13 @@ document.addEventListener('click', function(e) {
     navigateTo(new URL(href, location.origin).href);
 });
 
-// ✅ Gestion de la touche RETOUR (popstate) — CORRIGÉE
+// ✅ Gestion de la touche RETOUR (popstate)
 window.addEventListener('popstate', function(e) {
-    // Si on a une URL dans l'état, on y navigue
     if (e.state && e.state.url) {
         navigateTo(e.state.url, false);
         return;
     }
-    
-    // Sinon, on recharge la page (fallback)
-    // Cela gère le cas où l'utilisateur arrive sur une URL sans état
-    const currentUrl = window.location.href;
-    navigateTo(currentUrl, false);
+    navigateTo(window.location.href, false);
 });
 
 // =====================================================
@@ -411,6 +421,120 @@ function initSocketNotifications() {
 }
 
 // =====================================================
-// 11. DÉMARRAGE
+// 11. RÉINITIALISATION DES ÉVÉNEMENTS APRÈS CHARGEMENT AJAX
+// =====================================================
+document.addEventListener('page-loaded', function() {
+    console.log('📄 Page chargée dynamiquement, réinitialisation des événements...');
+
+    // ✅ Réinitialiser les événements de la boutique (shop)
+    document.querySelectorAll('.btn-shop-buy').forEach(btn => {
+        // Supprimer les anciens événements pour éviter les doublons
+        btn.removeEventListener('click', handleShopBuy);
+        btn.addEventListener('click', handleShopBuy);
+    });
+
+    // ✅ Réinitialiser les événements des primes (bounties)
+    document.querySelectorAll('.btn-accomplish').forEach(btn => {
+        btn.removeEventListener('click', handleBountyAccomplish);
+        btn.addEventListener('click', handleBountyAccomplish);
+    });
+
+    document.querySelectorAll('.btn-view-applicants').forEach(btn => {
+        btn.removeEventListener('click', handleViewApplicants);
+        btn.addEventListener('click', handleViewApplicants);
+    });
+
+    // ✅ Ajoute ici d'autres initialisations si besoin
+    // (ex: création de primes, wallet, etc.)
+});
+
+// =====================================================
+// 12. GESTIONNAIRES D'ÉVÉNEMENTS (BOUTIQUE, PRIMES, etc.)
+// =====================================================
+
+// Boutique : Acheter un article
+async function handleShopBuy(e) {
+    const btn = e.currentTarget;
+    const itemId = btn.dataset.itemId;
+    if (!itemId) return;
+
+    btn.disabled = true;
+    btn.textContent = '⏳...';
+
+    try {
+        const res = await fetch('/api/shop/buy', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ itemId })
+        });
+        const data = await res.json();
+        if (data.success) {
+            alert('✅ Achat réussi !');
+            location.reload(); // ou mettre à jour le solde dynamiquement
+        } else {
+            alert('❌ ' + (data.error || 'Erreur'));
+        }
+    } catch (err) {
+        alert('❌ Erreur réseau');
+        console.error(err);
+    } finally {
+        btn.disabled = false;
+        btn.textContent = 'Acheter';
+    }
+}
+
+// Primes : Accomplir une prime
+async function handleBountyAccomplish(e) {
+    const btn = e.currentTarget;
+    const bountyId = btn.dataset.id;
+    if (!bountyId) return;
+
+    btn.disabled = true;
+    btn.textContent = '⏳...';
+
+    try {
+        const res = await fetch(`/api/bounties/${bountyId}/accomplish`, {
+            method: 'POST'
+        });
+        const data = await res.json();
+        if (data.ok) {
+            alert(`✅ Félicitations ! +${data.reward} crédits !`);
+            location.reload();
+        } else {
+            alert('❌ ' + (data.reason || 'Erreur'));
+        }
+    } catch (err) {
+        alert('❌ Erreur réseau');
+        console.error(err);
+    } finally {
+        btn.disabled = false;
+        btn.textContent = 'Accomplir';
+    }
+}
+
+// Primes : Voir les candidats
+async function handleViewApplicants(e) {
+    const btn = e.currentTarget;
+    const bountyId = btn.dataset.id;
+    if (!bountyId) return;
+
+    try {
+        const res = await fetch(`/api/bounties/${bountyId}/applicants`);
+        const data = await res.json();
+        if (data.success) {
+            // Afficher les candidats dans une modal ou une alerte
+            const names = data.applicants.map(a => a.user?.nom || 'Inconnu').join('\n');
+            alert(`👥 Candidats :\n${names || 'Aucun'}`);
+        } else {
+            alert('❌ ' + (data.error || 'Erreur'));
+        }
+    } catch (err) {
+        alert('❌ Erreur réseau');
+        console.error(err);
+    }
+}
+
+// =====================================================
+// 13. DÉMARRAGE
 // =====================================================
 console.log('📦 main.js chargé');
