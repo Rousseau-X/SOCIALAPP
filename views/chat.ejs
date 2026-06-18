@@ -35,7 +35,7 @@
     <!-- VAULT OVERLAY -->
     <div id="vaultOverlay" class="vault-overlay" style="display:<%= isLocked ? 'flex' : 'none' %>;">
       <div class="vault-box">
-        <div style="font-size:48px; margin-bottom:12px;">🔒</div>
+        <i class="fa-solid fa-lock" style="font-size:48px; margin-bottom:12px; display:block;"></i>
         <h3>Conversation verrouillée</h3>
         <p>Entre ton PIN pour accéder</p>
         <input type="password" id="vaultPinInput" placeholder="PIN" maxlength="8" class="vault-pin-input">
@@ -94,7 +94,7 @@
               <% } else { %>
                 <span class="message-text"><%= msg.contenu %></span>
               <% } %>
-              <% if (isBurn) { %><div class="burn-timer" data-expires="<%= msg.expiresAt %>">⏳ …</div><% } %>
+              <% if (isBurn) { %><div class="burn-timer" data-expires="<%= msg.expiresAt %>"><i class="fa-regular fa-clock"></i> …</div><% } %>
               <% if (isSent) { %><span class="message-status"><i class="fa-solid <%= msg.lu ? 'fa-check-double read' : 'fa-check' %>"></i></span><% } %>
             </div>
           <% } %>
@@ -260,12 +260,12 @@ messageInput.addEventListener("input", function() {
 
   // IA hint
   const val = this.value;
-  const cmds = { "/+": "🤖 Demande à l'IA", "/imagine": "🎨 Génère une image", "/edit": "✏️ Édite une image (reply requis)", "/sticker": "🎭 Crée un sticker", "/find": "🔍 Cherche dans l'historique", "/burn": "🔥 Message éphémère /burn <sec>", "/send": "💸 /send @pseudo montant", "/roll": "🎲 Lance les dés" };
+  const cmds = { "/+": '<i class="fa-solid fa-robot"></i> Demande à l\'IA', "/imagine": '<i class="fa-solid fa-wand-magic-sparkles"></i> Génère une image', "/edit": '<i class="fa-solid fa-pen"></i> Édite une image (reply requis)', "/sticker": '<i class="fa-solid fa-masks-theater"></i> Crée un sticker', "/find": '<i class="fa-solid fa-magnifying-glass"></i> Cherche dans l\'historique', "/burn": '<i class="fa-solid fa-fire"></i> Message éphémère /burn &lt;sec&gt;', "/send": '<i class="fa-solid fa-paper-plane"></i> /send @pseudo montant', "/roll": '<i class="fa-solid fa-dice"></i> Lance les dés' };
   let hint = null;
   for (const [cmd, desc] of Object.entries(cmds)) {
     if (val.startsWith(cmd)) { hint = desc; break; }
   }
-  if (hint) { aiHint.textContent = hint; aiHint.style.display = "block"; }
+  if (hint) { aiHint.innerHTML = hint; aiHint.style.display = "block"; }
   else { aiHint.style.display = "none"; }
 
   // Ghost typing
@@ -566,7 +566,7 @@ function appendIbMessage(data, isSent) {
     html = `<div class="message-bubble ${isSent?"sent":"received"} ${isBurn?"burn-msg":""}">
       ${replyHtml}
       <span class="message-text">${esc(data.contenu||"")}</span>
-      ${isBurn?`<div class="burn-timer" data-expires="${data.expiresAt}">⏳ …</div>`:""}
+      ${isBurn?`<div class="burn-timer" data-expires="${data.expiresAt}"><i class="fa-regular fa-clock"></i> …</div>`:""}
       ${isSent?'<span class="message-status"><i class="fa-solid fa-check"></i></span>':""}
     </div>`;
   }
@@ -595,7 +595,7 @@ function startBurnTimer(el, expiresAt) {
   if (!el) return;
   const interval = setInterval(() => {
     const remaining = Math.max(0, Math.floor((new Date(expiresAt) - Date.now()) / 1000));
-    el.textContent = `🔥 ${remaining}s`;
+    el.innerHTML = `<i class="fa-solid fa-fire"></i> ${remaining}s`;
     if (remaining <= 0) clearInterval(interval);
   }, 1000);
 }

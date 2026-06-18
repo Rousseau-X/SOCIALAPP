@@ -8,12 +8,12 @@
     <div class="content-area">
         <div class="shop-page">
             <div class="shop-header">
-                <h2>🛍️ Boutique</h2>
+                <h2><i class="fa-solid fa-store"></i> Boutique</h2>
                 <div class="shop-balance">
-                    <span>💰</span>
+                    <i class="fa-solid fa-coins"></i>
                     <span id="shopBalance"><%= user.walletBalance %></span> crédits
                     <% if (user.xpBoostExpiry && new Date(user.xpBoostExpiry) > new Date()) { %>
-                        <span style="margin-left:10px;font-size:11px;background:#f59e0b22;color:#f59e0b;border:1px solid #f59e0b44;padding:2px 8px;border-radius:20px;font-weight:700;">⚡ Boost XP actif</span>
+                        <span style="margin-left:10px;font-size:11px;background:#f59e0b22;color:#f59e0b;border:1px solid #f59e0b44;padding:2px 8px;border-radius:20px;font-weight:700;"><i class="fa-solid fa-bolt"></i> Boost XP actif</span>
                     <% } %>
                 </div>
             </div>
@@ -32,8 +32,8 @@
             <% categories.forEach(cat => { %>
             <div class="shop-category">
                 <div class="shop-category-title">
-                    <% const catEmojis = { 'Thèmes': '🎨', 'Boosts': '⚡', 'Titres': '🏅', 'Cadres': '🖼️', 'Badges': '🎖️' } %>
-                    <%= catEmojis[cat] || '✨' %> <%= cat %>
+                    <% const catIcons = { 'Thèmes': '<i class="fa-solid fa-palette"></i>', 'Boosts': '<i class="fa-solid fa-bolt"></i>', 'Titres': '<i class="fa-solid fa-medal"></i>', 'Cadres': '<i class="fa-solid fa-image"></i>', 'Badges': '<i class="fa-solid fa-certificate"></i>' } %>
+                    <%- catIcons[cat] || '<i class="fa-solid fa-star"></i>' %> <%= cat %>
                 </div>
                 <div class="shop-grid">
                     <% shopItems.filter(i => i.category === cat).forEach(item => {
@@ -51,7 +51,7 @@
                             <% if (item.price === 0) { %>
                                 <span class="price-free">Gratuit</span>
                             <% } else { %>
-                                <span class="price-credits">💰 <%= item.price %> crédits</span>
+                                <span class="price-credits"><i class="fa-solid fa-coins"></i> <%= item.price %> crédits</span>
                             <% } %>
                         </div>
                         <% if (isOwned) { %>
@@ -62,7 +62,7 @@
                                 data-price="<%= item.price %>"
                                 data-type="<%= item.type %>"
                                 data-name="<%= item.name %>">
-                                <%= item.price === 0 ? 'Réclamer' : item.type === 'xpboost' ? '⚡ Activer' : item.type === 'credits' ? '💰 Obtenir' : 'Acheter' %>
+                                <%- item.price === 0 ? 'Réclamer' : item.type === 'xpboost' ? '<i class="fa-solid fa-bolt"></i> Activer' : item.type === 'credits' ? '<i class="fa-solid fa-coins"></i> Obtenir' : 'Acheter' %>
                             </button>
                         <% } %>
                     </div>
@@ -98,7 +98,7 @@
 <script>
 function showToast(msg, ok=true) {
     const t = document.getElementById("shopToast")
-    t.textContent = msg
+    t.innerHTML = msg
     t.style.background = ok ? "#10b981" : "#ef4444"
     t.style.display = "block"
     setTimeout(() => { t.style.display = "none" }, 3000)
@@ -128,11 +128,11 @@ document.querySelectorAll(".btn-shop-buy").forEach(btn => {
             if (data.success) {
                 if (data.balance !== undefined) document.getElementById("shopBalance").textContent = data.balance
                 if (type === 'theme') showToast(`✓ ${name} activé !`)
-                else if (type === 'xpboost') showToast(`⚡ ${name} activé — ton XP est doublé !`)
-                else if (type === 'title') showToast(`🏅 Titre "${name.replace('Titre ','')}" appliqué sur ton profil !`)
-                else if (type === 'frame') showToast(`🖼️ ${name} appliqué sur ton profil !`)
-                else if (type === 'badge') showToast(`🎖️ Badge obtenu et visible sur ton profil !`)
-                else if (type === 'credits') showToast(`💰 +${data.creditsGained} crédits ajoutés à ton solde !`)
+                else if (type === 'xpboost') showToast(`<i class="fa-solid fa-bolt"></i> ${name} activé — ton XP est doublé !`)
+                else if (type === 'title') showToast(`<i class="fa-solid fa-medal"></i> Titre "${name.replace('Titre ','')}" appliqué sur ton profil !`)
+                else if (type === 'frame') showToast(`<i class="fa-solid fa-image"></i> ${name} appliqué sur ton profil !`)
+                else if (type === 'badge') showToast(`<i class="fa-solid fa-certificate"></i> Badge obtenu et visible sur ton profil !`)
+                else if (type === 'credits') showToast(`<i class="fa-solid fa-coins"></i> +${data.creditsGained} crédits ajoutés à ton solde !`)
                 setTimeout(() => location.reload(), 1500)
             } else {
                 showToast(data.error || "Erreur lors de l'achat.", false)
