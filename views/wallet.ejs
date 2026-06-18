@@ -9,7 +9,7 @@
         <div class="wallet-page">
             <div class="wallet-header-card">
                 <div class="wallet-balance-display">
-                    <span class="wallet-icon-big">💰</span>
+                    <span class="wallet-icon-big"><i class="fa-solid fa-coins"></i></span>
                     <div>
                         <div class="wallet-amount">
                             <% if (user.role === 'admin') { %>∞ <span>Illimité</span>
@@ -26,7 +26,7 @@
                             <% } else if (user.xp < xpThresholds.argent) { %>Argent à <%= xpThresholds.argent %> XP
                             <% } else if (user.xp < xpThresholds.or) { %>Or à <%= xpThresholds.or %> XP
                             <% } else if (user.xp < xpThresholds.platine) { %>Platine à <%= xpThresholds.platine %> XP
-                            <% } else { %>Niveau maximum ✨<% } %>
+                            <% } else { %>Niveau maximum <i class="fa-solid fa-trophy"></i><% } %>
                         </span>
                     </div>
                     <div class="xp-bar-track">
@@ -40,14 +40,14 @@
                 <h3 style="margin-bottom:16px; font-size:16px; font-weight:700;">Paliers XP</h3>
                 <div class="tier-grid">
                     <% const tiers = [
-                        {name:'Bronze', xp:100, emoji:'🥉', color:'#cd7f32'},
-                        {name:'Argent', xp:500, emoji:'🥈', color:'#a8a9ad'},
-                        {name:'Or', xp:2000, emoji:'🥇', color:'#ffd700'},
-                        {name:'Platine', xp:10000, emoji:'💎', color:'#b9f2ff'}
+                        {name:'Bronze', xp:100, icon:'<i class="fa-solid fa-medal" style="color:#cd7f32;"></i>', color:'#cd7f32'},
+                        {name:'Argent', xp:500, icon:'<i class="fa-solid fa-medal" style="color:#a8a9ad;"></i>', color:'#a8a9ad'},
+                        {name:'Or', xp:2000, icon:'<i class="fa-solid fa-medal" style="color:#ffd700;"></i>', color:'#ffd700'},
+                        {name:'Platine', xp:10000, icon:'<i class="fa-solid fa-gem" style="color:#b9f2ff;"></i>', color:'#b9f2ff'}
                     ] %>
                     <% tiers.forEach(t => { %>
                     <div class="tier-card <%= user.xp >= t.xp ? 'unlocked' : '' %>">
-                        <div class="tier-emoji"><%= t.emoji %></div>
+                        <div class="tier-emoji"><%- t.icon %></div>
                         <div class="tier-name"><%= t.name %></div>
                         <div class="tier-xp"><%= t.xp %> XP</div>
                         <% if (user.xp >= t.xp) { %><div class="tier-badge-unlocked">✓ Débloqué</div><% } %>
@@ -58,28 +58,28 @@
 
             <div class="wallet-info-cards">
                 <div class="wallet-info-card">
-                    <div class="wallet-info-icon">💬</div>
+                    <div class="wallet-info-icon"><i class="fa-solid fa-comment-dots"></i></div>
                     <div class="wallet-info-text">
                         <strong>Gagne des crédits</strong>
                         <p>Complète des primes dans le groupe Primes pour gagner des crédits.</p>
                     </div>
                 </div>
                 <div class="wallet-info-card">
-                    <div class="wallet-info-icon">🎯</div>
+                    <div class="wallet-info-icon"><i class="fa-solid fa-bullseye"></i></div>
                     <div class="wallet-info-text">
                         <strong>Gagne de l'XP</strong>
                         <p>Envoie des messages, aide la communauté dans Avis & Solutions.</p>
                     </div>
                 </div>
                 <div class="wallet-info-card">
-                    <div class="wallet-info-icon">🛍️</div>
+                    <div class="wallet-info-icon"><i class="fa-solid fa-store"></i></div>
                     <div class="wallet-info-text">
                         <strong>Dépense tes crédits</strong>
                         <p>Achète des thèmes visuels dans la <a href="/shop">Boutique</a>.</p>
                     </div>
                 </div>
                 <div class="wallet-info-card">
-                    <div class="wallet-info-icon">💸</div>
+                    <div class="wallet-info-icon"><i class="fa-solid fa-money-bill-transfer"></i></div>
                     <div class="wallet-info-text">
                         <strong>Transfère des crédits</strong>
                         <p>Dans une conv, tape <code>/send @pseudo montant</code> pour envoyer des crédits.</p>

@@ -8,7 +8,7 @@
     <div class="content-area">
         <div class="bounties-page">
             <div class="bounties-header">
-                <h2>💰 Primes</h2>
+                <h2><i class="fa-solid fa-coins"></i> Primes</h2>
                 <div class="bounties-balance">
                     Solde :
                     <% if (user.role === 'admin') { %>
@@ -22,7 +22,7 @@
 
             <!-- Formulaire de création -->
             <div class="create-bounty-form" id="createBountyForm" style="display:none;">
-                <h3>💰 Nouvelle prime</h3>
+                <h3><i class="fa-solid fa-coins"></i> Nouvelle prime</h3>
                 <div class="form-group">
                     <label>Action requise</label>
                     <select id="bountyAction" style="width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:8px;font-size:14px;background:var(--card-bg);color:var(--text-primary);">
@@ -46,7 +46,7 @@
             <div class="bounties-list">
                 <% if (bounties.length === 0) { %>
                     <div class="empty-state">
-                        <div style="font-size:48px; margin-bottom:16px;">💰</div>
+                        <i class="fa-solid fa-coins" style="font-size:48px; margin-bottom:16px; display:block; text-align:center;"></i>
                         <p>Aucune prime disponible pour le moment.</p>
                         <p style="color:var(--text-secondary);">Sois le premier à en créer une !</p>
                     </div>
@@ -55,9 +55,9 @@
                     <div class="bounty-card status-<%= b.status %>">
                         <div class="bounty-card-header">
                             <div class="bounty-status-badge status-<%= b.status %>">
-                                <%= b.status === 'open' ? '🟢 Ouverte' : b.status === 'claimed' ? '✅ Attribuée' : '🔴 Fermée' %>
+                                <%- b.status === 'open' ? '<i class="fa-solid fa-circle" style="color:#22c55e;"></i> Ouverte' : b.status === 'claimed' ? '<i class="fa-solid fa-circle-check" style="color:#10b981;"></i> Attribuée' : '<i class="fa-solid fa-circle-xmark" style="color:#ef4444;"></i> Fermée' %>
                             </div>
-                            <div class="bounty-reward">💰 <%= b.rewardAmount %> crédits</div>
+                            <div class="bounty-reward"><i class="fa-solid fa-coins"></i> <%= b.rewardAmount %> crédits</div>
                         </div>
                         <h3 class="bounty-title"><%= b.title %></h3>
                         <p class="bounty-desc"><%= b.description %></p>
@@ -76,21 +76,21 @@
                                 <button class="btn-accomplish"
                                     data-id="<%= b._id %>"
                                     data-action="<%= b.actionType %>">
-                                    ⚡ Accomplir
+                                    <i class="fa-solid fa-bolt"></i> Accomplir
                                 </button>
                             <% } else if (alreadyApplied) { %>
-                                <span class="badge-applied">✅ Accompli</span>
+                                <span class="badge-applied"><i class="fa-solid fa-circle-check"></i> Accompli</span>
                             <% } %>
 
                             <% if (isOwn && b.status === 'open') { %>
                                 <button class="btn-view-applicants"
                                     data-id="<%= b._id %>">
-                                    👁 Voir candidats (<%= b.applicants.length %>)
+                                    <i class="fa-solid fa-eye"></i> Voir candidats (<%= b.applicants.length %>)
                                 </button>
                             <% } %>
 
                             <% if (b.status === 'claimed' && b.claimedBy) { %>
-                                <span style="font-size:12px;color:#10b981;">🏆 Attribuée</span>
+                                <span style="font-size:12px;color:#10b981;"><i class="fa-solid fa-trophy"></i> Attribuée</span>
                             <% } %>
                         </div>
                     </div>
@@ -104,7 +104,7 @@
 <!-- Modal : accomplir une prime -->
 <div id="accomplishModal" class="modal-overlay" style="display:none;">
     <div class="modal-box">
-        <h3>⚡ Accomplir la prime</h3>
+        <h3><i class="fa-solid fa-bolt"></i> Accomplir la prime</h3>
         <p id="accomplishDesc" style="font-size:14px;color:var(--text-secondary);margin-bottom:16px;"></p>
         <div style="display:flex; gap:12px; margin-top:8px;">
             <button id="confirmAccomplish" class="btn-primary-action">Vérifier &amp; Réclamer</button>
@@ -116,7 +116,7 @@
 <!-- Modal : voir les candidats -->
 <div id="applicantsModal" class="modal-overlay" style="display:none;">
     <div class="modal-box" style="max-width:480px;">
-        <h3>👥 Candidats</h3>
+        <h3><i class="fa-solid fa-users"></i> Candidats</h3>
         <div id="applicantsList" style="margin-top:12px;"></div>
         <button id="closeApplicants" class="btn-secondary-action" style="margin-top:16px;width:100%;">Fermer</button>
     </div>
@@ -137,7 +137,7 @@ document.getElementById("cancelBounty").addEventListener("click", () => {
 document.getElementById("bountyAction").addEventListener("change", function() {
     const desc = actionDescs[this.value]
     const el = document.getElementById("actionDesc")
-    if (desc) { el.textContent = "ℹ️ " + desc; el.style.display = "block"; }
+    if (desc) { el.innerHTML = '<i class="fa-solid fa-circle-info"></i> ' + desc; el.style.display = "block"; }
     else { el.style.display = "none"; }
 })
 document.getElementById("submitBounty").addEventListener("click", async () => {
@@ -201,7 +201,7 @@ document.querySelectorAll(".btn-view-applicants").forEach(btn => {
                         <img src="${a.user?.photoProfil || ''}" style="width:36px;height:36px;border-radius:50%;object-fit:cover;" alt="">
                         <div>
                             <div style="font-weight:600;font-size:14px;">${a.user?.nom || '?'}</div>
-                            <div style="font-size:11px;color:var(--text-secondary);">${a.verified ? '✅ Vérifié automatiquement' : a.message || 'Candidature manuelle'}</div>
+                            <div style="font-size:11px;color:var(--text-secondary);">${a.verified ? '<i class="fa-solid fa-circle-check" style="color:#10b981;"></i> Vérifié automatiquement' : a.message || 'Candidature manuelle'}</div>
                         </div>
                     </div>
                     <button onclick="awardBounty('${bountyId}','${a.user?._id}')" class="btn-primary-action" style="padding:6px 14px;font-size:12px;">Attribuer</button>

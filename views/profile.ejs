@@ -98,14 +98,14 @@
             <div class="card" style="padding:16px 20px; display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;">
                 <div style="display:flex; gap:20px; flex-wrap:wrap;">
                     <div style="display:flex; flex-direction:column; align-items:center; gap:2px;">
-                        <span style="font-size:20px;">💰</span>
+                        <i class="fa-solid fa-coins" style="font-size:20px; color:#f59e0b;"></i>
                         <span style="font-size:17px; font-weight:700; color:#f59e0b;">
                             <% if (profileUser.role === 'admin') { %>∞<% } else { %><%= profileUser.walletBalance || 0 %><% } %>
                         </span>
                         <span style="font-size:11px; color:var(--text-secondary);"><%= profileUser.role === 'admin' ? 'Illimité' : 'Crédits' %></span>
                     </div>
                     <div style="display:flex; flex-direction:column; align-items:center; gap:2px;">
-                        <span style="font-size:20px;">⭐</span>
+                        <i class="fa-solid fa-star" style="font-size:20px; color:#8b5cf6;"></i>
                         <span style="font-size:17px; font-weight:700; color:#8b5cf6;"><%= profileUser.xp || 0 %></span>
                         <span style="font-size:11px; color:var(--text-secondary);">XP</span>
                     </div>
@@ -118,7 +118,7 @@
                         <i class="fa-solid fa-store"></i> Boutique
                     </a>
                     <button id="cloneToggleBtn" style="padding:8px 18px;font-size:13px;border:1px solid var(--border);border-radius:8px;cursor:pointer;background:<%= profileUser.aiCloneActive ? '#8b5cf6' : 'var(--bg-secondary)' %>;color:<%= profileUser.aiCloneActive ? '#fff' : 'var(--text-primary)' %>;" title="Si activé, un clone IA répond automatiquement à tes messages privés en ton absence">
-                        🎭 Clone IA <%= profileUser.aiCloneActive ? '(Actif)' : '(Inactif)' %>
+                        <i class="fa-solid fa-masks-theater"></i> Clone IA <%= profileUser.aiCloneActive ? '(Actif)' : '(Inactif)' %>
                     </button>
                 </div>
             </div>
@@ -126,7 +126,7 @@
             <!-- Clone IA - Instructions -->
             <div class="card" id="cloneInstructionsCard" style="padding:16px 20px; display:<%= profileUser.aiCloneActive ? 'block' : 'none' %>;">
                 <div style="display:flex; align-items:center; gap:10px; margin-bottom:12px;">
-                    <span style="font-size:20px;">🎭</span>
+                    <i class="fa-solid fa-masks-theater" style="font-size:20px;"></i>
                     <div>
                         <div style="font-weight:700; font-size:14px;">Instructions du Clone IA</div>
                         <div style="font-size:12px; color:var(--text-secondary);">Donne des consignes précises à ton clone pour qu'il réponde à ta façon</div>
@@ -149,7 +149,7 @@
             %>
             <div class="card" style="padding:16px 20px;">
                 <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
-                    <span style="font-size:20px;">🎒</span>
+                    <i class="fa-solid fa-box-open" style="font-size:20px;"></i>
                     <div>
                         <div style="font-size:14px;font-weight:700;">Ma Collection</div>
                         <div style="font-size:12px;color:var(--text-secondary);">Tous tes cosmétiques actifs et expirés</div>
@@ -165,7 +165,7 @@
 
                     <% if (profileUser.theme && profileUser.theme !== 'default') { %>
                     <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--bg-secondary);border-radius:10px;border:1px solid var(--border);">
-                        <span style="font-size:20px;">🎨</span>
+                        <i class="fa-solid fa-palette" style="font-size:20px;"></i>
                         <div style="flex:1;">
                             <div style="font-size:13px;font-weight:600;">Thème : <span style="text-transform:capitalize;color:var(--primary);"><%= profileUser.theme %></span></div>
                             <div style="font-size:11px;color:var(--text-secondary);">Thème actif sur ton profil</div>
@@ -176,7 +176,7 @@
 
                     <% if (profileUser.profileTitle) { %>
                     <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--bg-secondary);border-radius:10px;border:1px solid var(--border);">
-                        <span style="font-size:20px;">👑</span>
+                        <i class="fa-solid fa-crown" style="font-size:20px;"></i>
                         <div style="flex:1;">
                             <div style="font-size:13px;font-weight:600;">Titre : <span style="color:var(--primary);"><%= profileUser.profileTitle %></span></div>
                             <div style="font-size:11px;color:var(--text-secondary);">Affiché sous ton nom de profil</div>
@@ -187,7 +187,7 @@
 
                     <% if (profileUser.profileFrame) { %>
                     <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--bg-secondary);border-radius:10px;border:1px solid var(--border);">
-                        <span style="font-size:20px;">🖼️</span>
+                        <i class="fa-solid fa-image" style="font-size:20px;"></i>
                         <div style="flex:1;">
                             <div style="font-size:13px;font-weight:600;">Cadre : <span style="text-transform:capitalize;color:var(--primary);"><%= profileUser.profileFrame %></span></div>
                             <div style="font-size:11px;color:var(--text-secondary);">Cadre autour de ta photo de profil</div>
@@ -200,16 +200,16 @@
                     <div>
                         <div style="font-size:12px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Badges actifs</div>
                         <% activeBadges.forEach(badge => {
-                            const badgeEmojis = { verifie: '✅', moderateur: '🛡️', fondateur: '🏆', premium: '💎', staff: '⭐' };
+                            const badgeIcons = { verifie: '<i class="fa-solid fa-circle-check" style="color:#3b82f6;"></i>', moderateur: '<i class="fa-solid fa-shield" style="color:#8b5cf6;"></i>', fondateur: '<i class="fa-solid fa-trophy" style="color:#f59e0b;"></i>', premium: '<i class="fa-solid fa-gem" style="color:#06b6d4;"></i>', staff: '<i class="fa-solid fa-star" style="color:#f59e0b;"></i>' };
                             const daysLeft = badge.expiresAt ? Math.ceil((new Date(badge.expiresAt) - now) / (1000*60*60*24)) : null;
                         %>
                         <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--bg-secondary);border-radius:10px;border:1px solid var(--border);margin-bottom:6px;">
-                            <span style="font-size:20px;"><%= badgeEmojis[badge.type] || '🏅' %></span>
+                            <span style="font-size:20px;"><%- badgeIcons[badge.type] || '<i class="fa-solid fa-medal"></i>' %></span>
                             <div style="flex:1;">
                                 <div style="font-size:13px;font-weight:600;text-transform:capitalize;"><%= badge.type %></div>
                                 <% if (badge.expiresAt) { %>
                                 <div style="font-size:11px;color:<%= daysLeft <= 3 ? '#f59e0b' : 'var(--text-secondary)' %>;">
-                                    <% if (daysLeft <= 3) { %>⚠️ Expire dans <%= daysLeft %> jour<%= daysLeft > 1 ? 's' : '' %> (<%= new Date(badge.expiresAt).toLocaleDateString('fr-FR') %>)<% } else { %>Expire le <%= new Date(badge.expiresAt).toLocaleDateString('fr-FR') %><% } %>
+                                    <% if (daysLeft <= 3) { %><i class="fa-solid fa-triangle-exclamation" style="color:#f59e0b;"></i> Expire dans <%= daysLeft %> jour<%= daysLeft > 1 ? 's' : '' %> (<%= new Date(badge.expiresAt).toLocaleDateString('fr-FR') %>)<% } else { %>Expire le <%= new Date(badge.expiresAt).toLocaleDateString('fr-FR') %><% } %>
                                 </div>
                                 <% } else { %>
                                 <div style="font-size:11px;color:var(--text-secondary);">Badge permanent</div>
@@ -225,10 +225,10 @@
                     <div>
                         <div style="font-size:12px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Badges expirés</div>
                         <% expiredBadges.forEach(badge => {
-                            const badgeEmojis = { verifie: '✅', moderateur: '🛡️', fondateur: '🏆', premium: '💎', staff: '⭐' };
+                            const badgeIcons = { verifie: '<i class="fa-solid fa-circle-check" style="color:#3b82f6;"></i>', moderateur: '<i class="fa-solid fa-shield" style="color:#8b5cf6;"></i>', fondateur: '<i class="fa-solid fa-trophy" style="color:#f59e0b;"></i>', premium: '<i class="fa-solid fa-gem" style="color:#06b6d4;"></i>', staff: '<i class="fa-solid fa-star" style="color:#f59e0b;"></i>' };
                         %>
                         <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--bg-secondary);border-radius:10px;border:1px solid var(--border);margin-bottom:6px;opacity:0.6;">
-                            <span style="font-size:20px;filter:grayscale(1);"><%= badgeEmojis[badge.type] || '🏅' %></span>
+                            <span style="font-size:20px;filter:grayscale(1);"><%- badgeIcons[badge.type] || '<i class="fa-solid fa-medal"></i>' %></span>
                             <div style="flex:1;">
                                 <div style="font-size:13px;font-weight:600;text-transform:capitalize;"><%= badge.type %></div>
                                 <div style="font-size:11px;color:var(--text-secondary);">Expiré le <%= new Date(badge.expiresAt).toLocaleDateString('fr-FR') %></div>
@@ -351,7 +351,7 @@
                 if (data.success) {
                     cloneBtn.style.background = data.active ? "#8b5cf6" : "var(--bg-secondary)"
                     cloneBtn.style.color = data.active ? "#fff" : "var(--text-primary)"
-                    cloneBtn.textContent = `🎭 Clone IA (${data.active ? "Actif" : "Inactif"})`
+                    cloneBtn.innerHTML = `<i class="fa-solid fa-masks-theater"></i> Clone IA (${data.active ? "Actif" : "Inactif"})`
                     if (cloneCard) cloneCard.style.display = data.active ? "block" : "none"
                 }
             })
