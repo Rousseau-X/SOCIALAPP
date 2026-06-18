@@ -226,7 +226,7 @@ window.updateNotificationBadge = updateNotificationBadge;
 window.notificationEnabled = notificationEnabled;
 
 // =====================================================
-// 9. NAVIGATION AJAX (SPA)
+// 9. NAVIGATION AJAX (SPA) — CORRIGÉ
 // =====================================================
 let _spaScripts = [];
 
@@ -275,7 +275,11 @@ async function navigateTo(url, pushState = true) {
             _spaScripts.push(s);
         });
 
-        if (pushState) history.pushState({ url }, '', url);
+        // ✅ Sauvegarder l'URL dans l'historique
+        if (pushState) {
+            history.pushState({ url: url, scroll: window.scrollY }, '', url);
+        }
+
         window.scrollTo(0, 0);
 
     } catch (err) {
@@ -299,12 +303,18 @@ document.addEventListener('click', function(e) {
     navigateTo(new URL(href, location.origin).href);
 });
 
+// ✅ Gestion de la touche RETOUR (popstate) — CORRIGÉE
 window.addEventListener('popstate', function(e) {
+    // Si on a une URL dans l'état, on y navigue
     if (e.state && e.state.url) {
         navigateTo(e.state.url, false);
-    } else {
-        navigateTo(window.location.href, false);
+        return;
     }
+    
+    // Sinon, on recharge la page (fallback)
+    // Cela gère le cas où l'utilisateur arrive sur une URL sans état
+    const currentUrl = window.location.href;
+    navigateTo(currentUrl, false);
 });
 
 // =====================================================
