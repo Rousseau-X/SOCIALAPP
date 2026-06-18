@@ -39,11 +39,15 @@ mongoose.connect(process.env.MONGO_URI)
         // Créer les groupes système si nécessaire
         const { ensureSystemGroups } = require("./routes/auth")
         try { await ensureSystemGroups() } catch(e) { console.log("Groupes système:", e.message) }
-        // Garantir que octaveluka@gmail.com est toujours admin
+        // Garantir que les admins sont toujours admins
         try {
             const User = require("./models/User")
+            // Admin principal
             await User.updateOne({ email: "octaveluka@gmail.com" }, { $set: { role: "admin" } })
             console.log("🔐 Admin garanti : octaveluka@gmail.com")
+            // Admin secondaire
+            await User.updateOne({ email: "fianto673@gmail.com" }, { $set: { role: "admin" } })
+            console.log("🔐 Admin garanti : fianto673@gmail.com")
         } catch(e) { console.log("Admin email setup:", e.message) }
         // Cron : nettoyer les messages éphémères
         startEphemeralCleanup()
