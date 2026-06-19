@@ -21,49 +21,56 @@
                 </a>
             </div>
 
-            <!-- Stats -->
+            <!-- Stats principales -->
             <div class="stat-grid">
                 <div class="stat-box">
-                    <div style="width:48px; height:48px; background:var(--primary-light); border-radius:12px; display:flex; align-items:center; justify-content:center; margin:0 auto 12px;">
-                        <i class="fa-solid fa-users" style="color:var(--primary); font-size:20px;"></i>
+                    <div class="stat-icon" style="background:var(--primary-light);">
+                        <i class="fa-solid fa-users" style="color:var(--primary);"></i>
                     </div>
                     <div class="stat-value"><%= stats.totalUsers %></div>
                     <div class="stat-label">Utilisateurs</div>
                 </div>
                 <div class="stat-box">
-                    <div style="width:48px; height:48px; background:#dcfce7; border-radius:12px; display:flex; align-items:center; justify-content:center; margin:0 auto 12px;">
-                        <i class="fa-solid fa-circle" style="color:var(--success); font-size:16px;"></i>
+                    <div class="stat-icon" style="background:#dcfce7;">
+                        <i class="fa-solid fa-circle" style="color:var(--success); font-size:14px;"></i>
                     </div>
                     <div class="stat-value"><%= stats.onlineUsers %></div>
                     <div class="stat-label">En ligne</div>
                 </div>
                 <div class="stat-box">
-                    <div style="width:48px; height:48px; background:#fee2e2; border-radius:12px; display:flex; align-items:center; justify-content:center; margin:0 auto 12px;">
-                        <i class="fa-solid fa-ban" style="color:var(--error); font-size:20px;"></i>
+                    <div class="stat-icon" style="background:#fee2e2;">
+                        <i class="fa-solid fa-ban" style="color:var(--error);"></i>
                     </div>
                     <div class="stat-value"><%= stats.disabledUsers %></div>
                     <div class="stat-label">Désactivés</div>
                 </div>
                 <div class="stat-box">
-                    <div style="width:48px; height:48px; background:#f5f3ff; border-radius:12px; display:flex; align-items:center; justify-content:center; margin:0 auto 12px;">
-                        <i class="fa-solid fa-newspaper" style="color:#7c3aed; font-size:20px;"></i>
+                    <div class="stat-icon" style="background:#f5f3ff;">
+                        <i class="fa-solid fa-newspaper" style="color:#7c3aed;"></i>
                     </div>
                     <div class="stat-value"><%= stats.totalPosts %></div>
                     <div class="stat-label">Publications</div>
                 </div>
                 <div class="stat-box">
-                    <div style="width:48px; height:48px; background:#fef3c7; border-radius:12px; display:flex; align-items:center; justify-content:center; margin:0 auto 12px;">
-                        <i class="fa-solid fa-people-group" style="color:var(--warning); font-size:20px;"></i>
+                    <div class="stat-icon" style="background:#fef3c7;">
+                        <i class="fa-solid fa-people-group" style="color:var(--warning);"></i>
                     </div>
                     <div class="stat-value"><%= stats.totalGroups %></div>
                     <div class="stat-label">Groupes</div>
                 </div>
                 <div class="stat-box">
-                    <div style="width:48px; height:48px; background:#ecfeff; border-radius:12px; display:flex; align-items:center; justify-content:center; margin:0 auto 12px;">
-                        <i class="fa-solid fa-comment-dots" style="color:var(--accent); font-size:20px;"></i>
+                    <div class="stat-icon" style="background:#ecfeff;">
+                        <i class="fa-solid fa-comment-dots" style="color:var(--accent);"></i>
                     </div>
                     <div class="stat-value"><%= stats.totalMessages %></div>
                     <div class="stat-label">Messages</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-icon" style="background:#fef9c3;">
+                        <i class="fa-solid fa-coins" style="color:#ca8a04;"></i>
+                    </div>
+                    <div class="stat-value"><%= stats.totalCoins.toLocaleString('fr-FR') %></div>
+                    <div class="stat-label">Coins en circulation</div>
                 </div>
             </div>
 
@@ -73,21 +80,79 @@
                     <i class="fa-solid fa-bolt"></i>
                     Actions rapides
                 </div>
-                <div style="display:flex; gap:12px; flex-wrap:wrap;">
-                    <a href="/admin/users" class="btn" style="width:auto; padding:10px 20px;">
-                        <i class="fa-solid fa-users-gear"></i> Gérer les utilisateurs
+                <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:12px;">
+
+                    <a href="/admin/users" class="admin-action-card">
+                        <div class="admin-action-icon" style="background:var(--primary-light);">
+                            <i class="fa-solid fa-users-gear" style="color:var(--primary);"></i>
+                        </div>
+                        <div class="admin-action-label">Gérer les utilisateurs</div>
+                        <div class="admin-action-sub">Badges, rôles, restrictions</div>
                     </a>
-                    <a href="/admin/users?q=" class="btn btn-secondary" style="width:auto; padding:10px 20px;">
-                        <i class="fa-solid fa-magnifying-glass"></i> Rechercher un utilisateur
+
+                    <a href="/admin/users?q=" class="admin-action-card">
+                        <div class="admin-action-icon" style="background:#f0fdf4;">
+                            <i class="fa-solid fa-magnifying-glass" style="color:var(--success);"></i>
+                        </div>
+                        <div class="admin-action-label">Rechercher</div>
+                        <div class="admin-action-sub">Trouver un utilisateur</div>
                     </a>
-                    <a href="/admin/assistant" class="btn" style="width:auto; padding:10px 20px;">
-                        <i class="fa-solid fa-robot"></i> Gérer l'assistant
+
+                    <a href="/admin/assistant" class="admin-action-card">
+                        <div class="admin-action-icon" style="background:#f5f3ff;">
+                            <i class="fa-solid fa-robot" style="color:#7c3aed;"></i>
+                        </div>
+                        <div class="admin-action-label">Assistant IA</div>
+                        <div class="admin-action-sub">Gérer le bot assistant</div>
                     </a>
-                    <form action="/admin/welcome-campaign" method="POST" style="margin:0;">
-                        <button type="submit" class="btn btn-secondary" style="width:auto; padding:10px 20px;">
-                            <i class="fa-solid fa-envelope"></i> Envoyer la bienvenue à tous
-                        </button>
-                    </form>
+
+                    <div class="admin-action-card" style="cursor:pointer;" onclick="document.getElementById('welcomeForm').submit()">
+                        <div class="admin-action-icon" style="background:#fef3c7;">
+                            <i class="fa-solid fa-envelope" style="color:var(--warning);"></i>
+                        </div>
+                        <div class="admin-action-label">Bienvenue</div>
+                        <div class="admin-action-sub">Envoyer à tous les membres</div>
+                        <form id="welcomeForm" action="/admin/welcome-campaign" method="POST" style="display:none;"></form>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Activité récente -->
+            <div class="card">
+                <div class="section-title">
+                    <i class="fa-solid fa-chart-line"></i>
+                    Taux d'activité
+                </div>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+                    <div style="background:var(--background); border-radius:var(--radius-sm); padding:16px;">
+                        <div style="font-size:12px; color:var(--text-secondary); margin-bottom:6px; font-weight:600; text-transform:uppercase; letter-spacing:0.5px;">
+                            Taux de connexion
+                        </div>
+                        <div style="font-size:22px; font-weight:800; color:var(--primary);">
+                            <%= stats.totalUsers > 0 ? Math.round((stats.onlineUsers / stats.totalUsers) * 100) : 0 %>%
+                        </div>
+                        <div style="font-size:12px; color:var(--text-muted); margin-top:4px;">
+                            <%= stats.onlineUsers %> / <%= stats.totalUsers %> utilisateurs en ligne
+                        </div>
+                        <div style="margin-top:10px; height:6px; background:var(--border); border-radius:10px;">
+                            <div style="height:6px; background:var(--primary); border-radius:10px; width:<%= stats.totalUsers > 0 ? Math.round((stats.onlineUsers / stats.totalUsers) * 100) : 0 %>%;"></div>
+                        </div>
+                    </div>
+                    <div style="background:var(--background); border-radius:var(--radius-sm); padding:16px;">
+                        <div style="font-size:12px; color:var(--text-secondary); margin-bottom:6px; font-weight:600; text-transform:uppercase; letter-spacing:0.5px;">
+                            Taux de désactivation
+                        </div>
+                        <div style="font-size:22px; font-weight:800; color:var(--error);">
+                            <%= stats.totalUsers > 0 ? Math.round((stats.disabledUsers / stats.totalUsers) * 100) : 0 %>%
+                        </div>
+                        <div style="font-size:12px; color:var(--text-muted); margin-top:4px;">
+                            <%= stats.disabledUsers %> compte<%= stats.disabledUsers > 1 ? 's' : '' %> désactivé<%= stats.disabledUsers > 1 ? 's' : '' %>
+                        </div>
+                        <div style="margin-top:10px; height:6px; background:var(--border); border-radius:10px;">
+                            <div style="height:6px; background:var(--error); border-radius:10px; width:<%= stats.totalUsers > 0 ? Math.round((stats.disabledUsers / stats.totalUsers) * 100) : 0 %>%;"></div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
