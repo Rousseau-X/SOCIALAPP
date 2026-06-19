@@ -38,14 +38,29 @@ const userSchema = new mongoose.Schema({
     xpBoostExpiry: { type: Date, default: null },
     profileTitle: { type: String, default: null },
     profileFrame: { type: String, default: null, enum: [null, "bronze", "argent", "or", "diamant"] },
-
     lastFreeCredits: { type: Date, default: null },
 
     // === SÉCURITÉ & INCOGNITO ===
     isIncognitoInput: { type: Boolean, default: false },
     activeSubProfile: { type: mongoose.Schema.Types.ObjectId, ref: "SubProfile", default: null },
-    // vaultedChats: Map<otherUserId, hashedPIN>
     vaultedChats: { type: Map, of: String, default: {} },
+
+    // === MODÉRATION AVANCÉE ===
+    deletionReason: { type: String, default: null },
+    disableReason: { type: String, default: null },
+    disableContact: { type: String, default: null },
+
+    restrictions: {
+        messages:    { until: { type: Date, default: null } },
+        invitations: { until: { type: Date, default: null } },
+        likes:       { until: { type: Date, default: null } },
+        posts:       { until: { type: Date, default: null } }
+    },
+
+    warnings: [{
+        motif: { type: String, required: true },
+        createdAt: { type: Date, default: Date.now }
+    }]
 
 }, { timestamps: true })
 
