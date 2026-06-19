@@ -4,8 +4,9 @@ const User = require("../models/User");
 const Post = require("../models/Post");
 const Group = require("../models/Group");
 const Message = require("../models/Message");
+const Notification = require("../models/Notification");
 const { requireAdmin } = require("../middleware/auth");
-const assistant = require("../lib/assistant"); // ← AJOUT
+const assistant = require("../lib/assistant");
 
 // Dashboard principal
 router.get("/admin", requireAdmin, async (req, res) => {
@@ -16,6 +17,7 @@ router.get("/admin", requireAdmin, async (req, res) => {
         const totalMessages = await Message.countDocuments();
         const onlineUsers = await User.countDocuments({ enLigne: true });
         const disabledUsers = await User.countDocuments({ isDisabled: true });
+        const totalCoins = await User.aggregate([{ $group: { _id: null, total: { $sum: "$walletBalance" } } }]);
 
         res.render("admin-dashboard", {
             title: "Dashboard Admin",
@@ -26,7 +28,8 @@ router.get("/admin", requireAdmin, async (req, res) => {
                 totalGroups,
                 totalMessages,
                 onlineUsers,
-                disabledUsers
+                disabledUsers,
+                totalCoins: totalCoins[0]?.total || 0
             }
         });
     } catch (err) {
@@ -35,11 +38,11 @@ router.get("/admin", requireAdmin, async (req, res) => {
     }
 });
 
-// === RELANCER LA CAMPAGNE DE BIENVENUE (ADMIN) ===
+// Relancer la campagne de bienvenue
 router.post("/admin/welcome-campaign", requireAdmin, async (req, res) => {
     try {
         await assistant.sendWelcomeToAll();
-        req.flash("success", "✅ Campagne de bienvenue relancée pour tous les utilisateurs.");
+        req.flash("success", "✅ Campagne de bienvenue relancée.");
     } catch (err) {
         console.error(err);
         req.flash("error", "❌ Erreur lors de l'envoi de la campagne.");
@@ -47,7 +50,7 @@ router.post("/admin/welcome-campaign", requireAdmin, async (req, res) => {
     res.redirect("/admin");
 });
 
-// Liste des utilisateurs (avec recherche)
+// Liste des utilisateurs
 router.get("/admin/users", requireAdmin, async (req, res) => {
     try {
         const { q } = req.query;
@@ -77,9 +80,12 @@ router.get("/admin/users", requireAdmin, async (req, res) => {
     }
 });
 
-// Activer / désactiver un compte (AJAX)
-router.post("/admin/users/:id/toggle-disable", requireAdmin, async (req, res) => {
+// ============================================================
+// DÉSACTIVATION AVEC MOTIF (AJAX)
+// ============================================================
+router.post("/admin/users/:id/disable", requireAdmin, async (req, res) => {
     try {
+        const { reason, contact } = req.body;
         const targetUser = await User.findById(req.params.id);
         if (!targetUser) return res.status(404).json({ error: "Utilisateur introuvable" });
 
@@ -87,17 +93,286 @@ router.post("/admin/users/:id/toggle-disable", requireAdmin, async (req, res) =>
             return res.status(400).json({ error: "Tu ne peux pas désactiver ton propre compte." });
         }
 
-        targetUser.isDisabled = !targetUser.isDisabled;
+        targetUser.isDisabled = true;
+        targetUser.disableReason = reason || "Non spécifié";
+        targetUser.disableContact = contact || null;
         await targetUser.save();
 
-        res.json({ success: true, isDisabled: targetUser.isDisabled });
+        res.json({ success: true, isDisabled: true });
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: "Erreur serveur" });
     }
 });
 
-// Changer le rôle (admin / user) (AJAX)
+// Réactiver un compte (AJAX)
+router.post("/admin/users/:id/enable", requireAdmin, async (req, res) => {
+    try {
+        const targetUser = await User.findById(req.params.id);
+        if (!targetUser) return res.status(404).json({ error: "Utilisateur introuvable" });
+
+        targetUser.isDisabled = false;
+        targetUser.disableReason = null;
+        targetUser.disableContact = null;
+        await targetUser.save();
+
+        res.json({ success: true, isDisabled: false });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: "Erreur serveur" });
+    }
+});
+
+// ============================================================
+// SUPPRESSION AVEC MOTIF (AJAX)
+// ============================================================
+router.post("/admin/users/:id/delete", requireAdmin, async (req, res) => {
+    try {
+        const { reason } = req.body;
+        const targetUser = await User.findById(req.params.id);
+        if (!targetUser) return res.status(404).json({ error: "Utilisateur introuvable" });
+
+        if (targetUser._id.toString() === req.session.user.id) {
+            return res.status(400).json({ error: "Tu ne peux pas supprimer ton propre compte." });
+        }
+
+        // Sauvegarder le motif dans un champ avant suppression
+        // (pour affichage côté login si jamais on veut garder une trace)
+        targetUser.deletionReason = reason || "Non spécifié";
+        targetUser.isDisabled = true;
+
+        // On ne supprime pas vraiment — on marque comme "supprimé" avec motif
+        // pour que l'utilisateur voit le message à la prochaine connexion
+        // puis on nettoie ses données mais on garde le doc pour la raison
+        await Post.deleteMany({ auteur: targetUser._id });
+        await Message.deleteMany({ $or: [{ expediteur: targetUser._id }, { destinataire: targetUser._id }] });
+        await User.updateMany({}, {
+            $pull: {
+                amis: targetUser._id,
+                demandesRecues: targetUser._id,
+                demandesEnvoyees: targetUser._id
+            }
+        });
+
+        // Anonymiser le compte mais garder le motif visible à la connexion
+        targetUser.nom = "Compte supprimé";
+        targetUser.email = `deleted_${targetUser._id}@supprimé.com`;
+        targetUser.bio = "";
+        targetUser.photoProfil = "https://ui-avatars.com/api/?background=dc2626&color=fff&name=X";
+        targetUser.amis = [];
+        targetUser.demandesRecues = [];
+        targetUser.demandesEnvoyees = [];
+        targetUser.badges = [];
+        targetUser.walletBalance = 0;
+        targetUser.xp = 0;
+        await targetUser.save();
+
+        res.json({ success: true });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: "Erreur serveur" });
+    }
+});
+
+// ============================================================
+// RESTRICTIONS TEMPORAIRES (AJAX)
+// ============================================================
+router.post("/admin/users/:id/restrict", requireAdmin, async (req, res) => {
+    try {
+        const { type, duree } = req.body;
+        // type: "messages" | "invitations" | "likes" | "posts"
+        // duree: nombre de minutes
+
+        const types = ["messages", "invitations", "likes", "posts"];
+        if (!types.includes(type)) {
+            return res.status(400).json({ error: "Type de restriction invalide." });
+        }
+
+        const targetUser = await User.findById(req.params.id);
+        if (!targetUser) return res.status(404).json({ error: "Utilisateur introuvable" });
+
+        if (targetUser._id.toString() === req.session.user.id) {
+            return res.status(400).json({ error: "Tu ne peux pas te restreindre toi-même." });
+        }
+
+        const minutes = parseInt(duree) || 60;
+        const until = new Date(Date.now() + minutes * 60 * 1000);
+
+        if (!targetUser.restrictions) targetUser.restrictions = {};
+        targetUser.restrictions[type] = { until };
+        targetUser.markModified("restrictions");
+        await targetUser.save();
+
+        // Notification à l'utilisateur
+        await Notification.create({
+            destinataire: targetUser._id,
+            expediteur: req.session.user.id,
+            type: "system",
+            lien: "/",
+            message: `Ton accès à "${type}" a été restreint pour ${minutes} minutes.`
+        });
+
+        if (global.io) {
+            global.io.to(targetUser._id.toString()).emit("account-restricted", {
+                type,
+                until,
+                message: `Tu es restreint(e) sur "${type}" pendant ${minutes} minutes.`
+            });
+        }
+
+        res.json({ success: true, until });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: "Erreur serveur" });
+    }
+});
+
+// Lever une restriction (AJAX)
+router.post("/admin/users/:id/unrestrict/:type", requireAdmin, async (req, res) => {
+    try {
+        const targetUser = await User.findById(req.params.id);
+        if (!targetUser) return res.status(404).json({ error: "Utilisateur introuvable" });
+
+        if (targetUser.restrictions && targetUser.restrictions[req.params.type]) {
+            targetUser.restrictions[req.params.type] = { until: null };
+            targetUser.markModified("restrictions");
+            await targetUser.save();
+        }
+
+        res.json({ success: true });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: "Erreur serveur" });
+    }
+});
+
+// ============================================================
+// ENVOI DE COINS (AJAX)
+// ============================================================
+router.post("/admin/users/:id/send-coins", requireAdmin, async (req, res) => {
+    try {
+        const { amount, reason } = req.body;
+        const coins = parseInt(amount);
+
+        if (!coins || coins <= 0 || coins > 100000) {
+            return res.status(400).json({ error: "Montant invalide (1 à 100 000 coins)." });
+        }
+
+        const targetUser = await User.findById(req.params.id);
+        if (!targetUser) return res.status(404).json({ error: "Utilisateur introuvable" });
+
+        targetUser.walletBalance = (targetUser.walletBalance || 0) + coins;
+        await targetUser.save();
+
+        // Notification à l'utilisateur
+        await Notification.create({
+            destinataire: targetUser._id,
+            expediteur: req.session.user.id,
+            type: "system",
+            lien: "/wallet",
+            message: `Tu as reçu ${coins} coins ! ${reason ? "Motif : " + reason : ""}`
+        });
+
+        if (global.io) {
+            global.io.to(targetUser._id.toString()).emit("coins-received", {
+                amount: coins,
+                newBalance: targetUser.walletBalance,
+                reason: reason || ""
+            });
+        }
+
+        res.json({ success: true, newBalance: targetUser.walletBalance });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: "Erreur serveur" });
+    }
+});
+
+// ============================================================
+// AVERTISSEMENT (AJAX)
+// ============================================================
+router.post("/admin/users/:id/warn", requireAdmin, async (req, res) => {
+    try {
+        const { motif } = req.body;
+        if (!motif || motif.trim().length === 0) {
+            return res.status(400).json({ error: "Le motif est requis." });
+        }
+
+        const targetUser = await User.findById(req.params.id);
+        if (!targetUser) return res.status(404).json({ error: "Utilisateur introuvable" });
+
+        if (!targetUser.warnings) targetUser.warnings = [];
+        targetUser.warnings.push({ motif: motif.trim() });
+        await targetUser.save();
+
+        await Notification.create({
+            destinataire: targetUser._id,
+            expediteur: req.session.user.id,
+            type: "system",
+            lien: "/",
+            message: `⚠️ Avertissement reçu : ${motif.trim()}`
+        });
+
+        if (global.io) {
+            global.io.to(targetUser._id.toString()).emit("warning-received", {
+                motif: motif.trim(),
+                total: targetUser.warnings.length
+            });
+        }
+
+        res.json({ success: true, total: targetUser.warnings.length });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: "Erreur serveur" });
+    }
+});
+
+// ============================================================
+// BADGES (AJAX)
+// ============================================================
+router.post("/admin/users/:id/badges/add", requireAdmin, async (req, res) => {
+    try {
+        const { type } = req.body;
+        const types = ["verifie", "moderateur", "fondateur", "premium", "staff"];
+
+        if (!type || !types.includes(type)) {
+            return res.status(400).json({ error: "Type de badge invalide." });
+        }
+
+        const targetUser = await User.findById(req.params.id);
+        if (!targetUser) return res.status(404).json({ error: "Utilisateur introuvable" });
+
+        const alreadyHas = targetUser.badges.some(b => b.type === type);
+        if (alreadyHas) {
+            return res.status(400).json({ error: "Cet utilisateur a déjà ce badge." });
+        }
+
+        targetUser.badges.push({ type });
+        await targetUser.save();
+
+        res.json({ success: true, type });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: "Erreur serveur" });
+    }
+});
+
+router.post("/admin/users/:id/badges/remove/:type", requireAdmin, async (req, res) => {
+    try {
+        const targetUser = await User.findById(req.params.id);
+        if (!targetUser) return res.status(404).json({ error: "Utilisateur introuvable" });
+
+        targetUser.badges = targetUser.badges.filter(b => b.type !== req.params.type);
+        await targetUser.save();
+
+        res.json({ success: true });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: "Erreur serveur" });
+    }
+});
+
+// Changer le rôle (AJAX)
 router.post("/admin/users/:id/toggle-role", requireAdmin, async (req, res) => {
     try {
         const targetUser = await User.findById(req.params.id);
@@ -116,99 +391,5 @@ router.post("/admin/users/:id/toggle-role", requireAdmin, async (req, res) => {
         res.status(500).json({ error: "Erreur serveur" });
     }
 });
-
-// 🔵 Ajouter / retirer le badge "vérifié" (cercle bleu, sans emoji)
-router.post("/admin/users/:id/toggle-verify", requireAdmin, async (req, res) => {
-    try {
-        const targetUser = await User.findById(req.params.id);
-        if (!targetUser) return res.status(404).json({ error: "Utilisateur introuvable" });
-
-        if (targetUser._id.toString() === req.session.user.id) {
-            return res.status(400).json({ error: "Tu ne peux pas modifier ton propre statut vérifié." });
-        }
-
-        targetUser.verified = !targetUser.verified;
-        await targetUser.save();
-
-        res.json({ success: true, verified: targetUser.verified });
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: "Erreur serveur" });
-    }
-});
-
-// Supprimer un compte définitivement (AJAX)
-router.post("/admin/users/:id/delete", requireAdmin, async (req, res) => {
-    try {
-        const targetUser = await User.findById(req.params.id);
-        if (!targetUser) return res.status(404).json({ error: "Utilisateur introuvable" });
-
-        if (targetUser._id.toString() === req.session.user.id) {
-            return res.status(400).json({ error: "Tu ne peux pas supprimer ton propre compte." });
-        }
-
-        await Post.deleteMany({ auteur: targetUser._id });
-        await Message.deleteMany({ $or: [{ expediteur: targetUser._id }, { destinataire: targetUser._id }] });
-
-        await User.updateMany({}, {
-            $pull: {
-                amis: targetUser._id,
-                demandesRecues: targetUser._id,
-                demandesEnvoyees: targetUser._id
-            }
-        });
-
-        await User.findByIdAndDelete(targetUser._id);
-
-        res.json({ success: true });
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: "Erreur serveur" });
-    }
-});
-
-// Ajouter un badge (AJAX)
-router.post("/admin/users/:id/badges/add", requireAdmin, async (req, res) => {
-    try {
-        const { type } = req.body
-        const types = ["verifie", "moderateur", "fondateur", "premium", "staff"]
-
-        if (!type || !types.includes(type)) {
-            return res.status(400).json({ error: "Type de badge invalide." })
-        }
-
-        const targetUser = await User.findById(req.params.id)
-        if (!targetUser) return res.status(404).json({ error: "Utilisateur introuvable" })
-
-        const alreadyHas = targetUser.badges.some(b => b.type === type)
-        if (alreadyHas) {
-            return res.status(400).json({ error: "Cet utilisateur a déjà ce badge." })
-        }
-
-        targetUser.badges.push({ type })
-        await targetUser.save()
-
-        res.json({ success: true, type })
-    } catch (err) {
-        console.error(err)
-        res.status(500).json({ error: "Erreur serveur" })
-    }
-})
-
-// Retirer un badge (AJAX)
-router.post("/admin/users/:id/badges/remove/:type", requireAdmin, async (req, res) => {
-    try {
-        const targetUser = await User.findById(req.params.id)
-        if (!targetUser) return res.status(404).json({ error: "Utilisateur introuvable" })
-
-        targetUser.badges = targetUser.badges.filter(b => b.type !== req.params.type)
-        await targetUser.save()
-
-        res.json({ success: true })
-    } catch (err) {
-        console.error(err)
-        res.status(500).json({ error: "Erreur serveur" })
-    }
-})
 
 module.exports = router;
