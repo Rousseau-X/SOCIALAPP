@@ -18,6 +18,7 @@ const SubProfile = require("./models/SubProfile")
 const assistant = require("./lib/assistant")
 const { dispatchCommand, signCode, callCopilot } = require("./lib/aiCommands")
 const Post = require("./models/Post")
+const { isRestricted } = require("./middleware/auth")
 
 // Compteur activité quotidienne (messages → crédits)
 const dailyGroupMsgMap = new Map()
@@ -36,22 +37,15 @@ mongoose.connect(process.env.MONGO_URI)
         await assistant.ensureAssistantExists()
         console.log("🤖 Assistant prêt")
         assistant.sendWelcomeToAll()
-        // Créer les groupes système si nécessaire
         const { ensureSystemGroups } = require("./routes/auth")
         try { await ensureSystemGroups() } catch(e) { console.log("Groupes système:", e.message) }
-        // Garantir que les admins sont toujours admins
         try {
-            const User = require("./models/User")
-            // Admin principal
             await User.updateOne({ email: "octaveluka@gmail.com" }, { $set: { role: "admin" } })
             console.log("🔐 Admin garanti : octaveluka@gmail.com")
-            // Admin secondaire
             await User.updateOne({ email: "fianto673@gmail.com" }, { $set: { role: "admin" } })
             console.log("🔐 Admin garanti : fianto673@gmail.com")
         } catch(e) { console.log("Admin email setup:", e.message) }
-        // Cron : nettoyer les messages éphémères
         startEphemeralCleanup()
-        // Tâches journalières : générer dès le démarrage + toutes les heures (auto-reset à minuit)
         const { generateDailyTasks } = require("./routes/dailytasks")
         generateDailyTasks().catch(e => console.error("Daily tasks init:", e.message))
         setInterval(() => generateDailyTasks().catch(e => console.error("Daily tasks cron:", e.message)), 3600000)
@@ -75,7 +69,7 @@ function startEphemeralCleanup() {
                 await Message.findByIdAndDelete(msg._id)
             }
         } catch (e) { console.error("Ephemeral cleanup error:", e.message) }
-    }, 10000) // toutes les 10 secondes
+    }, 10000)
 }
 
 // =============================================
@@ -167,8 +161,7 @@ app.use("/", require("./routes/dailytasks"))
 // =============================================
 // SOCKET.IO
 // =============================================
-// Watch Party : état en mémoire par groupe
-const watchPartyState = {} // { [groupId]: { url, currentTime, isPaused, lastUpdate } }
+const watchPartyState = {}
 
 io.on("connection", async (socket) => {
     const userId = socket.handshake.query.userId
@@ -185,7 +178,9 @@ io.on("connection", async (socket) => {
         }
     } catch (e) {}
 
-    // === MESSAGERIE PRIVÉE ===
+    // =========================================
+    // MESSAGERIE PRIVÉE
+    // =========================================
     socket.on("send-message", async (data) => {
         try {
             const { from, to, contenu, type, audio, duration, replyTo } = data
@@ -196,9 +191,21 @@ io.on("connection", async (socket) => {
                 if (!audio) return
             } else return
 
+            // === VÉRIFICATION RESTRICTION MESSAGES ===
+            const senderCheck = await User.findById(from)
+            if (senderCheck && isRestricted(senderCheck, "messages")) {
+                const until = new Date(senderCheck.restrictions.messages.until)
+                const minutesLeft = Math.ceil((until - Date.now()) / 60000)
+                socket.emit("send-error", {
+                    type: "restriction",
+                    message: `Tu es restreint(e) sur les messages pendant encore ${minutesLeft} minute(s).`
+                })
+                return
+            }
+
             const textContent = type === 'text' ? contenu.trim() : ''
 
-            // Vérifier commandes IA dans les messages privés
+            // Commandes IA
             if (type === 'text' && textContent.match(/^\/[a-z+]/i)) {
                 const cmdResult = await dispatchCommand(textContent, from, { destinataireId: to, replyToId: replyTo || null })
                 if (cmdResult && !cmdResult.error) {
@@ -218,17 +225,14 @@ io.on("connection", async (socket) => {
                         msgData.expiresAt = cmdResult.expiresAt
                     }
                     const saved = await Message.create(msgData)
-                    const payload = { _id: saved._id, expediteur: from, destinataire: to, ...msgData, type: cmdResult.type, burnSeconds: cmdResult.burnSeconds || null, lu: false }
-                    io.to(to).emit("new-message", payload)
-                    io.to(from).emit("new-message", payload)
-
-                    // XP (avec boost éventuel)
                     const _senderForBoost = await User.findById(from, "xpBoostExpiry")
                     const _xpBoost = _senderForBoost?.xpBoostExpiry && _senderForBoost.xpBoostExpiry > new Date()
                     await User.findByIdAndUpdate(from, { $inc: { xp: _xpBoost ? 4 : 2 } })
+                    const payload = { _id: saved._id, expediteur: from, destinataire: to, ...msgData, type: cmdResult.type, burnSeconds: cmdResult.burnSeconds || null, lu: false }
+                    io.to(to).emit("new-message", payload)
+                    io.to(from).emit("new-message", payload)
                     return
                 } else if (cmdResult && cmdResult.error) {
-                    // Renvoyer l'erreur comme message système
                     const errMsg = await Message.create({ expediteur: from, destinataire: to, contenu: `⚠️ ${cmdResult.error}`, lu: false })
                     io.to(from).emit("new-message", { _id: errMsg._id, expediteur: from, destinataire: to, contenu: errMsg.contenu, type: 'text', lu: false })
                     return
@@ -245,7 +249,6 @@ io.on("connection", async (socket) => {
                 lu: false
             })
 
-            // XP pour message envoyé (avec boost éventuel)
             const _senderBoostCheck = await User.findById(from, "xpBoostExpiry")
             const _hasBoost = _senderBoostCheck?.xpBoostExpiry && _senderBoostCheck.xpBoostExpiry > new Date()
             await User.findByIdAndUpdate(from, { $inc: { xp: _hasBoost ? 2 : 1 } })
@@ -271,7 +274,7 @@ io.on("connection", async (socket) => {
             io.to(to).emit("new-message", payload)
             io.to(from).emit("new-message", payload)
 
-            // Clone IA : réponse automatique si le destinataire l'a activé
+            // Clone IA
             if (type === 'text' && textContent && from !== to) {
                 try {
                     const recipientUser = await User.findById(to, "aiCloneActive aiCloneInstructions nom")
@@ -289,8 +292,7 @@ io.on("connection", async (socket) => {
                 } catch (e) { console.log("Clone IA:", e.message) }
             }
 
-            // Notification (VIP check)
-            const senderUser = await User.findById(from, "nom")
+            // Notification
             const isUrgent = /urgent|important|aide|help|sos|asap/i.test(textContent)
             if (isUrgent || type === 'audio') {
                 const notification = await Notification.create({ destinataire: to, expediteur: from, type: "message", lien: "/messages/" + from })
@@ -320,20 +322,20 @@ io.on("connection", async (socket) => {
         } catch (e) {}
     })
 
-    // Typing indicator (avec respect du mode incognito)
     socket.on("typing", async (data) => {
         const { from, to, isTyping } = data
         try {
             const user = await User.findById(from, "isIncognitoInput")
-            if (user?.isIncognitoInput) return // Ghost typing : on n'émet rien
+            if (user?.isIncognitoInput) return
         } catch (e) {}
         socket.to(to).emit("typing", { from, isTyping })
     })
 
-    // === GROUPES ===
+    // =========================================
+    // GROUPES
+    // =========================================
     socket.on("join-group", (groupId) => {
         socket.join("group_" + groupId)
-        // Envoyer l'état Watch Party actuel au nouveau membre (auto-join direct)
         const wp = watchPartyState[groupId]
         if (wp && wp.url) {
             const elapsed = wp.isPaused ? 0 : Math.max(0, (Date.now() - wp.lastUpdate) / 1000)
@@ -349,6 +351,18 @@ io.on("connection", async (socket) => {
             if (type === 'text') { if (!contenu || contenu.trim().length === 0) return }
             else if (type === 'audio') { if (!audio) return }
             else return
+
+            // === VÉRIFICATION RESTRICTION MESSAGES ===
+            const senderCheck = await User.findById(from)
+            if (senderCheck && isRestricted(senderCheck, "messages")) {
+                const until = new Date(senderCheck.restrictions.messages.until)
+                const minutesLeft = Math.ceil((until - Date.now()) / 60000)
+                socket.emit("send-error", {
+                    type: "restriction",
+                    message: `Tu es restreint(e) sur les messages pendant encore ${minutesLeft} minute(s).`
+                })
+                return
+            }
 
             const group = await Group.findById(groupId).populate("membres.user", "nom")
             if (!group) return
@@ -390,7 +404,6 @@ io.on("connection", async (socket) => {
                     io.to("group_" + groupId).emit("new-group-message", payload)
                     return
                 } else if (cmdResult && cmdResult.error) {
-                    const expediteurUser = await User.findById(from)
                     io.to(from).emit("new-group-message", {
                         _id: Date.now(), expediteur: { _id: from, nom: "Système" },
                         pseudo: "Système", contenu: `⚠️ ${cmdResult.error}`, groupId, type: 'text'
@@ -399,7 +412,7 @@ io.on("connection", async (socket) => {
                 }
             }
 
-            // Sous-profil anonyme ?
+            // Sous-profil anonyme
             const senderUser = await User.findById(from).populate("activeSubProfile")
             const activeSubProfile = senderUser?.activeSubProfile
             const chaosOverride = group.isChaosMode ? group.membres.find(m => m.user._id.toString() === from) : null
@@ -443,7 +456,7 @@ io.on("connection", async (socket) => {
 
             io.to("group_" + groupId).emit("new-group-message", payload)
 
-            // Récompense activité : +5 crédits tous les 5 messages groupe (silencieux)
+            // Récompense activité
             const _today = new Date().toISOString().slice(0, 10)
             const _actKey = `${from}:${_today}`
             const _cnt = (dailyGroupMsgMap.get(_actKey) || 0) + 1
@@ -565,7 +578,7 @@ io.on("connection", async (socket) => {
         socket.to("group_" + groupId).emit("watch-party-sync", { action, currentTime, url, from: userId })
     })
 
-    // === FOCUS MODE (éditeur collaboratif) ===
+    // === FOCUS MODE ===
     socket.on("focus-update", (data) => {
         const { groupId, content } = data
         socket.to("group_" + groupId).emit("focus-update", { content, from: userId })
@@ -581,7 +594,6 @@ io.on("connection", async (socket) => {
                 await user.save()
                 io.emit("user-status", { userId, enLigne: false })
             }
-            // Retirer des salons vocaux
             const groupsWithVoice = await Group.find({ voiceRoomMembers: userId })
             for (const grp of groupsWithVoice) {
                 grp.voiceRoomMembers = grp.voiceRoomMembers.filter(m => m.toString() !== userId)
