@@ -3,6 +3,14 @@
 <title><%= title %> — SocialApp</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 <link rel="stylesheet" href="/css/style.css">
+<!-- PWA -->
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#4f46e5">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="SocialApp">
+<link rel="apple-touch-icon" href="/icons/icon-192.png">
+<meta name="mobile-web-app-capable" content="yes">
 <!-- Préchargement du son pour les notifications -->
 <audio id="notificationSound" preload="auto" style="display:none;">
     <source src="/sounds/Sale-notification-chime-sound-effect.mp3" type="audio/mpeg">
@@ -19,4 +27,12 @@
         });
     }
 })();
+
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('/sw.js')
+                .then((reg) => console.log('✅ Service Worker enregistré'))
+                .catch((err) => console.log('❌ Service Worker erreur:', err))
+        })
+    }
 </script>
