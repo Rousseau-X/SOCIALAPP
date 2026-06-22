@@ -75,7 +75,20 @@
                         <textarea name="bio" rows="3" maxlength="200"
                                   placeholder="Parle un peu de toi..."><%= profileUser.bio %></textarea>
                     </div>
-
+                         <!-- Notifications Push -->
+<div class="card" style="margin-top:0;">
+    <div class="section-title">
+        <i class="fa-solid fa-bell"></i>
+        Notifications push
+    </div>
+    <p style="font-size:13px; color:var(--text-secondary); margin-bottom:14px; line-height:1.6;">
+        Reçois des notifications même quand SocialApp est fermé — messages, likes, demandes d'amis...
+    </p>
+    <button id="push-toggle-btn"
+            style="display:inline-flex; align-items:center; gap:8px; padding:10px 20px; border-radius:var(--radius-sm); font-size:14px; font-weight:600; cursor:pointer; border:1px solid #c7d2fe; background:var(--primary-light); color:var(--primary);">
+        <i class="fa-solid fa-bell"></i> Activer les notifications
+    </button>
+</div>
                     <button type="submit" class="btn">
                         <i class="fa-solid fa-check"></i> Enregistrer les modifications
                     </button>
