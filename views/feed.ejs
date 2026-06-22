@@ -17,6 +17,28 @@
                     <div class="subtitle">Découvre les dernières publications de tes amis</div>
                 </div>
             </div>
+<!-- BARRE DE STORIES -->
+<div class="stories-bar" id="storiesBar">
+    <div class="story-add-btn" id="addStoryBtn">
+        <i class="fa-solid fa-plus"></i>
+        <span>Ajouter</span>
+    </div>
+    <input type="file" id="storyInput" accept="image/*" style="display:none">
+</div>
+
+<!-- OVERLAY STORIES -->
+<div class="story-overlay" id="storyOverlay">
+    <div class="story-progress" id="storyProgress"></div>
+    <div class="story-close" id="storyClose"><i class="fa-solid fa-xmark"></i></div>
+    <div class="story-author-info">
+        <img id="storyAuthorAvatar" src="" alt="">
+        <span id="storyAuthorName"></span>
+    </div>
+    <img class="story-media" id="storyMedia" src="" alt="">
+    <div class="story-views">
+        <i class="fa-regular fa-eye"></i> <span id="storyViewCount">0</span> vues
+    </div>
+</div>
 
             <% if (error && error.length > 0) { %>
                 <div class="alert alert-error">
