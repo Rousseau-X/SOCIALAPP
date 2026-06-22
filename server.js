@@ -19,6 +19,7 @@ const assistant = require("./lib/assistant")
 const { dispatchCommand, signCode, callCopilot } = require("./lib/aiCommands")
 const Post = require("./models/Post")
 const { isRestricted } = require("./middleware/auth")
+const { sendPushToUser, sendPushToUsers, buildPayload } = require("./lib/webpush")
 
 // Compteur activité quotidienne (messages → crédits)
 const dailyGroupMsgMap = new Map()
