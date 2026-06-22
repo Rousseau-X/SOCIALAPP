@@ -27,12 +27,19 @@
 
             <%
             const categories = [...new Set(shopItems.map(i => i.category))]
+            const catIcons = {
+                'Thèmes': '<i class="fa-solid fa-palette"></i>',
+                'Boosts': '<i class="fa-solid fa-bolt"></i>',
+                'Titres': '<i class="fa-solid fa-medal"></i>',
+                'Cadres': '<i class="fa-solid fa-image"></i>',
+                'Badges': '<i class="fa-solid fa-certificate"></i>',
+                'Effets': '<i class="fa-solid fa-sparkles"></i>'
+            }
             %>
 
             <% categories.forEach(cat => { %>
             <div class="shop-category">
                 <div class="shop-category-title">
-                    <% const catIcons = { 'Thèmes': '<i class="fa-solid fa-palette"></i>', 'Boosts': '<i class="fa-solid fa-bolt"></i>', 'Titres': '<i class="fa-solid fa-medal"></i>', 'Cadres': '<i class="fa-solid fa-image"></i>', 'Badges': '<i class="fa-solid fa-certificate"></i>' } %>
                     <%- catIcons[cat] || '<i class="fa-solid fa-star"></i>' %> <%= cat %>
                 </div>
                 <div class="shop-grid">
@@ -42,6 +49,7 @@
                         else if (item.type === 'title') isOwned = user.profileTitle === item.value
                         else if (item.type === 'frame') isOwned = user.profileFrame === item.value
                         else if (item.type === 'badge') isOwned = (user.badges || []).some(b => b.type === item.value)
+                        else if (item.type === 'effect') isOwned = user.profileEffect === item.value
                     %>
                     <div class="shop-item <%= item.type === 'theme' ? 'theme-preview-' + item.theme : '' %> <%= isOwned ? 'active-theme' : '' %>">
                         <div class="shop-item-emoji"><%= item.emoji %></div>
@@ -133,6 +141,7 @@ document.querySelectorAll(".btn-shop-buy").forEach(btn => {
                 else if (type === 'frame') showToast(`<i class="fa-solid fa-image"></i> ${name} appliqué sur ton profil !`)
                 else if (type === 'badge') showToast(`<i class="fa-solid fa-certificate"></i> Badge obtenu et visible sur ton profil !`)
                 else if (type === 'credits') showToast(`<i class="fa-solid fa-coins"></i> +${data.creditsGained} crédits ajoutés à ton solde !`)
+                else if (type === 'effect') showToast(`<i class="fa-solid fa-sparkles"></i> ${name} activé sur ton profil !`)
                 setTimeout(() => location.reload(), 1500)
             } else {
                 showToast(data.error || "Erreur lors de l'achat.", false)
