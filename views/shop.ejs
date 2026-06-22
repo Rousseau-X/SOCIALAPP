@@ -52,7 +52,17 @@
                         else if (item.type === 'effect') isOwned = user.profileEffect === item.value
                     %>
                     <div class="shop-item <%= item.type === 'theme' ? 'theme-preview-' + item.theme : '' %> <%= isOwned ? 'active-theme' : '' %>">
+                        <% if (item.type === 'effect') { %>
+                        <div style="text-align:center;padding:10px 0 4px;overflow:visible;">
+                            <div class="effect-<%= item.value %>" style="display:inline-block;position:relative;overflow:visible;">
+                                <img src="<%= user.photoProfil || '/images/default.jpg' %>"
+                                     style="width:64px;height:64px;border-radius:50%;object-fit:cover;display:block;"
+                                     alt="apercu">
+                            </div>
+                        </div>
+                        <% } else { %>
                         <div class="shop-item-emoji"><%= item.emoji %></div>
+                        <% } %>
                         <div class="shop-item-name"><%= item.name %></div>
                         <div class="shop-item-desc" style="font-size:11px;color:var(--text-secondary);margin:4px 0 8px;min-height:28px;line-height:1.4;"><%= item.desc %></div>
                         <div class="shop-item-price">

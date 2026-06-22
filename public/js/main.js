@@ -634,42 +634,39 @@ async function handleViewApplicants(e) {
             if (!type) return;
 
             if (type === 'butterfly') {
-                var bCfg = [
-                    { c1: '#e879f9', c2: '#c026d3', dur: 4,   dir: 'fxOrbitCW',  del: 0    },
-                    { c1: '#f0abfc', c2: '#a21caf', dur: 5.5, dir: 'fxOrbitCCW', del: -1.8 },
-                    { c1: '#c084fc', c2: '#7c3aed', dur: 3.5, dir: 'fxOrbitCW',  del: -3.1 }
+                var bColors = [
+                    ['#e879f9','#c026d3'],
+                    ['#f0abfc','#a21caf'],
+                    ['#c084fc','#7c3aed'],
+                    ['#e879f9','#6d28d9']
                 ];
+                var bAngles = [0, 90, 180, 270];
+                var bDurs   = [0.32, 0.38, 0.28, 0.35];
+                var bDels   = [0, -0.1, -0.18, -0.26];
                 var bw = L ? 28 : 18, bh = L ? 22 : 14;
-                bCfg.forEach(function(c) {
-                    makeOrbit(wrapper, orbitR, bw, bh, c.dur, c.dir, 'fxWingFlap', 0.35, c.del, FX.butterfly(c.c1, c.c2));
-                });
+                for (var i = 0; i < 4; i++) {
+                    makeStatic(wrapper, bAngles[i], orbitR, bw, bh, 'fxWingFlap', bDurs[i], bDels[i], FX.butterfly(bColors[i][0], bColors[i][1]));
+                }
             }
 
             if (type === 'flame') {
-                var fCfg = [
-                    { dur: 7,   dir: 'fxOrbitCW',  del: 0,    fd: 0.6  },
-                    { dur: 5.5, dir: 'fxOrbitCW',  del: -1.4, fd: 0.45 },
-                    { dur: 8,   dir: 'fxOrbitCCW', del: -2.8, fd: 0.7  },
-                    { dur: 6,   dir: 'fxOrbitCW',  del: -4.2, fd: 0.5  }
-                ];
+                var fAngles = [0, 72, 144, 216, 288];
+                var fDurs   = [0.55, 0.65, 0.45, 0.70, 0.50];
+                var fDels   = [0, -0.13, -0.25, -0.38, -0.48];
                 var fw = L ? 18 : 12, fh = L ? 28 : 18;
-                fCfg.forEach(function(c) {
-                    makeOrbit(wrapper, orbitR, fw, fh, c.dur, c.dir, 'fxFlicker', c.fd, c.del, FX.flame);
-                });
+                for (var i = 0; i < 5; i++) {
+                    makeStatic(wrapper, fAngles[i], orbitR, fw, fh, 'fxFlicker', fDurs[i], fDels[i], FX.flame);
+                }
             }
 
             if (type === 'star') {
-                var sCfg = [
-                    { dur: 3,   dir: 'fxOrbitCW',  del: 0,    td: 0.8  },
-                    { dur: 4.5, dir: 'fxOrbitCCW', del: -0.9, td: 1.2  },
-                    { dur: 2.8, dir: 'fxOrbitCW',  del: -1.8, td: 0.6  },
-                    { dur: 5,   dir: 'fxOrbitCCW', del: -2.7, td: 1.4  },
-                    { dur: 3.6, dir: 'fxOrbitCW',  del: -3.6, td: 0.9  }
-                ];
+                var sAngles = [0, 60, 120, 180, 240, 300];
+                var sDurs   = [0.9, 1.1, 0.7, 1.3, 0.85, 1.0];
+                var sDels   = [0, -0.15, -0.30, -0.45, -0.60, -0.75];
                 var sw = L ? 24 : 15, sh = L ? 24 : 15;
-                sCfg.forEach(function(c) {
-                    makeOrbit(wrapper, orbitR, sw, sh, c.dur, c.dir, 'fxTwinkle', c.td, c.del, FX.star);
-                });
+                for (var i = 0; i < 6; i++) {
+                    makeStatic(wrapper, sAngles[i], orbitR, sw, sh, 'fxTwinkle', sDurs[i], sDels[i], FX.star);
+                }
             }
 
             if (type === 'sparkle') {
@@ -685,17 +682,13 @@ async function handleViewApplicants(e) {
 
             if (type === 'diamond') {
                 var dColors = ['#67e8f9','#0ea5e9','#a5f3fc','#38bdf8','#7dd3fc'];
-                var dCfg = [
-                    { dur: 5,   dir: 'fxOrbitCW',  del: 0,    gd: 1.2 },
-                    { dur: 7,   dir: 'fxOrbitCCW', del: -1.4, gd: 1.8 },
-                    { dur: 4.5, dir: 'fxOrbitCW',  del: -2.8, gd: 1.0 },
-                    { dur: 6,   dir: 'fxOrbitCCW', del: -4.2, gd: 1.5 },
-                    { dur: 5.5, dir: 'fxOrbitCW',  del: -0.7, gd: 1.3 }
-                ];
+                var dAngles = [30, 102, 174, 246, 318];
+                var dDurs   = [1.2, 1.8, 1.0, 1.5, 1.3];
+                var dDels   = [0, -0.36, -0.72, -1.08, -1.44];
                 var dw = L ? 20 : 13, dh = L ? 26 : 16;
-                dCfg.forEach(function(c, i) {
-                    makeOrbit(wrapper, orbitR, dw, dh, c.dur, c.dir, 'fxDiamondGlint', c.gd, c.del, FX.diamond(dColors[i]));
-                });
+                for (var i = 0; i < 5; i++) {
+                    makeStatic(wrapper, dAngles[i], orbitR, dw, dh, 'fxDiamondGlint', dDurs[i], dDels[i], FX.diamond(dColors[i]));
+                }
             }
         });
     };
