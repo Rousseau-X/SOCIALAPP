@@ -38,7 +38,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     initNotifications();
-    initProfileEffects();
+    setTimeout(function() { initProfileEffects(); }, 100);
     updateNotificationBadge();
 
     initSocketNotifications();
@@ -617,9 +617,17 @@ async function handleViewApplicants(e) {
             var img = wrapper.querySelector('img');
             if (!img) return;
 
-            var imgW = img.offsetWidth || 46;
-            var orbitR = Math.round(imgW / 2) + (imgW > 60 ? 18 : 11);
+            var imgW = img.offsetWidth;
+            if (!imgW) {
+                var cs = window.getComputedStyle(img);
+                imgW = parseInt(cs.width) || 46;
+            }
+            var orbitR = Math.round(imgW / 2) + (imgW > 60 ? 22 : 14);
             var L = imgW > 60;
+
+            // Forcer overflow visible sur le wrapper et son parent pour que les particules ne soient pas coupées
+            wrapper.style.overflow = 'visible';
+            if (wrapper.parentElement) wrapper.parentElement.style.overflow = 'visible';
 
             var type = '';
             wrapper.classList.forEach(function(c) { if (c.startsWith('effect-')) type = c.replace('effect-', ''); });
@@ -631,7 +639,7 @@ async function handleViewApplicants(e) {
                     { c1: '#f0abfc', c2: '#a21caf', dur: 5.5, dir: 'fxOrbitCCW', del: -1.8 },
                     { c1: '#c084fc', c2: '#7c3aed', dur: 3.5, dir: 'fxOrbitCW',  del: -3.1 }
                 ];
-                var bw = L ? 22 : 14, bh = L ? 18 : 12;
+                var bw = L ? 28 : 18, bh = L ? 22 : 14;
                 bCfg.forEach(function(c) {
                     makeOrbit(wrapper, orbitR, bw, bh, c.dur, c.dir, 'fxWingFlap', 0.35, c.del, FX.butterfly(c.c1, c.c2));
                 });
@@ -644,7 +652,7 @@ async function handleViewApplicants(e) {
                     { dur: 8,   dir: 'fxOrbitCCW', del: -2.8, fd: 0.7  },
                     { dur: 6,   dir: 'fxOrbitCW',  del: -4.2, fd: 0.5  }
                 ];
-                var fw = L ? 14 : 9, fh = L ? 22 : 14;
+                var fw = L ? 18 : 12, fh = L ? 28 : 18;
                 fCfg.forEach(function(c) {
                     makeOrbit(wrapper, orbitR, fw, fh, c.dur, c.dir, 'fxFlicker', c.fd, c.del, FX.flame);
                 });
@@ -658,7 +666,7 @@ async function handleViewApplicants(e) {
                     { dur: 5,   dir: 'fxOrbitCCW', del: -2.7, td: 1.4  },
                     { dur: 3.6, dir: 'fxOrbitCW',  del: -3.6, td: 0.9  }
                 ];
-                var sw = L ? 18 : 12, sh = L ? 18 : 12;
+                var sw = L ? 24 : 15, sh = L ? 24 : 15;
                 sCfg.forEach(function(c) {
                     makeOrbit(wrapper, orbitR, sw, sh, c.dur, c.dir, 'fxTwinkle', c.td, c.del, FX.star);
                 });
@@ -668,7 +676,7 @@ async function handleViewApplicants(e) {
                 var spColors = ['#a855f7','#818cf8','#e879f9','#6366f1','#c084fc','#38bdf8'];
                 var spDurs   = [1.6, 2.0, 1.4, 1.8, 2.2, 1.5];
                 var spDels   = [0, -0.5, -1.0, -1.5, -0.8, -1.3];
-                var spw = L ? 18 : 12, sph = L ? 18 : 12;
+                var spw = L ? 24 : 16, sph = L ? 24 : 16;
                 for (var i = 0; i < 6; i++) {
                     var ang = (i / 6) * 360 - 90;
                     makeStatic(wrapper, ang, orbitR, spw, sph, 'fxSparklePopIn', spDurs[i], spDels[i], FX.sparkle(spColors[i]));
@@ -684,7 +692,7 @@ async function handleViewApplicants(e) {
                     { dur: 6,   dir: 'fxOrbitCCW', del: -4.2, gd: 1.5 },
                     { dur: 5.5, dir: 'fxOrbitCW',  del: -0.7, gd: 1.3 }
                 ];
-                var dw = L ? 16 : 11, dh = L ? 20 : 13;
+                var dw = L ? 20 : 13, dh = L ? 26 : 16;
                 dCfg.forEach(function(c, i) {
                     makeOrbit(wrapper, orbitR, dw, dh, c.dur, c.dir, 'fxDiamondGlint', c.gd, c.del, FX.diamond(dColors[i]));
                 });
@@ -696,4 +704,6 @@ async function handleViewApplicants(e) {
 // =====================================================
 // 14. DÉMARRAGE
 // =====================================================
+// Backup : relancer les effets une fois tout chargé (images incluses)
+window.addEventListener('load', function() { initProfileEffects(); });
 console.log('📦 main.js chargé');

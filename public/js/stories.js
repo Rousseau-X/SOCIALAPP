@@ -121,6 +121,12 @@ function showStory() {
     const textEl = document.getElementById("story-text-overlay")
     textEl.innerText = story.texte || ""
     textEl.style.display = story.texte ? "block" : "none"
+    // Centrer verticalement si story texte uniquement (couleurFond = pas de vrai média)
+    if (story.couleurFond && story.texte) {
+        textEl.classList.add("text-only")
+    } else {
+        textEl.classList.remove("text-only")
+    }
 
     // Vues
     document.getElementById("story-views-count").innerText = story.vues?.length || 0
@@ -366,6 +372,55 @@ async function publishStory() {
         publishBtn.disabled = false
         publishBtn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Publier'
     }
+}
+
+// =============================================
+// PANEL VUES
+// =============================================
+async function showViewersPanel() {
+    const group = currentStoryGroups[currentGroupIndex]
+    if (!group) return
+    const story = group.stories[currentStoryIndex]
+    if (!story) return
+
+    stopStoryTimer()
+
+    const panel = document.getElementById("story-viewers-panel")
+    const backdrop = document.getElementById("story-viewers-backdrop")
+    const list = document.getElementById("story-viewers-list")
+    if (!panel || !list) return
+
+    list.innerHTML = '<div style="text-align:center;padding:24px;color:var(--text-muted);"><i class="fa-solid fa-spinner fa-spin"></i></div>'
+    panel.style.display = "block"
+    backdrop.style.display = "block"
+
+    try {
+        const res = await fetch(`/stories/${story._id}/viewers`)
+        const data = await res.json()
+
+        if (data.restricted) {
+            list.innerHTML = '<div style="text-align:center;padding:24px;color:var(--text-muted);">Seul l\'auteur peut voir les vues.</div>'
+        } else if (data.success && data.viewers.length > 0) {
+            list.innerHTML = data.viewers.map(v => `
+                <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);">
+                    <img src="${v.user?.photoProfil || '/images/default.jpg'}" style="width:42px;height:42px;border-radius:50%;object-fit:cover;flex-shrink:0;">
+                    <span style="font-weight:600;color:var(--text-primary);font-size:14px;">${escapeHtml(v.user?.nom || 'Utilisateur')}</span>
+                </div>
+            `).join('')
+        } else {
+            list.innerHTML = '<div style="text-align:center;padding:24px;color:var(--text-muted);font-size:13px;">Aucune vue pour le moment.</div>'
+        }
+    } catch (e) {
+        list.innerHTML = '<div style="text-align:center;padding:24px;color:var(--text-muted);">Erreur de chargement.</div>'
+    }
+}
+
+function closeViewersPanel() {
+    const panel = document.getElementById("story-viewers-panel")
+    const backdrop = document.getElementById("story-viewers-backdrop")
+    if (panel) panel.style.display = "none"
+    if (backdrop) backdrop.style.display = "none"
+    startStoryTimer()
 }
 
 // =============================================

@@ -40,19 +40,35 @@
     </div>
 
     <!-- Footer -->
-    <div class="story-viewer-footer">
-        <div class="story-views-count">
+    <div class="story-viewer-footer" style="z-index:20;">
+        <div class="story-views-count" onclick="showViewersPanel()" style="cursor:pointer; padding:6px 10px; border-radius:20px; background:rgba(255,255,255,0.15);">
             <i class="fa-solid fa-eye" style="font-size:12px;"></i>
             <span id="story-views-count">0</span>
+            <i class="fa-solid fa-chevron-up" style="font-size:10px; margin-left:2px;"></i>
         </div>
-        <div class="story-emoji-reactions">
-            <button class="story-emoji-btn" onclick="reactToStory('❤️')">❤️</button>
-            <button class="story-emoji-btn" onclick="reactToStory('😂')">😂</button>
-            <button class="story-emoji-btn" onclick="reactToStory('😮')">😮</button>
-            <button class="story-emoji-btn" onclick="reactToStory('🔥')">🔥</button>
-            <button class="story-emoji-btn" onclick="reactToStory('👏')">👏</button>
+        <div class="story-emoji-reactions" style="position:relative; z-index:20;">
+            <button class="story-emoji-btn" onclick="event.stopPropagation(); reactToStory('❤️')">❤️</button>
+            <button class="story-emoji-btn" onclick="event.stopPropagation(); reactToStory('😂')">😂</button>
+            <button class="story-emoji-btn" onclick="event.stopPropagation(); reactToStory('😮')">😮</button>
+            <button class="story-emoji-btn" onclick="event.stopPropagation(); reactToStory('🔥')">🔥</button>
+            <button class="story-emoji-btn" onclick="event.stopPropagation(); reactToStory('👏')">👏</button>
         </div>
     </div>
+</div>
+
+<!-- ========== PANEL : QUI A VU ========== -->
+<div id="story-viewers-backdrop" onclick="closeViewersPanel()" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:999998;"></div>
+<div id="story-viewers-panel" style="display:none; position:fixed; bottom:0; left:0; right:0; background:var(--card-bg); border-radius:18px 18px 0 0; z-index:999999; padding:20px 20px 32px; max-height:55vh; overflow-y:auto; box-shadow:0 -6px 32px rgba(0,0,0,0.35);">
+    <div style="width:36px; height:4px; background:var(--border); border-radius:4px; margin:0 auto 18px;"></div>
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:16px;">
+        <div style="font-weight:700; font-size:15px; color:var(--text-primary);">
+            <i class="fa-solid fa-eye" style="color:var(--primary); margin-right:6px;"></i>Vues
+        </div>
+        <button onclick="closeViewersPanel()" style="background:none; border:none; cursor:pointer; color:var(--text-muted); font-size:20px; padding:4px;">
+            <i class="fa-solid fa-xmark"></i>
+        </button>
+    </div>
+    <div id="story-viewers-list"></div>
 </div>
 
 <!-- ========== CRÉATEUR DE STORY ========== -->

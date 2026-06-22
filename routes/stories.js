@@ -160,6 +160,22 @@ router.post("/stories/:id/react", requireAuth, async (req, res) => {
     }
 })
 
+// Voir qui a vu une story (auteur uniquement)
+router.get("/stories/:id/viewers", requireAuth, async (req, res) => {
+    try {
+        const story = await Story.findById(req.params.id)
+            .populate("vues.user", "nom photoProfil")
+        if (!story) return res.status(404).json({ error: "Story introuvable" })
+        if (story.auteur.toString() !== req.session.user.id) {
+            return res.json({ success: true, viewers: [], restricted: true })
+        }
+        res.json({ success: true, viewers: story.vues, restricted: false })
+    } catch (err) {
+        console.error(err)
+        res.status(500).json({ error: "Erreur serveur" })
+    }
+})
+
 // Supprimer sa propre story
 router.delete("/stories/:id", requireAuth, async (req, res) => {
     try {
