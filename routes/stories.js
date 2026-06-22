@@ -8,6 +8,7 @@ const User = require('../models/User');
 // Uploader une story
 router.post('/api/stories/upload', requireAuth, uploadPost.single('media'), async (req, res) => {
     try {
+        if (!req.file) return res.status(400).json({ error: 'Aucun fichier' });
         const story = await Story.create({
             auteur: req.session.user.id,
             media: req.file.path,
@@ -15,6 +16,7 @@ router.post('/api/stories/upload', requireAuth, uploadPost.single('media'), asyn
         });
         res.json({ success: true, story });
     } catch (err) {
+        console.error(err);
         res.status(500).json({ error: err.message });
     }
 });
@@ -33,6 +35,7 @@ router.get('/api/stories', requireAuth, async (req, res) => {
 
         res.json({ stories });
     } catch (err) {
+        console.error(err);
         res.status(500).json({ error: err.message });
     }
 });
@@ -47,6 +50,7 @@ router.post('/api/stories/:id/view', requireAuth, async (req, res) => {
         }
         res.json({ success: true });
     } catch (err) {
+        console.error(err);
         res.status(500).json({ error: err.message });
     }
 });
