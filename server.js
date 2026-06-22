@@ -292,6 +292,16 @@ io.on("connection", async (socket) => {
             }
 
             io.to(to).emit("new-message", payload)
+            // Notification push si l'utilisateur est hors ligne
+const recipientForPush = await User.findById(to, "enLigne nom")
+if (!recipientForPush?.enLigne) {
+    const senderForPush = await User.findById(from, "nom")
+    await sendPushToUser(to, buildPayload("message", {
+        senderName: senderForPush?.nom || "Quelqu'un",
+        senderId: from,
+        content: type === "audio" ? "Message vocal" : textContent.slice(0, 80)
+    }))
+            }
             io.to(from).emit("new-message", payload)
 
             // Clone IA
