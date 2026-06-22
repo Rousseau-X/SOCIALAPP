@@ -158,6 +158,25 @@ app.use("/", require("./routes/security"))
 app.use("/", require("./routes/voicerooms"))
 app.use("/", require("./routes/dailytasks"))
 
+// Route pour servir les icônes PWA générées dynamiquement
+app.get("/icons/icon-:size.png", async (req, res) => {
+    const size = parseInt(req.params.size) || 192
+    const validSizes = [72, 96, 128, 144, 152, 192, 384, 512]
+    if (!validSizes.includes(size)) return res.status(404).send("Not found")
+
+    try {
+        const response = await fetch(
+            `https://ui-avatars.com/api/?name=S&background=4f46e5&color=fff&size=${size}&bold=true&font-size=0.6&rounded=false`
+        )
+        const buffer = await response.arrayBuffer()
+        res.set("Content-Type", "image/png")
+        res.set("Cache-Control", "public, max-age=86400")
+        res.send(Buffer.from(buffer))
+    } catch (e) {
+        res.status(500).send("Erreur génération icône")
+    }
+})
+
 // =============================================
 // SOCKET.IO
 // =============================================
