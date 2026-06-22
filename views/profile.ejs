@@ -29,7 +29,10 @@
             <div class="card profile-header">
                 <div class="profile-cover"></div>
                 <div class="profile-header-content">
-                    <img src="<%= profileUser.photoProfil %>" class="profile-avatar" alt="">
+                    <!-- ===== AVATAR AVEC EFFET ===== -->
+                    <div class="<%= profileUser.profileEffect ? 'effect-' + profileUser.profileEffect : '' %>" style="display:inline-block; position:relative;">
+                        <img src="<%= profileUser.photoProfil %>" class="profile-avatar" alt="">
+                    </div>
                     <div class="profile-name">
                         <%= profileUser.nom %>
                         <%- include('partials/badges', { badges: profileUser.badges }) %>
@@ -145,7 +148,7 @@
                 const now = new Date();
                 const activeBadges = (profileUser.badges || []).filter(b => !b.expiresAt || new Date(b.expiresAt) > now);
                 const expiredBadges = (profileUser.badges || []).filter(b => b.expiresAt && new Date(b.expiresAt) <= now);
-                const hasCollection = activeBadges.length > 0 || expiredBadges.length > 0 || profileUser.profileTitle || profileUser.profileFrame || (profileUser.theme && profileUser.theme !== 'default');
+                const hasCollection = activeBadges.length > 0 || expiredBadges.length > 0 || profileUser.profileTitle || profileUser.profileFrame || (profileUser.theme && profileUser.theme !== 'default') || profileUser.profileEffect;
             %>
             <div class="card" style="padding:16px 20px;">
                 <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
@@ -162,6 +165,23 @@
                 </div>
                 <% } else { %>
                 <div style="display:flex;flex-direction:column;gap:10px;">
+
+                    <% if (profileUser.profileEffect) { %>
+                    <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--bg-secondary);border-radius:10px;border:1px solid var(--border);">
+                        <i class="fa-solid fa-sparkles" style="font-size:20px;color:var(--primary);"></i>
+                        <div style="flex:1;">
+                            <div style="font-size:13px;font-weight:600;">Effet : <span style="text-transform:capitalize;color:var(--primary);">
+                                <% if (profileUser.profileEffect === 'sparkle') { %>✨ Étincelles<% } %>
+                                <% if (profileUser.profileEffect === 'flame') { %>🔥 Flammes<% } %>
+                                <% if (profileUser.profileEffect === 'star') { %>⭐ Étoiles<% } %>
+                                <% if (profileUser.profileEffect === 'diamond') { %>💎 Diamant<% } %>
+                                <% if (profileUser.profileEffect === 'butterfly') { %>🦋 Papillons<% } %>
+                            </span></div>
+                            <div style="font-size:11px;color:var(--text-secondary);">Animation autour de ton avatar</div>
+                        </div>
+                        <span style="font-size:11px;background:rgba(16,185,129,0.15);color:#10b981;padding:3px 8px;border-radius:20px;font-weight:600;">✓ Actif</span>
+                    </div>
+                    <% } %>
 
                     <% if (profileUser.theme && profileUser.theme !== 'default') { %>
                     <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--bg-secondary);border-radius:10px;border:1px solid var(--border);">
@@ -255,7 +275,10 @@
             <% posts.forEach(post => { %>
                 <div class="card post">
                     <div class="post-header">
-                        <img src="<%= post.auteur.photoProfil %>" class="post-avatar" alt="">
+                        <!-- ===== AVATAR DU POST AVEC EFFET ===== -->
+                        <div class="<%= post.auteur.profileEffect ? 'effect-' + post.auteur.profileEffect : '' %>" style="display:inline-block; position:relative;">
+                            <img src="<%= post.auteur.photoProfil %>" class="post-avatar" alt="">
+                        </div>
                         <div>
                             <div class="post-author">
                                 <%= post.auteur.nom %>
