@@ -90,6 +90,7 @@ app.use('/auth/register', authLimiter)
 app.use('/api/', apiLimiter)
 app.use(globalLimiter)
 app.use("/", require("./routes/push"))
+app.use("/", require("./routes/stories"))
 
 // =============================================
 // CONFIGURATION EXPRESS
