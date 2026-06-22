@@ -1,12 +1,12 @@
 const express = require('express');
 const router = express.Router();
 const { requireAuth } = require('../middleware/auth');
-const { uploadPost } = require('../lib/cloudinary');
+const { uploadStory } = require('../lib/cloudinary');
 const Story = require('../models/Story');
 const User = require('../models/User');
 
 // Uploader une story
-router.post('/api/stories/upload', requireAuth, uploadPost.single('media'), async (req, res) => {
+router.post('/api/stories/upload', requireAuth, uploadStory.single('media'), async (req, res) => {
     try {
         console.log('📸 Upload story reçu');
         if (!req.file) {
