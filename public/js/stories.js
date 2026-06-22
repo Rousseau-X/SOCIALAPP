@@ -6,32 +6,40 @@ let currentStoryIndex = 0;
 let storiesList = [];
 let storyTimer = null;
 
+// Récupérer l'ID de l'utilisateur courant
+const currentUserId = document.querySelector('[data-user-id]')?.dataset.userId || '';
+
 // Charger les stories depuis le serveur
 async function loadStories() {
     try {
+        console.log('📥 Chargement des stories...');
         const res = await fetch('/api/stories');
         const data = await res.json();
+        console.log('📥 Stories reçues :', data.stories.length);
         storiesList = data.stories || [];
         renderStoriesBar();
     } catch (e) {
-        console.error('Erreur chargement stories:', e);
+        console.error('❌ Erreur chargement stories:', e);
     }
 }
 
 // Afficher la barre de stories
 function renderStoriesBar() {
     const bar = document.getElementById('storiesBar');
-    if (!bar) return;
+    if (!bar) {
+        console.log('❌ Barre de stories introuvable');
+        return;
+    }
 
     // Garder le bouton "Ajouter"
     const addBtn = bar.querySelector('.story-add-btn');
     bar.innerHTML = '';
     bar.appendChild(addBtn);
 
-    if (storiesList.length === 0) return;
-
-    // Récupérer l'ID de l'utilisateur courant (défini dans une variable globale)
-    const currentUserId = window.currentUserId || '';
+    if (storiesList.length === 0) {
+        console.log('📭 Aucune story à afficher');
+        return;
+    }
 
     storiesList.forEach((story, index) => {
         const isSeen = story.vues.includes(currentUserId);
@@ -46,6 +54,7 @@ function renderStoriesBar() {
         item.addEventListener('click', () => openStory(index));
         bar.appendChild(item);
     });
+    console.log('✅ Stories affichées');
 }
 
 // Ouvrir une story en overlay
@@ -85,7 +94,6 @@ function openStory(index) {
     }, 5000);
 }
 
-// Passer à la story suivante
 function nextStory() {
     const next = currentStoryIndex + 1;
     if (next < storiesList.length) {
@@ -95,27 +103,36 @@ function nextStory() {
     }
 }
 
-// Fermer l'overlay
 function closeStory() {
     clearTimeout(storyTimer);
     document.getElementById('storyOverlay').classList.remove('active');
 }
 
-// Initialisation au chargement de la page
+// Initialisation
 document.addEventListener('DOMContentLoaded', function() {
-    // Charger les stories
+    console.log('📸 Initialisation des stories');
     loadStories();
 
-    // Bouton "Ajouter" -> input file
     const addBtn = document.getElementById('addStoryBtn');
     const fileInput = document.getElementById('storyInput');
+
     if (addBtn && fileInput) {
-        addBtn.addEventListener('click', () => fileInput.click());
+        addBtn.addEventListener('click', () => {
+            console.log('🖱️ Clic sur Ajouter une story');
+            fileInput.click();
+        });
+
         fileInput.addEventListener('change', async function(e) {
             const file = e.target.files[0];
-            if (!file) return;
+            if (!file) {
+                console.log('❌ Aucun fichier sélectionné');
+                return;
+            }
+            console.log('📤 Upload story :', file.name);
+
             const formData = new FormData();
             formData.append('media', file);
+
             try {
                 const res = await fetch('/api/stories/upload', {
                     method: 'POST',
@@ -123,23 +140,26 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
                 const data = await res.json();
                 if (data.success) {
-                    // Recharger la barre après upload
+                    console.log('✅ Story uploadée avec succès');
                     loadStories();
                 } else {
-                    alert('Erreur : ' + (data.error || 'Upload failed'));
+                    console.error('❌ Erreur upload:', data.error);
+                    alert('Erreur : ' + data.error);
                 }
             } catch (err) {
-                console.error('Erreur upload story:', err);
+                console.error('❌ Erreur réseau:', err);
                 alert('Erreur réseau');
             }
             fileInput.value = '';
         });
+    } else {
+        console.log('❌ Bouton Ajouter ou input introuvable');
     }
 
-    // Fermeture overlay (croix)
     document.getElementById('storyClose')?.addEventListener('click', closeStory);
-    // Clic sur le fond pour fermer
     document.getElementById('storyOverlay')?.addEventListener('click', function(e) {
         if (e.target === this) closeStory();
     });
 });
+
+console.log('📦 stories.js chargé');
