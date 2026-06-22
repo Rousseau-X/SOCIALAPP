@@ -6,35 +6,28 @@ const currentUserId = document.querySelector('[data-user-id]')?.dataset.userId |
 
 async function loadStories() {
     try {
-        console.log('📥 Chargement des stories...');
         const res = await fetch('/api/stories');
         const data = await res.json();
-        console.log('📥 Stories reçues :', data.stories.length);
         storiesList = data.stories || [];
         renderStoriesBar();
     } catch (e) {
-        console.error('❌ Erreur chargement stories:', e);
+        console.error('Erreur chargement stories:', e);
     }
 }
 
 function renderStoriesBar() {
     const bar = document.getElementById('storiesBar');
-    if (!bar) {
-        console.log('❌ Barre de stories introuvable');
-        return;
-    }
+    if (!bar) return;
 
+    // Vider complètement la barre en gardant le bouton "+"
     const addBtn = bar.querySelector('.story-add-btn');
     bar.innerHTML = '';
     bar.appendChild(addBtn);
 
-    if (storiesList.length === 0) {
-        console.log('📭 Aucune story à afficher');
-        return;
-    }
+    if (storiesList.length === 0) return;
 
     storiesList.forEach((story, index) => {
-        const isSeen = story.vues.includes(currentUserId);
+        const isSeen = story.vues && story.vues.includes(currentUserId);
         const item = document.createElement('div');
         item.className = 'story-item';
         item.innerHTML = `
@@ -46,7 +39,6 @@ function renderStoriesBar() {
         item.addEventListener('click', () => openStory(index));
         bar.appendChild(item);
     });
-    console.log('✅ Stories affichées');
 }
 
 function openStory(index) {
@@ -65,7 +57,7 @@ function openStory(index) {
     media.alt = `Story de ${story.auteur.nom}`;
     authorName.textContent = story.auteur.nom;
     authorAvatar.src = story.auteur.photoProfil;
-    viewCount.textContent = story.vues.length || 0;
+    viewCount.textContent = story.vues ? story.vues.length : 0;
 
     progressContainer.innerHTML = `
         <div class="story-progress-bar active">
@@ -74,6 +66,7 @@ function openStory(index) {
     `;
 
     overlay.classList.add('active');
+
     fetch(`/api/stories/${story._id}/view`, { method: 'POST' });
 
     clearTimeout(storyTimer);
@@ -97,29 +90,18 @@ function closeStory() {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('📸 Initialisation des stories');
     loadStories();
 
     const addBtn = document.getElementById('addStoryBtn');
     const fileInput = document.getElementById('storyInput');
 
     if (addBtn && fileInput) {
-        addBtn.addEventListener('click', () => {
-            console.log('🖱️ Clic sur Ajouter une story');
-            fileInput.click();
-        });
-
+        addBtn.addEventListener('click', () => fileInput.click());
         fileInput.addEventListener('change', async function(e) {
             const file = e.target.files[0];
-            if (!file) {
-                console.log('❌ Aucun fichier sélectionné');
-                return;
-            }
-            console.log('📤 Upload story :', file.name);
-
+            if (!file) return;
             const formData = new FormData();
             formData.append('media', file);
-
             try {
                 const res = await fetch('/api/stories/upload', {
                     method: 'POST',
@@ -127,20 +109,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
                 const data = await res.json();
                 if (data.success) {
-                    console.log('✅ Story uploadée avec succès');
                     loadStories();
                 } else {
-                    console.error('❌ Erreur upload:', data.error);
                     alert('Erreur : ' + data.error);
                 }
             } catch (err) {
-                console.error('❌ Erreur réseau:', err);
                 alert('Erreur réseau');
             }
             fileInput.value = '';
         });
-    } else {
-        console.log('❌ Bouton Ajouter ou input introuvable');
     }
 
     document.getElementById('storyClose')?.addEventListener('click', closeStory);
@@ -148,5 +125,3 @@ document.addEventListener('DOMContentLoaded', function() {
         if (e.target === this) closeStory();
     });
 });
-
-console.log('📦 stories.js chargé');
