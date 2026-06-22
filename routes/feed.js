@@ -13,8 +13,8 @@ router.get("/", requireAuth, async (req, res) => {
 
         // Récupère tous les posts, triés du plus récent au plus ancien
         const rawPosts = await Post.find()
-            .populate("auteur", "nom photoProfil badges")
-            .populate("commentaires.auteur", "nom photoProfil badges")
+            .populate("auteur", "nom photoProfil badges profileEffect")
+            .populate("commentaires.auteur", "nom photoProfil badges profileEffect")
             .sort({ createdAt: -1 })
             .limit(50)
         // Filtrer les posts dont l'auteur a été supprimé

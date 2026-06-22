@@ -982,13 +982,15 @@ a {
 .profile-header {
     text-align: center;
     padding: 0;
-    overflow: hidden;
+    overflow: visible;
 }
 
 .profile-cover {
     height: 140px;
     background: linear-gradient(135deg, var(--primary) 0%, #7c3aed 100%);
     position: relative;
+    overflow: hidden;
+    border-radius: 14px 14px 0 0;
 }
 
 .profile-header-content {
@@ -3917,126 +3919,168 @@ body:not(.page-loading) .main-container {
     color: #fff;
 }
 /* ============================================================
-   EFFETS DE PROFIL (Animations)
+   EFFETS DE PROFIL — Animations CSS professionnelles
    ============================================================ */
 
-/* --- 1. Étincelles (Sparkle) --- */
-@keyframes sparkleAnim {
-    0%   { transform: scale(0) rotate(0deg); opacity: 0; }
-    50%  { transform: scale(1.3) rotate(180deg); opacity: 1; }
-    100% { transform: scale(0) rotate(360deg); opacity: 0; }
-}
-
-.effect-sparkle {
-    position: relative;
-}
-.effect-sparkle::after {
-    content: "✨";
-    position: absolute;
-    top: -12px;
-    right: -12px;
-    font-size: 22px;
-    animation: sparkleAnim 1.8s ease-in-out infinite;
-    pointer-events: none;
-    z-index: 5;
-}
-
-/* --- 2. Flammes (Flame) --- */
-@keyframes flameAnim {
-    0%   { transform: translateY(0) scale(1); opacity: 0.8; }
-    50%  { transform: translateY(-10px) scale(1.3); opacity: 1; }
-    100% { transform: translateY(0) scale(1); opacity: 0.8; }
-}
-
-.effect-flame {
-    position: relative;
-}
-.effect-flame::after {
-    content: "🔥";
-    position: absolute;
-    top: -10px;
-    right: -10px;
-    font-size: 20px;
-    animation: flameAnim 0.9s ease-in-out infinite;
-    pointer-events: none;
-    z-index: 5;
-}
-
-/* --- 3. Étoiles filantes (Star) --- */
-@keyframes starShootAnim {
-    0%   { transform: translateX(-40px) translateY(-40px) scale(0.5); opacity: 0; }
-    20%  { opacity: 1; }
-    80%  { opacity: 1; }
-    100% { transform: translateX(40px) translateY(40px) scale(1.2); opacity: 0; }
-}
-
-.effect-star {
-    position: relative;
-}
-.effect-star::after {
-    content: "⭐";
-    position: absolute;
-    top: -20px;
-    left: -20px;
-    font-size: 18px;
-    animation: starShootAnim 3.5s ease-in-out infinite;
-    pointer-events: none;
-    z-index: 5;
-}
-
-/* --- 4. Diamant (Diamond) --- */
-@keyframes diamondAnim {
-    0%   { transform: scale(1) rotate(0deg); opacity: 0.6; }
-    50%  { transform: scale(1.3) rotate(180deg); opacity: 1; }
-    100% { transform: scale(1) rotate(360deg); opacity: 0.6; }
-}
-
-.effect-diamond {
-    position: relative;
-}
-.effect-diamond::after {
-    content: "💎";
-    position: absolute;
-    top: -8px;
-    right: -8px;
-    font-size: 24px;
-    animation: diamondAnim 2.2s ease-in-out infinite;
-    pointer-events: none;
-    z-index: 5;
-}
-
-/* --- 5. Papillons (Butterfly) --- */
-@keyframes butterflyAnim {
-    0%   { transform: translateX(0) translateY(0) scale(1); }
-    25%  { transform: translateX(15px) translateY(-12px) scale(1.1); }
-    50%  { transform: translateX(-8px) translateY(-20px) scale(0.9); }
-    75%  { transform: translateX(12px) translateY(-8px) scale(1.05); }
-    100% { transform: translateX(0) translateY(0) scale(1); }
-}
-
+.effect-sparkle,
+.effect-flame,
+.effect-star,
+.effect-diamond,
 .effect-butterfly {
     position: relative;
-}
-.effect-butterfly::after {
-    content: "🦋";
-    position: absolute;
-    top: -12px;
-    right: -12px;
-    font-size: 20px;
-    animation: butterflyAnim 3.2s ease-in-out infinite;
-    pointer-events: none;
-    z-index: 5;
+    display: inline-block;
 }
 
-/* --- Responsive : réduire la taille des effets sur mobile --- */
-@media (max-width: 480px) {
-    .effect-sparkle::after,
-    .effect-flame::after,
-    .effect-star::after,
-    .effect-diamond::after,
-    .effect-butterfly::after {
-        font-size: 16px;
-        top: -8px;
-        right: -8px;
-    }
-    }
+/* ---- 1. SPARKLE — Anneau violet/indigo tournant ---- */
+@keyframes sparkleRingSpin { to { transform: rotate(360deg); } }
+@keyframes sparkleGlow {
+    0%, 100% { box-shadow: 0 0 0 3px var(--card-bg), 0 0 0 5px #8b5cf6, 0 0 18px 6px rgba(139,92,246,0.45); }
+    50%       { box-shadow: 0 0 0 3px var(--card-bg), 0 0 0 6px #a78bfa, 0 0 34px 14px rgba(139,92,246,0.75); }
+}
+.effect-sparkle::before {
+    content: '';
+    position: absolute;
+    inset: -5px;
+    border-radius: 50%;
+    background: conic-gradient(from 0deg, #8b5cf6 0%, #e879f9 30%, #c4b5fd 50%, #3b82f6 70%, #8b5cf6 100%);
+    animation: sparkleRingSpin 2s linear infinite;
+    pointer-events: none;
+    z-index: 0;
+}
+.effect-sparkle::after {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    border-radius: 50%;
+    background: var(--card-bg);
+    pointer-events: none;
+    z-index: 0;
+}
+.effect-sparkle img {
+    position: relative;
+    z-index: 1;
+    animation: sparkleGlow 2s ease-in-out infinite;
+}
+
+/* ---- 2. FLAME — Halo orange/rouge pulsant ---- */
+@keyframes flameGlow {
+    0%, 100% { box-shadow: 0 0 0 3px var(--card-bg), 0 0 0 5px #f97316, 0 0 16px 5px rgba(239,68,68,0.45), 0 0 32px 10px rgba(251,146,60,0.2); }
+    50%       { box-shadow: 0 0 0 3px var(--card-bg), 0 0 0 6px #fb923c, 0 0 28px 12px rgba(239,68,68,0.75), 0 0 50px 20px rgba(251,146,60,0.35); }
+}
+.effect-flame::before {
+    content: '';
+    position: absolute;
+    inset: -5px;
+    border-radius: 50%;
+    background: conic-gradient(from 0deg, #ef4444 0%, #f97316 25%, #fbbf24 50%, #f97316 75%, #ef4444 100%);
+    animation: sparkleRingSpin 1.2s linear infinite;
+    pointer-events: none;
+    z-index: 0;
+}
+.effect-flame::after {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    border-radius: 50%;
+    background: var(--card-bg);
+    pointer-events: none;
+    z-index: 0;
+}
+.effect-flame img {
+    position: relative;
+    z-index: 1;
+    animation: flameGlow 0.9s ease-in-out infinite;
+}
+
+/* ---- 3. STAR — Bordure dorée scintillante ---- */
+@keyframes starGlow {
+    0%, 100% { box-shadow: 0 0 0 3px var(--card-bg), 0 0 0 5px #f59e0b, 0 0 18px 5px rgba(245,158,11,0.45); }
+    33%       { box-shadow: 0 0 0 3px var(--card-bg), 0 0 0 6px #fde68a, 0 0 26px 10px rgba(253,230,138,0.65); }
+    66%       { box-shadow: 0 0 0 3px var(--card-bg), 0 0 0 6px #d97706, 0 0 36px 14px rgba(245,158,11,0.75); }
+}
+@keyframes starRingSpin { to { transform: rotate(-360deg); } }
+.effect-star::before {
+    content: '';
+    position: absolute;
+    inset: -5px;
+    border-radius: 50%;
+    background: conic-gradient(from 0deg, #f59e0b 0%, #fde68a 20%, #f59e0b 40%, #fffbeb 55%, #d97706 70%, #fde68a 85%, #f59e0b 100%);
+    animation: starRingSpin 3s linear infinite;
+    pointer-events: none;
+    z-index: 0;
+}
+.effect-star::after {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    border-radius: 50%;
+    background: var(--card-bg);
+    pointer-events: none;
+    z-index: 0;
+}
+.effect-star img {
+    position: relative;
+    z-index: 1;
+    animation: starGlow 2.4s ease-in-out infinite;
+}
+
+/* ---- 4. DIAMOND — Éclat cyan/bleu cristallin ---- */
+@keyframes diamondGlow {
+    0%, 100% { box-shadow: 0 0 0 3px var(--card-bg), 0 0 0 5px #06b6d4, 0 0 18px 6px rgba(6,182,212,0.4); }
+    50%       { box-shadow: 0 0 0 3px var(--card-bg), 0 0 0 7px #67e8f9, 0 0 38px 18px rgba(6,182,212,0.75); }
+}
+.effect-diamond::before {
+    content: '';
+    position: absolute;
+    inset: -5px;
+    border-radius: 50%;
+    background: conic-gradient(from 0deg, #06b6d4 0%, #e0f2fe 20%, #0284c7 40%, #67e8f9 60%, #0ea5e9 80%, #06b6d4 100%);
+    animation: sparkleRingSpin 2.2s linear infinite;
+    pointer-events: none;
+    z-index: 0;
+}
+.effect-diamond::after {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    border-radius: 50%;
+    background: var(--card-bg);
+    pointer-events: none;
+    z-index: 0;
+}
+.effect-diamond img {
+    position: relative;
+    z-index: 1;
+    animation: diamondGlow 2.2s ease-in-out infinite;
+}
+
+/* ---- 5. BUTTERFLY — Aura rose/violet douce ---- */
+@keyframes butterflyGlow {
+    0%, 100% { box-shadow: 0 0 0 3px var(--card-bg), 0 0 0 5px #ec4899, 0 0 16px 5px rgba(236,72,153,0.35); }
+    50%       { box-shadow: 0 0 0 3px var(--card-bg), 0 0 0 6px #f0abfc, 0 0 32px 14px rgba(236,72,153,0.65); }
+}
+@keyframes butterflyRingSpin { to { transform: rotate(360deg); } }
+.effect-butterfly::before {
+    content: '';
+    position: absolute;
+    inset: -5px;
+    border-radius: 50%;
+    background: conic-gradient(from 0deg, #ec4899 0%, #f0abfc 25%, #c084fc 50%, #f9a8d4 75%, #ec4899 100%);
+    animation: butterflyRingSpin 3s linear infinite;
+    pointer-events: none;
+    z-index: 0;
+}
+.effect-butterfly::after {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    border-radius: 50%;
+    background: var(--card-bg);
+    pointer-events: none;
+    z-index: 0;
+}
+.effect-butterfly img {
+    position: relative;
+    z-index: 1;
+    animation: butterflyGlow 3s ease-in-out infinite;
+}
