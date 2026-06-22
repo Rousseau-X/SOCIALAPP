@@ -18,14 +18,15 @@
                 </div>
             </div>
 
+            <!-- ===== STORIES ===== -->
+            <div id="stories-container"></div>
+
             <% if (error && error.length > 0) { %>
                 <div class="alert alert-error">
                     <i class="fa-solid fa-circle-exclamation"></i>
                     <span><%= error[0] %></span>
                 </div>
             <% } %>
-                   <!-- Stories -->
-             <%- include('partials/stories') %>
 
             <!-- Formulaire de publication -->
             <div class="card post-form">
