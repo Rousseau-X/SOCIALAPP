@@ -43,6 +43,15 @@ const SHOP_ITEMS = [
 
     // === BADGES SPÉCIAUX ===
     { id: "badge_premium", name: "Badge Premium",  price: 750,  type: "badge",  value: "premium", emoji: "👑", desc: "Débloque le badge Premium sur ton profil",       category: "Badges" },
+
+    // ============================================================
+    // === EFFETS DE PROFIL (AJOUT) ===
+    // ============================================================
+    { id: "effect_sparkle",  name: "Étincelles",    price: 500,  type: "effect", value: "sparkle",  emoji: "✨", desc: "Des étincelles autour de ton avatar",          category: "Effets" },
+    { id: "effect_flame",    name: "Flammes",       price: 800,  type: "effect", value: "flame",    emoji: "🔥", desc: "Des flammes autour de ton nom",              category: "Effets" },
+    { id: "effect_star",     name: "Étoiles",       price: 1200, type: "effect", value: "star",     emoji: "🌟", desc: "Des étoiles filantes sur ton profil",         category: "Effets" },
+    { id: "effect_diamond",  name: "Diamant",       price: 2000, type: "effect", value: "diamond",  emoji: "💎", desc: "Effet diamant ultra-brillant",              category: "Effets" },
+    { id: "effect_butterfly",name: "Papillons",     price: 2500, type: "effect", value: "butterfly",emoji: "🦋", desc: "Des papillons animés autour de toi",          category: "Effets" },
 ]
 
 const BOUNTY_ACTION_TYPES = [
@@ -182,13 +191,10 @@ router.post("/api/shop/buy", requireAuth, async (req, res) => {
             const now = new Date()
             const existing = user.badges.find(b => b.type === item.value)
             if (existing && existing.expiresAt && existing.expiresAt > now) {
-                // Prolonger de 14 jours à partir de l'expiration actuelle
                 existing.expiresAt = new Date(existing.expiresAt.getTime() + 14 * 24 * 3600 * 1000)
             } else if (existing && (!existing.expiresAt || existing.expiresAt <= now)) {
-                // Badge expiré → renouveler
                 existing.expiresAt = new Date(Date.now() + 14 * 24 * 3600 * 1000)
             } else {
-                // Nouveau badge
                 user.badges.push({ type: item.value, expiresAt: new Date(Date.now() + 14 * 24 * 3600 * 1000) })
             }
             result = { badge: item.value, expiresAt: existing ? existing.expiresAt : user.badges[user.badges.length - 1].expiresAt }
@@ -197,6 +203,17 @@ router.post("/api/shop/buy", requireAuth, async (req, res) => {
             user.walletBalance += item.amount
             if (item.id === "credits_50") user.lastFreeCredits = new Date()
             result = { creditsGained: item.amount }
+
+        // ============================================================
+        // === EFFET DE PROFIL (AJOUT) ===
+        // ============================================================
+        } else if (item.type === "effect") {
+            if (user.profileEffect === item.value) {
+                return res.json({ success: true, message: "Effet déjà actif !" })
+            }
+            user.profileEffect = item.value
+            req.session.user.profileEffect = item.value
+            result = { profileEffect: item.value }
         }
 
         await user.save()
@@ -233,12 +250,10 @@ router.post("/api/bounties", requireAuth, async (req, res) => {
         let title, description, bountyActionType
 
         if (customTitle && user.role === "admin") {
-            // Offre personnalisée par l'admin
             title = customTitle.trim().slice(0, 80)
             description = (customDescription || "").trim().slice(0, 200)
             bountyActionType = "custom_admin"
         } else {
-            // Type prédéfini (depuis page /bounties)
             const action = BOUNTY_ACTION_TYPES.find(a => a.id === actionType)
             if (!action) return res.status(400).json({ error: "Type d'action invalide." })
             title = action.label
@@ -264,7 +279,7 @@ router.post("/api/bounties", requireAuth, async (req, res) => {
     } catch (err) { console.error(err); res.status(500).json({ error: "Erreur serveur." }) }
 })
 
-// API : primes actives (pour le groupe Primes)
+// API : primes actives
 router.get("/api/bounties/active", requireAuth, async (req, res) => {
     try {
         const userId = req.session.user.id
@@ -302,7 +317,7 @@ router.get("/api/bounties/:id/applicants", requireAuth, async (req, res) => {
     } catch (err) { res.status(500).json({ error: "Erreur serveur." }) }
 })
 
-// Accomplir une prime (auto-vérification)
+// Accomplir une prime
 router.post("/api/bounties/:id/accomplish", requireAuth, async (req, res) => {
     try {
         const bounty = await Bounty.findById(req.params.id).populate("createdBy", "_id nom")
@@ -379,9 +394,20 @@ router.post("/api/clone/instructions", requireAuth, async (req, res) => {
 // API solde et XP
 router.get("/api/wallet/me", requireAuth, async (req, res) => {
     try {
-        const user = await User.findById(req.session.user.id, "walletBalance xp theme role aiCloneActive xpBoostExpiry profileTitle profileFrame")
+        const user = await User.findById(req.session.user.id, "walletBalance xp theme role aiCloneActive xpBoostExpiry profileTitle profileFrame profileEffect") // ← AJOUT : profileEffect
         const boostActive = user.xpBoostExpiry && user.xpBoostExpiry > new Date()
-        res.json({ balance: user.walletBalance, xp: user.xp, theme: user.theme, role: user.role, aiCloneActive: user.aiCloneActive, boostActive, xpBoostExpiry: user.xpBoostExpiry, profileTitle: user.profileTitle, profileFrame: user.profileFrame })
+        res.json({
+            balance: user.walletBalance,
+            xp: user.xp,
+            theme: user.theme,
+            role: user.role,
+            aiCloneActive: user.aiCloneActive,
+            boostActive,
+            xpBoostExpiry: user.xpBoostExpiry,
+            profileTitle: user.profileTitle,
+            profileFrame: user.profileFrame,
+            profileEffect: user.profileEffect // ← AJOUT
+        })
     } catch (err) { res.status(500).json({ error: "Erreur serveur." }) }
 })
 
