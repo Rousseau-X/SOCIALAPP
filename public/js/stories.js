@@ -1,127 +1,422 @@
-let currentStoryIndex = 0;
-let storiesList = [];
-let storyTimer = null;
+// =============================================
+// STORIES — CLIENT
+// =============================================
 
-const currentUserId = document.querySelector('[data-user-id]')?.dataset.userId || '';
+let currentStoryGroups = []
+let currentGroupIndex = 0
+let currentStoryIndex = 0
+let storyTimer = null
+let storyProgress = null
+const STORY_DURATION = 5000 // 5 secondes par story
 
+// =============================================
+// CHARGEMENT ET AFFICHAGE DES BULLES
+// =============================================
 async function loadStories() {
     try {
-        const res = await fetch('/api/stories');
-        const data = await res.json();
-        storiesList = data.stories || [];
-        renderStoriesBar();
+        const res = await fetch("/stories")
+        const data = await res.json()
+        if (!data.success) return
+
+        currentStoryGroups = data.groups
+        renderStoryBubbles(data.groups)
     } catch (e) {
-        console.error('Erreur chargement stories:', e);
+        console.error("Erreur loadStories:", e)
     }
 }
 
-function renderStoriesBar() {
-    const bar = document.getElementById('storiesBar');
-    if (!bar) return;
+function renderStoryBubbles(groups) {
+    const container = document.getElementById("stories-bubbles")
+    if (!container) return
 
-    // Vider complètement la barre en gardant le bouton "+"
-    const addBtn = bar.querySelector('.story-add-btn');
-    bar.innerHTML = '';
-    bar.appendChild(addBtn);
+    container.innerHTML = ""
 
-    if (storiesList.length === 0) return;
-
-    storiesList.forEach((story, index) => {
-        const isSeen = story.vues && story.vues.includes(currentUserId);
-        const item = document.createElement('div');
-        item.className = 'story-item';
-        item.innerHTML = `
-            <div class="story-avatar ${isSeen ? 'seen' : ''}">
-                <img src="${story.auteur.photoProfil}" alt="">
-            </div>
-            <div class="story-name">${story.auteur.nom}</div>
-        `;
-        item.addEventListener('click', () => openStory(index));
-        bar.appendChild(item);
-    });
-}
-
-function openStory(index) {
-    currentStoryIndex = index;
-    const story = storiesList[index];
-    if (!story) return;
-
-    const overlay = document.getElementById('storyOverlay');
-    const media = document.getElementById('storyMedia');
-    const authorName = document.getElementById('storyAuthorName');
-    const authorAvatar = document.getElementById('storyAuthorAvatar');
-    const viewCount = document.getElementById('storyViewCount');
-    const progressContainer = document.getElementById('storyProgress');
-
-    media.src = story.media;
-    media.alt = `Story de ${story.auteur.nom}`;
-    authorName.textContent = story.auteur.nom;
-    authorAvatar.src = story.auteur.photoProfil;
-    viewCount.textContent = story.vues ? story.vues.length : 0;
-
-    progressContainer.innerHTML = `
-        <div class="story-progress-bar active">
-            <div class="fill" style="animation-duration: 5s;"></div>
+    // Bouton "Ajouter une story"
+    const addBtn = document.createElement("div")
+    addBtn.className = "story-bubble"
+    addBtn.innerHTML = `
+        <div class="story-add-btn" onclick="openStoryCreator()">
+            <i class="fa-solid fa-plus"></i>
         </div>
-    `;
+        <div class="story-label">Ta story</div>
+    `
+    container.appendChild(addBtn)
 
-    overlay.classList.add('active');
+    // Stories des amis
+    groups.forEach((group, index) => {
+        const bubble = document.createElement("div")
+        bubble.className = "story-bubble"
+        bubble.onclick = () => openStoryViewer(index)
 
-    fetch(`/api/stories/${story._id}/view`, { method: 'POST' });
+        const allSeen = !group.hasUnseen
 
-    clearTimeout(storyTimer);
-    storyTimer = setTimeout(() => {
-        nextStory();
-    }, 5000);
+        bubble.innerHTML = `
+            <div class="story-ring ${allSeen ? "seen" : ""}">
+                <div class="story-ring-inner">
+                    <img src="${group.user.photoProfil}" alt="">
+                </div>
+            </div>
+            <div class="story-label">${escapeHtml(group.user.nom.split(" ")[0])}</div>
+        `
+        container.appendChild(bubble)
+    })
 }
 
-function nextStory() {
-    const next = currentStoryIndex + 1;
-    if (next < storiesList.length) {
-        openStory(next);
+// =============================================
+// VISIONNEUSE
+// =============================================
+function openStoryViewer(groupIndex, storyIndex = 0) {
+    currentGroupIndex = groupIndex
+    currentStoryIndex = storyIndex
+
+    const overlay = document.getElementById("story-viewer-overlay")
+    overlay.classList.add("active")
+
+    showStory()
+    document.body.style.overflow = "hidden"
+}
+
+function closeStoryViewer() {
+    const overlay = document.getElementById("story-viewer-overlay")
+    overlay.classList.remove("active")
+    stopStoryTimer()
+    document.body.style.overflow = ""
+}
+
+function showStory() {
+    stopStoryTimer()
+
+    const group = currentStoryGroups[currentGroupIndex]
+    if (!group) { closeStoryViewer(); return }
+
+    const story = group.stories[currentStoryIndex]
+    if (!story) { closeStoryViewer(); return }
+
+    // Marquer comme vue
+    fetch(`/stories/${story._id}/view`, { method: "POST" })
+
+    // Mettre à jour la barre de progression
+    renderProgressBars()
+
+    // Header
+    document.getElementById("story-author-avatar").src = group.user.photoProfil
+    document.getElementById("story-author-name").innerText = group.user.nom
+    const timeAgo = getTimeAgo(new Date(story.createdAt))
+    document.getElementById("story-time").innerText = timeAgo
+
+    // Média
+    const mediaContainer = document.getElementById("story-media-container")
+    if (story.couleurFond) {
+        mediaContainer.style.background = story.couleurFond
+        mediaContainer.innerHTML = ""
+    } else if (story.mediaType === "video") {
+        mediaContainer.style.background = "#000"
+        mediaContainer.innerHTML = `<video src="${story.media}" autoplay muted playsinline style="width:100%;height:100%;object-fit:contain;"></video>`
     } else {
-        closeStory();
+        mediaContainer.style.background = "#000"
+        mediaContainer.innerHTML = `<img src="${story.media}" style="width:100%;height:100%;object-fit:contain;" alt="">`
+    }
+
+    // Texte overlay
+    const textEl = document.getElementById("story-text-overlay")
+    textEl.innerText = story.texte || ""
+    textEl.style.display = story.texte ? "block" : "none"
+
+    // Vues
+    document.getElementById("story-views-count").innerText = story.vues?.length || 0
+
+    // Démarrer le timer
+    startStoryTimer()
+}
+
+function renderProgressBars() {
+    const group = currentStoryGroups[currentGroupIndex]
+    if (!group) return
+
+    const container = document.getElementById("story-progress-container")
+    container.innerHTML = ""
+
+    group.stories.forEach((_, i) => {
+        const seg = document.createElement("div")
+        seg.className = "story-progress-segment"
+        seg.id = `progress-seg-${i}`
+
+        const fill = document.createElement("div")
+        fill.className = "story-progress-fill"
+        fill.id = `progress-fill-${i}`
+
+        if (i < currentStoryIndex) {
+            fill.style.width = "100%"
+            fill.style.transition = "none"
+        } else if (i === currentStoryIndex) {
+            fill.style.width = "0%"
+        }
+
+        seg.appendChild(fill)
+        container.appendChild(seg)
+    })
+}
+
+function startStoryTimer() {
+    const fill = document.getElementById(`progress-fill-${currentStoryIndex}`)
+    if (!fill) return
+
+    fill.style.transition = `width ${STORY_DURATION}ms linear`
+    fill.style.width = "100%"
+
+    storyTimer = setTimeout(() => {
+        goToNextStory()
+    }, STORY_DURATION)
+}
+
+function stopStoryTimer() {
+    if (storyTimer) {
+        clearTimeout(storyTimer)
+        storyTimer = null
     }
 }
 
-function closeStory() {
-    clearTimeout(storyTimer);
-    document.getElementById('storyOverlay').classList.remove('active');
+function goToNextStory() {
+    const group = currentStoryGroups[currentGroupIndex]
+    if (!group) { closeStoryViewer(); return }
+
+    if (currentStoryIndex < group.stories.length - 1) {
+        currentStoryIndex++
+        showStory()
+    } else if (currentGroupIndex < currentStoryGroups.length - 1) {
+        currentGroupIndex++
+        currentStoryIndex = 0
+        showStory()
+    } else {
+        closeStoryViewer()
+    }
 }
 
-document.addEventListener('DOMContentLoaded', function() {
-    loadStories();
+function goToPrevStory() {
+    if (currentStoryIndex > 0) {
+        currentStoryIndex--
+    } else if (currentGroupIndex > 0) {
+        currentGroupIndex--
+        const prevGroup = currentStoryGroups[currentGroupIndex]
+        currentStoryIndex = prevGroup.stories.length - 1
+    }
+    showStory()
+}
 
-    const addBtn = document.getElementById('addStoryBtn');
-    const fileInput = document.getElementById('storyInput');
+// =============================================
+// RÉACTIONS
+// =============================================
+async function reactToStory(emoji) {
+    const group = currentStoryGroups[currentGroupIndex]
+    if (!group) return
+    const story = group.stories[currentStoryIndex]
+    if (!story) return
 
-    if (addBtn && fileInput) {
-        addBtn.addEventListener('click', () => fileInput.click());
-        fileInput.addEventListener('change', async function(e) {
-            const file = e.target.files[0];
-            if (!file) return;
-            const formData = new FormData();
-            formData.append('media', file);
-            try {
-                const res = await fetch('/api/stories/upload', {
-                    method: 'POST',
-                    body: formData
-                });
-                const data = await res.json();
-                if (data.success) {
-                    loadStories();
-                } else {
-                    alert('Erreur : ' + data.error);
-                }
-            } catch (err) {
-                alert('Erreur réseau');
+    try {
+        await fetch(`/stories/${story._id}/react`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ emoji })
+        })
+
+        // Afficher l'animation de réaction
+        showReactionAnimation(emoji)
+    } catch (e) {
+        console.error("Erreur réaction story:", e)
+    }
+}
+
+function showReactionAnimation(emoji) {
+    const overlay = document.getElementById("story-viewer-overlay")
+    const el = document.createElement("div")
+    el.style.cssText = `
+        position:absolute;
+        bottom:100px;
+        left:50%;
+        transform:translateX(-50%);
+        font-size:48px;
+        animation:storyReactionPop 1s ease forwards;
+        z-index:20;
+        pointer-events:none;
+    `
+    el.innerText = emoji
+    overlay.appendChild(el)
+    setTimeout(() => el.remove(), 1000)
+}
+
+// =============================================
+// CRÉATEUR DE STORY
+// =============================================
+const storyColors = [
+    "#4f46e5", "#7c3aed", "#db2777", "#dc2626",
+    "#d97706", "#16a34a", "#0891b2", "#0f172a",
+    "linear-gradient(135deg, #f59e0b, #ef4444)",
+    "linear-gradient(135deg, #4f46e5, #7c3aed)"
+]
+
+let selectedColor = storyColors[0]
+let selectedFile = null
+
+function openStoryCreator() {
+    const overlay = document.getElementById("story-creator-overlay")
+    overlay.classList.add("active")
+    document.body.style.overflow = "hidden"
+    renderColorPicker()
+}
+
+function closeStoryCreator() {
+    const overlay = document.getElementById("story-creator-overlay")
+    overlay.classList.remove("active")
+    document.body.style.overflow = ""
+    selectedFile = null
+    document.getElementById("story-file-input").value = ""
+    document.getElementById("story-preview-area").style.background = selectedColor
+    document.getElementById("story-preview-area").innerHTML = `
+        <div style="text-align:center; color:rgba(255,255,255,0.6);">
+            <i class="fa-solid fa-image" style="font-size:32px; margin-bottom:8px; display:block;"></i>
+            Aperçu
+        </div>
+    `
+    document.getElementById("story-text-input").value = ""
+}
+
+function renderColorPicker() {
+    const container = document.getElementById("story-color-picker")
+    if (!container) return
+    container.innerHTML = ""
+
+    storyColors.forEach(color => {
+        const swatch = document.createElement("div")
+        swatch.className = "story-color-swatch" + (color === selectedColor ? " selected" : "")
+        swatch.style.background = color
+        swatch.onclick = () => {
+            selectedColor = color
+            document.querySelectorAll(".story-color-swatch").forEach(s => s.classList.remove("selected"))
+            swatch.classList.add("selected")
+
+            if (!selectedFile) {
+                document.getElementById("story-preview-area").style.background = color
             }
-            fileInput.value = '';
-        });
-    }
+        }
+        container.appendChild(swatch)
+    })
+}
 
-    document.getElementById('storyClose')?.addEventListener('click', closeStory);
-    document.getElementById('storyOverlay')?.addEventListener('click', function(e) {
-        if (e.target === this) closeStory();
-    });
-});
+function handleStoryFileSelect(e) {
+    const file = e.target.files[0]
+    if (!file) return
+    selectedFile = file
+
+    const preview = document.getElementById("story-preview-area")
+    const url = URL.createObjectURL(file)
+
+    if (file.type.startsWith("video/")) {
+        preview.innerHTML = `<video src="${url}" style="width:100%;height:100%;object-fit:cover;" autoplay muted loop></video>`
+    } else {
+        preview.innerHTML = `<img src="${url}" style="width:100%;height:100%;object-fit:cover;" alt="">`
+    }
+    preview.style.background = "none"
+}
+
+async function publishStory() {
+    const texte = document.getElementById("story-text-input").value.trim()
+    const publishBtn = document.getElementById("story-publish-btn")
+
+    publishBtn.disabled = true
+    publishBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Publication...'
+
+    try {
+        let res, data
+
+        if (selectedFile) {
+            // Story avec média
+            const formData = new FormData()
+            formData.append("media", selectedFile)
+            if (texte) formData.append("texte", texte)
+            formData.append("couleurFond", selectedColor)
+
+            res = await fetch("/stories", { method: "POST", body: formData })
+        } else if (texte) {
+            // Story texte seul
+            res = await fetch("/stories/text", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ texte, couleurFond: selectedColor })
+            })
+        } else {
+            showStoryToast("Ajoute une image ou un texte.", true)
+            publishBtn.disabled = false
+            publishBtn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Publier'
+            return
+        }
+
+        data = await res.json()
+
+        if (data.success) {
+            closeStoryCreator()
+            showStoryToast("Story publiée !")
+            await loadStories()
+        } else {
+            showStoryToast(data.error || "Erreur", true)
+        }
+    } catch (e) {
+        console.error("Erreur publishStory:", e)
+        showStoryToast("Erreur de connexion.", true)
+    } finally {
+        publishBtn.disabled = false
+        publishBtn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Publier'
+    }
+}
+
+// =============================================
+// UTILITAIRES
+// =============================================
+function getTimeAgo(date) {
+    const diff = Date.now() - date.getTime()
+    const hours = Math.floor(diff / 3600000)
+    const minutes = Math.floor(diff / 60000)
+    if (hours >= 1) return `Il y a ${hours}h`
+    if (minutes >= 1) return `Il y a ${minutes}min`
+    return "À l'instant"
+}
+
+function escapeHtml(text) {
+    const div = document.createElement("div")
+    div.innerText = text
+    return div.innerHTML
+}
+
+function showStoryToast(message, isError = false) {
+    const existing = document.getElementById("story-toast")
+    if (existing) existing.remove()
+
+    const toast = document.createElement("div")
+    toast.id = "story-toast"
+    toast.style.cssText = `
+        position:fixed; bottom:90px; left:50%; transform:translateX(-50%);
+        background:${isError ? "#fee2e2" : "#dcfce7"};
+        color:${isError ? "#dc2626" : "#16a34a"};
+        border:1px solid ${isError ? "#fca5a5" : "#86efac"};
+        padding:10px 20px; border-radius:8px; font-size:13px; font-weight:600;
+        z-index:9999; white-space:nowrap; box-shadow:var(--shadow-md);
+    `
+    toast.innerHTML = `<i class="fa-solid fa-${isError ? "circle-exclamation" : "circle-check"}"></i> ${message}`
+    document.body.appendChild(toast)
+    setTimeout(() => toast.remove(), 3000)
+}
+
+// Animation réaction
+const style = document.createElement("style")
+style.textContent = `
+    @keyframes storyReactionPop {
+        0% { opacity:1; transform:translateX(-50%) scale(1); }
+        50% { opacity:1; transform:translateX(-50%) translateY(-30px) scale(1.3); }
+        100% { opacity:0; transform:translateX(-50%) translateY(-60px) scale(0.8); }
+    }
+`
+document.head.appendChild(style)
+
+// Initialisation
+document.addEventListener("DOMContentLoaded", () => {
+    loadStories()
+})
