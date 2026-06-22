@@ -24,6 +24,8 @@
                     <span><%= error[0] %></span>
                 </div>
             <% } %>
+                   <!-- Stories -->
+             <%- include('partials/stories') %>
 
             <!-- Formulaire de publication -->
             <div class="card post-form">
@@ -137,6 +139,7 @@
     </div>
 
     <script src="/js/feed.js"></script>
+    <script src="/js/stories.js"></script>
     <script>
         function toggleComments(postId) {
             const el = document.getElementById('comments-' + postId)
