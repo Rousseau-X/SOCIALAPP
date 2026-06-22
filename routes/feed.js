@@ -5,6 +5,7 @@ const User = require("../models/User")
 const Notification = require("../models/Notification")
 const { requireAuth } = require("../middleware/auth")
 const { uploadPost } = require("../lib/cloudinary")
+const { requireAuth, requireNotRestricted } = require("../middleware/auth")
 
 // Page d'accueil — Feed (tous les posts, sans restriction d'amis)
 router.get("/", requireAuth, async (req, res) => {
@@ -167,6 +168,93 @@ router.post("/post/:id/comment", requireAuth, async (req, res) => {
                 texte: texte.trim()
             }
         })
+    } catch (err) {
+        console.error(err)
+        res.status(500).json({ error: "Erreur serveur" })
+    }
+})
+
+// Partager un post (AJAX)
+router.post("/post/:id/share", requireAuth, requireNotRestricted("posts"), async (req, res) => {
+    try {
+        const { message } = req.body
+        const originalPost = await Post.findById(req.params.id)
+            .populate("auteur", "nom photoProfil badges")
+
+        if (!originalPost) {
+            return res.status(404).json({ error: "Publication introuvable." })
+        }
+
+        // Empêcher de partager son propre post si déjà partagé
+        const alreadyShared = await Post.findOne({
+            auteur: req.session.user.id,
+            sharedFrom: originalPost._id,
+            isShared: true
+        })
+
+        if (alreadyShared) {
+            return res.status(400).json({ error: "Tu as déjà partagé cette publication." })
+        }
+
+        // Créer le post partagé
+        const sharedPost = await Post.create({
+            auteur: req.session.user.id,
+            contenu: message?.trim() || "",
+            isShared: true,
+            sharedFrom: originalPost._id,
+            shareMessage: message?.trim() || ""
+        })
+
+        // Incrémenter le compteur de partages sur l'original
+        await Post.findByIdAndUpdate(originalPost._id, { $inc: { sharesCount: 1 } })
+
+        // XP pour le partage
+        await User.findByIdAndUpdate(req.session.user.id, { $inc: { xp: 3 } })
+
+        // Notification à l'auteur original
+        if (originalPost.auteur._id.toString() !== req.session.user.id) {
+            await Notification.create({
+                destinataire: originalPost.auteur._id,
+                expediteur: req.session.user.id,
+                type: "partage",
+                lien: "/"
+            })
+
+            if (global.io) {
+                const notif = await Notification.findOne({
+                    destinataire: originalPost.auteur._id,
+                    expediteur: req.session.user.id,
+                    type: "partage"
+                }).populate("expediteur", "nom photoProfil")
+                global.io.to(originalPost.auteur._id.toString()).emit("notification", notif)
+            }
+        }
+
+        // Populate pour retourner le post complet
+        const populated = await Post.findById(sharedPost._id)
+            .populate("auteur", "nom photoProfil badges")
+            .populate({
+                path: "sharedFrom",
+                populate: { path: "auteur", select: "nom photoProfil badges" }
+            })
+
+        res.json({
+            success: true,
+            post: populated,
+            sharesCount: originalPost.sharesCount + 1
+        })
+    } catch (err) {
+        console.error(err)
+        res.status(500).json({ error: "Erreur serveur" })
+    }
+})
+
+// Nombre de partages d'un post (AJAX)
+router.get("/post/:id/shares", requireAuth, async (req, res) => {
+    try {
+        const post = await Post.findById(req.params.id)
+        if (!post) return res.status(404).json({ error: "Publication introuvable." })
+        res.json({ success: true, sharesCount: post.sharesCount || 0 })
     } catch (err) {
         console.error(err)
         res.status(500).json({ error: "Erreur serveur" })
