@@ -60,23 +60,41 @@ router.get("/login", redirectIfAuth, (req, res) => {
 })
 
 // Traitement connexion
-router.post("/login", redirectIfAuth, async (req, res) => {
+router.post("/login", async (req, res) => {
     try {
         const { email, motDePasse } = req.body
         const user = await User.findOne({ email: email.toLowerCase() })
+
         if (!user) {
             req.flash("error", "Email ou mot de passe incorrect.")
             return res.redirect("/login")
         }
-        if (user.isDisabled) {
-            req.flash("error", "Ce compte a été désactivé. Contacte un administrateur.")
-            return res.redirect("/login")
-        }
+
+        // Vérifier le mot de passe d'abord
         const match = await bcrypt.compare(motDePasse, user.motDePasse)
         if (!match) {
             req.flash("error", "Email ou mot de passe incorrect.")
             return res.redirect("/login")
         }
+
+        // === COMPTE SUPPRIMÉ ===
+        if (user.deletionReason && user.nom === "Compte supprimé") {
+            return res.render("account-deleted", {
+                title: "Compte supprimé",
+                reason: user.deletionReason
+            })
+        }
+
+        // === COMPTE DÉSACTIVÉ ===
+        if (user.isDisabled) {
+            return res.render("account-disabled", {
+                title: "Compte désactivé",
+                reason: user.disableReason || "Non spécifié",
+                contact: user.disableContact || null
+            })
+        }
+
+        // === CONNEXION NORMALE ===
         req.session.user = {
             id: user._id,
             nom: user.nom,
@@ -86,13 +104,15 @@ router.post("/login", redirectIfAuth, async (req, res) => {
             theme: user.theme || "default",
             isIncognitoInput: user.isIncognitoInput || false
         }
+
         user.enLigne = true
         await user.save()
-        // S'assurer que l'utilisateur est dans les groupes système
+
         try {
             await ensureSystemGroups()
             await addUserToSystemGroups(user._id)
         } catch(e) {}
+
         res.redirect("/")
     } catch (err) {
         console.error(err)
@@ -110,40 +130,48 @@ router.get("/register", redirectIfAuth, (req, res) => {
 router.post("/register", redirectIfAuth, async (req, res) => {
     try {
         const { nom, email, motDePasse, confirmMotDePasse } = req.body
+
         if (!nom || !email || !motDePasse) {
             req.flash("error", "Tous les champs sont requis.")
             return res.redirect("/register")
         }
+
         if (!nomValide(nom)) {
             req.flash("error", "Le nom ne doit contenir que des lettres, chiffres, espaces, tirets ou apostrophes (2 à 30 caractères).")
             return res.redirect("/register")
         }
+
         if (motDePasse !== confirmMotDePasse) {
             req.flash("error", "Les mots de passe ne correspondent pas.")
             return res.redirect("/register")
         }
+
         if (motDePasse.length < 6) {
             req.flash("error", "Le mot de passe doit contenir au moins 6 caractères.")
             return res.redirect("/register")
         }
+
         const existingUser = await User.findOne({ email: email.toLowerCase() })
         if (existingUser) {
             req.flash("error", "Un compte existe déjà avec cet email.")
             return res.redirect("/register")
         }
+
         const humanCount = await User.countDocuments({ isBot: { $ne: true } })
         const role = humanCount === 0 ? "admin" : "user"
-        const newUser = new User({ nom: nom.trim(), email: email.toLowerCase(), motDePasse, role })
+
+        const newUser = new User({
+            nom: nom.trim(),
+            email: email.toLowerCase(),
+            motDePasse,
+            role
+        })
         await newUser.save()
 
-        // Message de bienvenue de l'assistant
         await assistant.sendWelcomeMessage(newUser._id)
-
-        // Assurer les groupes système et ajouter le nouvel utilisateur
         await ensureSystemGroups()
         await addUserToSystemGroups(newUser._id)
 
-        // Crédits de bienvenue
         newUser.walletBalance = 100
         newUser.xp = 10
         await newUser.save()
