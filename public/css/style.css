@@ -4014,3 +4014,128 @@ body:not(.page-loading) .main-container {
 }
 .fx-inner svg,
 .fx-static svg { display: block; overflow: visible; }
+
+/* ========== PARTAGE DE POST ========== */
+.shared-post-preview {
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 14px;
+    margin-bottom: 12px;
+    background: var(--background);
+    transition: var(--transition);
+}
+
+.shared-post-preview:hover {
+    border-color: var(--primary);
+    background: var(--primary-light);
+}
+
+.shared-post-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.shared-post-header img {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 1px solid var(--border);
+}
+
+.shared-post-author {
+    font-weight: 700;
+    font-size: 13px;
+    color: var(--text-primary);
+}
+
+.shared-post-date {
+    font-size: 11px;
+    color: var(--text-muted);
+}
+
+.shared-post-content {
+    font-size: 13.5px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+    white-space: pre-wrap;
+}
+
+.shared-post-image {
+    width: 100%;
+    border-radius: 6px;
+    margin-top: 8px;
+    max-height: 200px;
+    object-fit: cover;
+}
+
+.share-message {
+    font-size: 14.5px;
+    line-height: 1.6;
+    color: var(--text-primary);
+    margin-bottom: 10px;
+    white-space: pre-wrap;
+}
+
+/* Modal de partage */
+.share-modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 500;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.share-modal-overlay.active {
+    display: flex;
+}
+
+.share-modal-card {
+    background: var(--card-bg);
+    border-radius: var(--radius);
+    padding: 24px;
+    width: 100%;
+    max-width: 480px;
+    box-shadow: var(--shadow-lg);
+}
+
+.share-modal-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.share-modal-preview {
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 12px;
+    margin-bottom: 14px;
+    background: var(--background);
+}
+
+.share-count {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 13px;
+    color: var(--text-secondary);
+    font-weight: 600;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 6px;
+    transition: var(--transition);
+}
+
+.share-count:hover {
+    background: var(--background);
+    color: var(--primary);
+}
