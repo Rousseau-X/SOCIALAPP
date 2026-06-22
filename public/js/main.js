@@ -38,6 +38,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     initNotifications();
+    initProfileEffects();
     updateNotificationBadge();
 
     initSocketNotifications();
@@ -288,6 +289,9 @@ async function navigateTo(url, pushState = true) {
             _spaScripts.push(s);
         });
 
+        // ✅ Réinitialiser les effets de profil sur la nouvelle page
+        requestAnimationFrame(function() { initProfileEffects(); });
+
         // ✅ Déclencher un événement pour dire que la page est chargée
         document.dispatchEvent(new CustomEvent('page-loaded'));
 
@@ -535,6 +539,161 @@ async function handleViewApplicants(e) {
 }
 
 // =====================================================
-// 13. DÉMARRAGE
+// =====================================================
+// 13. EFFETS DE PROFIL — Particules thématiques
+// =====================================================
+(function() {
+    const FX = {
+        butterfly: function(c1, c2) {
+            return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 22 18" width="22" height="18">'
+                + '<ellipse cx="6"  cy="5"  rx="6"   ry="5"   fill="' + c1 + '" opacity="0.92"/>'
+                + '<ellipse cx="16" cy="5"  rx="6"   ry="5"   fill="' + c2 + '" opacity="0.92"/>'
+                + '<ellipse cx="7"  cy="13" rx="4"   ry="3.5" fill="' + c1 + '" opacity="0.78"/>'
+                + '<ellipse cx="15" cy="13" rx="4"   ry="3.5" fill="' + c2 + '" opacity="0.78"/>'
+                + '<ellipse cx="11" cy="9"  rx="1.2" ry="6"   fill="#3b0764"/>'
+                + '</svg>';
+        },
+        star: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 18 18" width="18" height="18">'
+            + '<polygon points="9,1 11.2,6.5 17.5,7 13,11 14.5,17.5 9,14 3.5,17.5 5,11 0.5,7 6.8,6.5" fill="#fbbf24"/>'
+            + '</svg>',
+        flame: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 14 22" width="14" height="22">'
+            + '<path d="M7,22 C1,18 0,11 4,6 C4,10 6,11 7,8 C7,13 10,13 10,7 C14,12 13,18 7,22Z" fill="#f97316" opacity="0.95"/>'
+            + '<path d="M7,20 C3,17 2,12 5,8 C5,12 7,12 7,9 C7,13 9,12 9,9 C12,12 11,17 7,20Z"  fill="#fcd34d" opacity="0.85"/>'
+            + '<path d="M7,18 C5,16 4.5,12 6,10 C6,13 7.5,13 7.5,11 C9,13 8.5,16 7,18Z"         fill="#fef3c7" opacity="0.7"/>'
+            + '</svg>',
+        sparkle: function(color) {
+            return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" width="18" height="18">'
+                + '<path d="M10,0 L11.8,8.2 L20,10 L11.8,11.8 L10,20 L8.2,11.8 L0,10 L8.2,8.2 Z" fill="' + color + '"/>'
+                + '</svg>';
+        },
+        diamond: function(color) {
+            return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 24" width="16" height="20">'
+                + '<polygon points="10,0 20,8 10,24 0,8" fill="' + color + '" opacity="0.9"/>'
+                + '<polygon points="10,0 20,8 10,10 0,8" fill="white" opacity="0.5"/>'
+                + '<polygon points="5,8 10,0 15,8" fill="white" opacity="0.2"/>'
+                + '</svg>';
+        }
+    };
+
+    function makeOrbit(wrapper, orbitR, w, h, orbitDur, orbitDir, innerAnim, innerDur, delay, html) {
+        var orbit = document.createElement('span');
+        orbit.className = 'fx-orbit';
+        orbit.style.cssText = 'position:absolute;top:50%;left:50%;width:0;height:0;pointer-events:none;z-index:10;'
+            + 'animation:' + orbitDir + ' ' + orbitDur + 's linear ' + delay + 's infinite;';
+
+        var inner = document.createElement('span');
+        inner.className = 'fx-inner';
+        inner.style.cssText = 'position:absolute;width:' + w + 'px;height:' + h + 'px;'
+            + 'left:' + orbitR + 'px;top:' + (-h / 2) + 'px;display:block;pointer-events:none;'
+            + 'animation:' + innerAnim + ' ' + innerDur + 's ease-in-out ' + delay + 's infinite;';
+        inner.innerHTML = html;
+
+        orbit.appendChild(inner);
+        wrapper.appendChild(orbit);
+    }
+
+    function makeStatic(wrapper, angle, orbitR, w, h, anim, animDur, delay, html) {
+        var rad = (angle * Math.PI) / 180;
+        var x = Math.cos(rad) * orbitR;
+        var y = Math.sin(rad) * orbitR;
+
+        var p = document.createElement('span');
+        p.className = 'fx-static';
+        p.style.cssText = 'position:absolute;'
+            + 'left:calc(50% + ' + x + 'px - ' + (w / 2) + 'px);'
+            + 'top:calc(50% + ' + y + 'px - ' + (h / 2) + 'px);'
+            + 'width:' + w + 'px;height:' + h + 'px;display:block;pointer-events:none;z-index:10;'
+            + 'animation:' + anim + ' ' + animDur + 's ease-in-out ' + delay + 's infinite;';
+        p.innerHTML = html;
+        wrapper.appendChild(p);
+    }
+
+    window.initProfileEffects = function() {
+        var selectors = '.effect-sparkle,.effect-flame,.effect-star,.effect-diamond,.effect-butterfly';
+        document.querySelectorAll(selectors).forEach(function(wrapper) {
+            if (wrapper.dataset.fxInit) return;
+            wrapper.dataset.fxInit = '1';
+
+            var img = wrapper.querySelector('img');
+            if (!img) return;
+
+            var imgW = img.offsetWidth || 46;
+            var orbitR = Math.round(imgW / 2) + (imgW > 60 ? 18 : 11);
+            var L = imgW > 60;
+
+            var type = '';
+            wrapper.classList.forEach(function(c) { if (c.startsWith('effect-')) type = c.replace('effect-', ''); });
+            if (!type) return;
+
+            if (type === 'butterfly') {
+                var bCfg = [
+                    { c1: '#e879f9', c2: '#c026d3', dur: 4,   dir: 'fxOrbitCW',  del: 0    },
+                    { c1: '#f0abfc', c2: '#a21caf', dur: 5.5, dir: 'fxOrbitCCW', del: -1.8 },
+                    { c1: '#c084fc', c2: '#7c3aed', dur: 3.5, dir: 'fxOrbitCW',  del: -3.1 }
+                ];
+                var bw = L ? 22 : 14, bh = L ? 18 : 12;
+                bCfg.forEach(function(c) {
+                    makeOrbit(wrapper, orbitR, bw, bh, c.dur, c.dir, 'fxWingFlap', 0.35, c.del, FX.butterfly(c.c1, c.c2));
+                });
+            }
+
+            if (type === 'flame') {
+                var fCfg = [
+                    { dur: 7,   dir: 'fxOrbitCW',  del: 0,    fd: 0.6  },
+                    { dur: 5.5, dir: 'fxOrbitCW',  del: -1.4, fd: 0.45 },
+                    { dur: 8,   dir: 'fxOrbitCCW', del: -2.8, fd: 0.7  },
+                    { dur: 6,   dir: 'fxOrbitCW',  del: -4.2, fd: 0.5  }
+                ];
+                var fw = L ? 14 : 9, fh = L ? 22 : 14;
+                fCfg.forEach(function(c) {
+                    makeOrbit(wrapper, orbitR, fw, fh, c.dur, c.dir, 'fxFlicker', c.fd, c.del, FX.flame);
+                });
+            }
+
+            if (type === 'star') {
+                var sCfg = [
+                    { dur: 3,   dir: 'fxOrbitCW',  del: 0,    td: 0.8  },
+                    { dur: 4.5, dir: 'fxOrbitCCW', del: -0.9, td: 1.2  },
+                    { dur: 2.8, dir: 'fxOrbitCW',  del: -1.8, td: 0.6  },
+                    { dur: 5,   dir: 'fxOrbitCCW', del: -2.7, td: 1.4  },
+                    { dur: 3.6, dir: 'fxOrbitCW',  del: -3.6, td: 0.9  }
+                ];
+                var sw = L ? 18 : 12, sh = L ? 18 : 12;
+                sCfg.forEach(function(c) {
+                    makeOrbit(wrapper, orbitR, sw, sh, c.dur, c.dir, 'fxTwinkle', c.td, c.del, FX.star);
+                });
+            }
+
+            if (type === 'sparkle') {
+                var spColors = ['#a855f7','#818cf8','#e879f9','#6366f1','#c084fc','#38bdf8'];
+                var spDurs   = [1.6, 2.0, 1.4, 1.8, 2.2, 1.5];
+                var spDels   = [0, -0.5, -1.0, -1.5, -0.8, -1.3];
+                var spw = L ? 18 : 12, sph = L ? 18 : 12;
+                for (var i = 0; i < 6; i++) {
+                    var ang = (i / 6) * 360 - 90;
+                    makeStatic(wrapper, ang, orbitR, spw, sph, 'fxSparklePopIn', spDurs[i], spDels[i], FX.sparkle(spColors[i]));
+                }
+            }
+
+            if (type === 'diamond') {
+                var dColors = ['#67e8f9','#0ea5e9','#a5f3fc','#38bdf8','#7dd3fc'];
+                var dCfg = [
+                    { dur: 5,   dir: 'fxOrbitCW',  del: 0,    gd: 1.2 },
+                    { dur: 7,   dir: 'fxOrbitCCW', del: -1.4, gd: 1.8 },
+                    { dur: 4.5, dir: 'fxOrbitCW',  del: -2.8, gd: 1.0 },
+                    { dur: 6,   dir: 'fxOrbitCCW', del: -4.2, gd: 1.5 },
+                    { dur: 5.5, dir: 'fxOrbitCW',  del: -0.7, gd: 1.3 }
+                ];
+                var dw = L ? 16 : 11, dh = L ? 20 : 13;
+                dCfg.forEach(function(c, i) {
+                    makeOrbit(wrapper, orbitR, dw, dh, c.dur, c.dir, 'fxDiamondGlint', c.gd, c.del, FX.diamond(dColors[i]));
+                });
+            }
+        });
+    };
+}());
+
+// =====================================================
+// 14. DÉMARRAGE
 // =====================================================
 console.log('📦 main.js chargé');
