@@ -3,24 +3,25 @@ const router = express.Router()
 const Post = require("../models/Post")
 const User = require("../models/User")
 const Notification = require("../models/Notification")
-const { requireAuth } = require("../middleware/auth")
-const { uploadPost } = require("../lib/cloudinary")
 const { requireAuth, requireNotRestricted } = require("../middleware/auth")
+const { uploadPost } = require("../lib/cloudinary")
 
-// Page d'accueil — Feed (tous les posts, sans restriction d'amis)
+// Page d'accueil — Feed
 router.get("/", requireAuth, async (req, res) => {
     try {
         const currentUser = await User.findById(req.session.user.id)
 
-        // Récupère tous les posts, triés du plus récent au plus ancien
         const rawPosts = await Post.find()
             .populate("auteur", "nom photoProfil badges profileEffect")
             .populate("commentaires.auteur", "nom photoProfil badges profileEffect")
+            .populate({
+                path: "sharedFrom",
+                populate: { path: "auteur", select: "nom photoProfil badges" }
+            })
             .sort({ createdAt: -1 })
             .limit(50)
-        // Filtrer les posts dont l'auteur a été supprimé
-        const posts = rawPosts.filter(p => p.auteur != null)
 
+        const posts = rawPosts.filter(p => p.auteur != null)
         const demandesCount = currentUser.demandesRecues.length
 
         res.render("feed", {
@@ -37,7 +38,7 @@ router.get("/", requireAuth, async (req, res) => {
 })
 
 // Publier un post
-router.post("/post", requireAuth, uploadPost.single("image"), async (req, res) => {
+router.post("/post", requireAuth, requireNotRestricted("posts"), uploadPost.single("image"), async (req, res) => {
     try {
         const { contenu } = req.body
 
@@ -66,9 +67,7 @@ router.post("/post/:id/delete", requireAuth, async (req, res) => {
     try {
         const post = await Post.findById(req.params.id)
 
-        if (!post) {
-            return res.redirect("/")
-        }
+        if (!post) return res.redirect("/")
 
         if (post.auteur.toString() !== req.session.user.id) {
             req.flash("error", "Tu ne peux pas supprimer ce post.")
@@ -84,7 +83,7 @@ router.post("/post/:id/delete", requireAuth, async (req, res) => {
 })
 
 // Like / Unlike un post (AJAX)
-router.post("/post/:id/like", requireAuth, async (req, res) => {
+router.post("/post/:id/like", requireAuth, requireNotRestricted("likes"), async (req, res) => {
     try {
         const post = await Post.findById(req.params.id)
         if (!post) return res.status(404).json({ error: "Post introuvable" })
@@ -104,9 +103,10 @@ router.post("/post/:id/like", requireAuth, async (req, res) => {
                     type: "like",
                     lien: "/"
                 })
-                // Émettre la notification en temps réel
                 if (global.io) {
-                    global.io.emit('notification', notification)
+                    const notifComplete = await Notification.findById(notification._id)
+                        .populate("expediteur", "nom photoProfil")
+                    global.io.to(post.auteur.toString()).emit("notification", notifComplete)
                 }
             }
         }
@@ -125,7 +125,7 @@ router.post("/post/:id/like", requireAuth, async (req, res) => {
 })
 
 // Ajouter un commentaire (AJAX)
-router.post("/post/:id/comment", requireAuth, async (req, res) => {
+router.post("/post/:id/comment", requireAuth, requireNotRestricted("messages"), async (req, res) => {
     try {
         const { texte } = req.body
         if (!texte || texte.trim().length === 0) {
@@ -149,9 +149,10 @@ router.post("/post/:id/comment", requireAuth, async (req, res) => {
                 type: "commentaire",
                 lien: "/"
             })
-            // Émettre la notification en temps réel
             if (global.io) {
-                global.io.emit('notification', notification)
+                const notifComplete = await Notification.findById(notification._id)
+                    .populate("expediteur", "nom photoProfil")
+                global.io.to(post.auteur.toString()).emit("notification", notifComplete)
             }
         }
 
@@ -185,7 +186,6 @@ router.post("/post/:id/share", requireAuth, requireNotRestricted("posts"), async
             return res.status(404).json({ error: "Publication introuvable." })
         }
 
-        // Empêcher de partager son propre post si déjà partagé
         const alreadyShared = await Post.findOne({
             auteur: req.session.user.id,
             sharedFrom: originalPost._id,
@@ -196,7 +196,6 @@ router.post("/post/:id/share", requireAuth, requireNotRestricted("posts"), async
             return res.status(400).json({ error: "Tu as déjà partagé cette publication." })
         }
 
-        // Créer le post partagé
         const sharedPost = await Post.create({
             auteur: req.session.user.id,
             contenu: message?.trim() || "",
@@ -205,32 +204,23 @@ router.post("/post/:id/share", requireAuth, requireNotRestricted("posts"), async
             shareMessage: message?.trim() || ""
         })
 
-        // Incrémenter le compteur de partages sur l'original
         await Post.findByIdAndUpdate(originalPost._id, { $inc: { sharesCount: 1 } })
-
-        // XP pour le partage
         await User.findByIdAndUpdate(req.session.user.id, { $inc: { xp: 3 } })
 
-        // Notification à l'auteur original
         if (originalPost.auteur._id.toString() !== req.session.user.id) {
-            await Notification.create({
+            const notification = await Notification.create({
                 destinataire: originalPost.auteur._id,
                 expediteur: req.session.user.id,
                 type: "partage",
                 lien: "/"
             })
-
             if (global.io) {
-                const notif = await Notification.findOne({
-                    destinataire: originalPost.auteur._id,
-                    expediteur: req.session.user.id,
-                    type: "partage"
-                }).populate("expediteur", "nom photoProfil")
-                global.io.to(originalPost.auteur._id.toString()).emit("notification", notif)
+                const notifComplete = await Notification.findById(notification._id)
+                    .populate("expediteur", "nom photoProfil")
+                global.io.to(originalPost.auteur._id.toString()).emit("notification", notifComplete)
             }
         }
 
-        // Populate pour retourner le post complet
         const populated = await Post.findById(sharedPost._id)
             .populate("auteur", "nom photoProfil badges")
             .populate({
