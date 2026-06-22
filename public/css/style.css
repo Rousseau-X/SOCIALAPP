@@ -3916,14 +3916,14 @@ body:not(.page-loading) .main-container {
     border-color: var(--error);
     color: #fff;
 }
-/* ===== STORIES ===== */
+/* ===== STORIES (ajout propre) ===== */
 .stories-bar {
     display: flex;
     gap: 14px;
     padding: 12px 0 16px;
     overflow-x: auto;
     scrollbar-width: none;
-    border-bottom: 1px solid var(--border, #e5e7eb);
+    border-bottom: 1px solid #e5e7eb;
     margin-bottom: 16px;
 }
 .stories-bar::-webkit-scrollbar { display: none; }
@@ -3958,7 +3958,7 @@ body:not(.page-loading) .main-container {
 }
 .story-name {
     font-size: 11px;
-    color: var(--text-secondary, #6b7280);
+    color: #6b7280;
     max-width: 68px;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -3969,7 +3969,7 @@ body:not(.page-loading) .main-container {
     width: 68px;
     height: 68px;
     border-radius: 50%;
-    background: var(--primary, #4f46e5);
+    background: #4f46e5;
     color: #fff;
     display: flex;
     flex-direction: column;
@@ -3978,7 +3978,7 @@ body:not(.page-loading) .main-container {
     cursor: pointer;
     font-size: 26px;
     border: 2px solid #fff;
-    box-shadow: 0 0 0 2px var(--primary, #4f46e5);
+    box-shadow: 0 0 0 2px #4f46e5;
     flex-shrink: 0;
 }
 .story-add-btn span {
@@ -4077,4 +4077,4 @@ body:not(.page-loading) .main-container {
     z-index: 10000;
     text-shadow: 0 2px 8px rgba(0,0,0,0.5);
     pointer-events: none;
- }
+}
