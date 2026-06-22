@@ -263,6 +263,12 @@ router.post("/admin/users/:id/send-coins", requireAdmin, async (req, res) => {
 
         targetUser.walletBalance = (targetUser.walletBalance || 0) + coins;
         await targetUser.save();
+        // Push notification coins
+const { sendPushToUser, buildPayload } = require("../lib/webpush")
+await sendPushToUser(targetUser._id, buildPayload("coins", {
+    amount: coins,
+    reason: reason || ""
+}))
 
         // Notification à l'utilisateur
         await Notification.create({
@@ -304,6 +310,11 @@ router.post("/admin/users/:id/warn", requireAdmin, async (req, res) => {
         if (!targetUser.warnings) targetUser.warnings = [];
         targetUser.warnings.push({ motif: motif.trim() });
         await targetUser.save();
+        // Push notification avertissement
+const { sendPushToUser, buildPayload } = require("../lib/webpush")
+await sendPushToUser(targetUser._id, buildPayload("warning", {
+    motif: motif.trim()
+}))
 
         await Notification.create({
             destinataire: targetUser._id,
