@@ -89,22 +89,18 @@ app.use('/auth/login', authLimiter)
 app.use('/auth/register', authLimiter)
 app.use('/api/', apiLimiter)
 app.use(globalLimiter)
-app.use("/", require("./routes/push"))
-app.use("/", require("./routes/stories"))
 
 // =============================================
-// CONFIGURATION EXPRESS
+// ✅ SESSION — DOIT ÊTRE AVANT TOUTES LES ROUTES
 // =============================================
 app.set("trust proxy", 1)
 app.set("view engine", "ejs")
 app.set("views", path.join(__dirname, "views"))
+
 app.use(express.urlencoded({ extended: true }))
 app.use(express.json())
 app.use(express.static(path.join(__dirname, "public")))
 
-// =============================================
-// SESSIONS
-// =============================================
 app.use(session({
     secret: process.env.SESSION_SECRET,
     resave: false,
@@ -144,8 +140,9 @@ app.use(async (req, res, next) => {
 })
 
 // =============================================
-// ROUTES
+// ROUTES — TOUTES APRÈS LA SESSION
 // =============================================
+app.use("/", require("./routes/push"))
 app.use("/", require("./routes/auth"))
 app.use("/", require("./routes/feed"))
 app.use("/", require("./routes/profile"))
@@ -160,6 +157,7 @@ app.use("/", require("./routes/gamification"))
 app.use("/", require("./routes/security"))
 app.use("/", require("./routes/voicerooms"))
 app.use("/", require("./routes/dailytasks"))
+app.use("/", require("./routes/stories"))
 
 // Route pour servir les icônes PWA générées dynamiquement
 app.get("/icons/icon-:size.png", async (req, res) => {
@@ -295,14 +293,14 @@ io.on("connection", async (socket) => {
 
             io.to(to).emit("new-message", payload)
             // Notification push si l'utilisateur est hors ligne
-const recipientForPush = await User.findById(to, "enLigne nom")
-if (!recipientForPush?.enLigne) {
-    const senderForPush = await User.findById(from, "nom")
-    await sendPushToUser(to, buildPayload("message", {
-        senderName: senderForPush?.nom || "Quelqu'un",
-        senderId: from,
-        content: type === "audio" ? "Message vocal" : textContent.slice(0, 80)
-    }))
+            const recipientForPush = await User.findById(to, "enLigne nom")
+            if (!recipientForPush?.enLigne) {
+                const senderForPush = await User.findById(from, "nom")
+                await sendPushToUser(to, buildPayload("message", {
+                    senderName: senderForPush?.nom || "Quelqu'un",
+                    senderId: from,
+                    content: type === "audio" ? "Message vocal" : textContent.slice(0, 80)
+                }))
             }
             io.to(from).emit("new-message", payload)
 
@@ -428,36 +426,31 @@ if (!recipientForPush?.enLigne) {
                     await User.findByIdAndUpdate(from, { $inc: { xp: 2 } })
                     const expediteurUser = await User.findById(from)
                     const payload = {
-                        _id: saved._id, expediteur: { _id: from, nom: expediteurUser.nom },
+                        _id: saved._id,
+                        expediteur: { _id: from, nom: expediteurUser.nom },
                         pseudo: membre.pseudo || expediteurUser.nom,
-                        ...msgData, groupId,
-                        type: cmdResult.type, burnSeconds: cmdResult.burnSeconds || null
+                        ...msgData,
+                        groupId,
+                        type: cmdResult.type,
+                        burnSeconds: cmdResult.burnSeconds || null
                     }
                     io.to("group_" + groupId).emit("new-group-message", payload)
                     return
-                    // Notifications push aux membres hors ligne
-const offlineMembers = group.membres
-    .filter(m => m.user._id.toString() !== from)
-    .map(m => m.user._id)
-
-if (offlineMembers.length > 0) {
-    await sendPushToUsers(offlineMembers, buildPayload("group-message", {
-        groupName: group.nom,
-        groupId,
-        senderName: displayName,
-        content: type === "audio" ? "Message vocal" : textContent.slice(0, 80)
-    }))
-                        }
                 } else if (cmdResult && cmdResult.error) {
+                    const expediteurUser = await User.findById(from)
                     io.to(from).emit("new-group-message", {
-                        _id: Date.now(), expediteur: { _id: from, nom: "Système" },
-                        pseudo: "Système", contenu: `⚠️ ${cmdResult.error}`, groupId, type: 'text'
+                        _id: Date.now(),
+                        expediteur: { _id: from, nom: "Système" },
+                        pseudo: "Système",
+                        contenu: `⚠️ ${cmdResult.error}`,
+                        groupId,
+                        type: 'text'
                     })
                     return
                 }
             }
 
-            // Sous-profil anonyme
+            // Sous-profil anonyme ?
             const senderUser = await User.findById(from).populate("activeSubProfile")
             const activeSubProfile = senderUser?.activeSubProfile
             const chaosOverride = group.isChaosMode ? group.membres.find(m => m.user._id.toString() === from) : null
@@ -501,7 +494,7 @@ if (offlineMembers.length > 0) {
 
             io.to("group_" + groupId).emit("new-group-message", payload)
 
-            // Récompense activité
+            // Récompense activité : +5 crédits tous les 5 messages groupe (silencieux)
             const _today = new Date().toISOString().slice(0, 10)
             const _actKey = `${from}:${_today}`
             const _cnt = (dailyGroupMsgMap.get(_actKey) || 0) + 1
@@ -623,7 +616,7 @@ if (offlineMembers.length > 0) {
         socket.to("group_" + groupId).emit("watch-party-sync", { action, currentTime, url, from: userId })
     })
 
-    // === FOCUS MODE ===
+    // === FOCUS MODE (éditeur collaboratif) ===
     socket.on("focus-update", (data) => {
         const { groupId, content } = data
         socket.to("group_" + groupId).emit("focus-update", { content, from: userId })
@@ -639,6 +632,7 @@ if (offlineMembers.length > 0) {
                 await user.save()
                 io.emit("user-status", { userId, enLigne: false })
             }
+            // Retirer des salons vocaux
             const groupsWithVoice = await Group.find({ voiceRoomMembers: userId })
             for (const grp of groupsWithVoice) {
                 grp.voiceRoomMembers = grp.voiceRoomMembers.filter(m => m.toString() !== userId)
@@ -662,8 +656,12 @@ async function sendSystemAlert(content) {
         const msg = await Message.create({ expediteur: bot._id, groupe: group._id, contenu: content })
         if (global.io) {
             global.io.to("group_" + group._id).emit("new-group-message", {
-                _id: msg._id, expediteur: { _id: bot._id, nom: bot.nom },
-                pseudo: bot.nom, contenu: content, groupId: group._id.toString(), type: 'text'
+                _id: msg._id,
+                expediteur: { _id: bot._id, nom: bot.nom },
+                pseudo: bot.nom,
+                contenu: content,
+                groupId: group._id.toString(),
+                type: 'text'
             })
         }
     } catch (e) { console.error("⚠️ System alert error:", e.message) }
