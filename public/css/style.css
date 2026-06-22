@@ -3916,25 +3916,3 @@ body:not(.page-loading) .main-container {
     border-color: var(--error);
     color: #fff;
 }
-//STYLE POUR STORY //
-.stories-bar { display:flex; gap:14px; padding:12px 0 16px; overflow-x:auto; scrollbar-width:none; }
-.stories-bar::-webkit-scrollbar { display:none; }
-.story-item { display:flex; flex-direction:column; align-items:center; gap:4px; cursor:pointer; flex-shrink:0; }
-.story-avatar { width:68px; height:68px; border-radius:50%; padding:2px; background:linear-gradient(135deg,#f09433,#bc1888); display:flex; align-items:center; justify-content:center; }
-.story-avatar.seen { background:#d1d5db; }
-.story-avatar img { width:100%; height:100%; border-radius:50%; border:2px solid #fff; object-fit:cover; }
-.story-name { font-size:11px; color:#374151; max-width:68px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; text-align:center; }
-.story-add-btn { width:68px; height:68px; border-radius:50%; background:#4f46e5; color:#fff; display:flex; flex-direction:column; align-items:center; justify-content:center; cursor:pointer; font-size:26px; border:2px solid #fff; box-shadow:0 0 0 2px #4f46e5; flex-shrink:0; }
-.story-add-btn span { font-size:10px; font-weight:600; margin-top:2px; }
-.story-overlay { display:none; position:fixed; inset:0; background:#000; z-index:9999; align-items:center; justify-content:center; flex-direction:column; }
-.story-overlay.active { display:flex; }
-.story-progress { position:fixed; top:12px; left:16px; right:16px; display:flex; gap:4px; z-index:10001; }
-.story-progress-bar { flex:1; height:3px; background:rgba(255,255,255,0.3); border-radius:4px; overflow:hidden; }
-.story-progress-bar .fill { height:100%; width:0%; background:#fff; border-radius:4px; animation:progressAnim 5s linear forwards; }
-@keyframes progressAnim { 0%{width:0%} 100%{width:100%} }
-.story-media { width:100%; max-width:420px; max-height:90vh; object-fit:contain; border-radius:12px; cursor:pointer; }
-.story-author-info { position:fixed; top:32px; left:20px; display:flex; align-items:center; gap:10px; z-index:10000; color:#fff; }
-.story-author-info img { width:36px; height:36px; border-radius:50%; border:2px solid #fff; object-fit:cover; }
-.story-author-info span { font-weight:600; font-size:15px; text-shadow:0 2px 8px rgba(0,0,0,0.6); }
-.story-close { position:fixed; top:28px; right:20px; color:#fff; font-size:28px; cursor:pointer; z-index:10001; text-shadow:0 2px 12px rgba(0,0,0,0.7); }
-.story-views { position:fixed; bottom:60px; left:0; right:0; text-align:center; color:rgba(255,255,255,0.7); font-size:13px; z-index:10000; text-shadow:0 2px 8px rgba(0,0,0,0.5); }
