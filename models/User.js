@@ -40,6 +40,13 @@ const userSchema = new mongoose.Schema({
     profileFrame: { type: String, default: null, enum: [null, "bronze", "argent", "or", "diamant"] },
     lastFreeCredits: { type: Date, default: null },
 
+    // === ANIMATIONS DE PROFIL (NOUVEAU) ===
+    profileEffect: {
+        type: String,
+        default: null,
+        enum: [null, "sparkle", "flame", "star", "diamond", "butterfly"]
+    },
+
     // === SÉCURITÉ & INCOGNITO ===
     isIncognitoInput: { type: Boolean, default: false },
     activeSubProfile: { type: mongoose.Schema.Types.ObjectId, ref: "SubProfile", default: null },
