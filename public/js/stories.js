@@ -1,15 +1,9 @@
-// ============================================================
-// STORIES — BARRE + OVERLAY
-// ============================================================
-
 let currentStoryIndex = 0;
 let storiesList = [];
 let storyTimer = null;
 
-// Récupérer l'ID de l'utilisateur courant
 const currentUserId = document.querySelector('[data-user-id]')?.dataset.userId || '';
 
-// Charger les stories depuis le serveur
 async function loadStories() {
     try {
         console.log('📥 Chargement des stories...');
@@ -23,7 +17,6 @@ async function loadStories() {
     }
 }
 
-// Afficher la barre de stories
 function renderStoriesBar() {
     const bar = document.getElementById('storiesBar');
     if (!bar) {
@@ -31,7 +24,6 @@ function renderStoriesBar() {
         return;
     }
 
-    // Garder le bouton "Ajouter"
     const addBtn = bar.querySelector('.story-add-btn');
     bar.innerHTML = '';
     bar.appendChild(addBtn);
@@ -57,7 +49,6 @@ function renderStoriesBar() {
     console.log('✅ Stories affichées');
 }
 
-// Ouvrir une story en overlay
 function openStory(index) {
     currentStoryIndex = index;
     const story = storiesList[index];
@@ -83,11 +74,8 @@ function openStory(index) {
     `;
 
     overlay.classList.add('active');
-
-    // Marquer comme vue
     fetch(`/api/stories/${story._id}/view`, { method: 'POST' });
 
-    // Timer : passer à la suivante après 5s
     clearTimeout(storyTimer);
     storyTimer = setTimeout(() => {
         nextStory();
@@ -108,7 +96,6 @@ function closeStory() {
     document.getElementById('storyOverlay').classList.remove('active');
 }
 
-// Initialisation
 document.addEventListener('DOMContentLoaded', function() {
     console.log('📸 Initialisation des stories');
     loadStories();
