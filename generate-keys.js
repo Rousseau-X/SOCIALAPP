@@ -1,5 +1,6 @@
 const webpush = require('web-push');
 
+
 // Générer les clés VAPID
 const keys = webpush.generateVAPIDKeys();
 
