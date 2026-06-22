@@ -32,7 +32,34 @@ const postSchema = new mongoose.Schema({
             type: Date,
             default: Date.now
         }
-    }]
+    }],
+
+    // === PARTAGE ===
+    isShared: {
+        type: Boolean,
+        default: false
+    },
+    sharedFrom: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Post",
+        default: null
+    },
+    shareMessage: {
+        type: String,
+        default: "",
+        maxlength: 300
+    },
+    sharesCount: {
+        type: Number,
+        default: 0
+    },
+
+    // === ÉPINGLÉ ===
+    isPinned: {
+        type: Boolean,
+        default: false
+    }
+
 }, { timestamps: true })
 
 module.exports = mongoose.models.Post || mongoose.model("Post", postSchema)
