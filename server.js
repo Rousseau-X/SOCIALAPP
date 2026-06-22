@@ -433,6 +433,19 @@ if (!recipientForPush?.enLigne) {
                     }
                     io.to("group_" + groupId).emit("new-group-message", payload)
                     return
+                    // Notifications push aux membres hors ligne
+const offlineMembers = group.membres
+    .filter(m => m.user._id.toString() !== from)
+    .map(m => m.user._id)
+
+if (offlineMembers.length > 0) {
+    await sendPushToUsers(offlineMembers, buildPayload("group-message", {
+        groupName: group.nom,
+        groupId,
+        senderName: displayName,
+        content: type === "audio" ? "Message vocal" : textContent.slice(0, 80)
+    }))
+                        }
                 } else if (cmdResult && cmdResult.error) {
                     io.to(from).emit("new-group-message", {
                         _id: Date.now(), expediteur: { _id: from, nom: "Système" },
