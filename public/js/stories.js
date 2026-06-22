@@ -30,6 +30,9 @@ function renderStoriesBar() {
 
     if (storiesList.length === 0) return;
 
+    // Récupérer l'ID de l'utilisateur courant (défini dans une variable globale)
+    const currentUserId = window.currentUserId || '';
+
     storiesList.forEach((story, index) => {
         const isSeen = story.vues.includes(currentUserId);
         const item = document.createElement('div');
@@ -58,14 +61,12 @@ function openStory(index) {
     const viewCount = document.getElementById('storyViewCount');
     const progressContainer = document.getElementById('storyProgress');
 
-    // Remplir les infos
     media.src = story.media;
     media.alt = `Story de ${story.auteur.nom}`;
     authorName.textContent = story.auteur.nom;
     authorAvatar.src = story.auteur.photoProfil;
     viewCount.textContent = story.vues.length || 0;
 
-    // Barre de progression
     progressContainer.innerHTML = `
         <div class="story-progress-bar active">
             <div class="fill" style="animation-duration: 5s;"></div>
@@ -100,8 +101,9 @@ function closeStory() {
     document.getElementById('storyOverlay').classList.remove('active');
 }
 
-// Initialisation
+// Initialisation au chargement de la page
 document.addEventListener('DOMContentLoaded', function() {
+    // Charger les stories
     loadStories();
 
     // Bouton "Ajouter" -> input file
@@ -114,19 +116,29 @@ document.addEventListener('DOMContentLoaded', function() {
             if (!file) return;
             const formData = new FormData();
             formData.append('media', file);
-            const res = await fetch('/api/stories/upload', { method: 'POST', body: formData });
-            const data = await res.json();
-            if (data.success) {
-                loadStories(); // recharger la barre
-            } else {
-                alert('Erreur upload story');
+            try {
+                const res = await fetch('/api/stories/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await res.json();
+                if (data.success) {
+                    // Recharger la barre après upload
+                    loadStories();
+                } else {
+                    alert('Erreur : ' + (data.error || 'Upload failed'));
+                }
+            } catch (err) {
+                console.error('Erreur upload story:', err);
+                alert('Erreur réseau');
             }
             fileInput.value = '';
         });
     }
 
-    // Fermeture overlay
+    // Fermeture overlay (croix)
     document.getElementById('storyClose')?.addEventListener('click', closeStory);
+    // Clic sur le fond pour fermer
     document.getElementById('storyOverlay')?.addEventListener('click', function(e) {
         if (e.target === this) closeStory();
     });
