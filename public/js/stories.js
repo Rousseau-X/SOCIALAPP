@@ -111,7 +111,7 @@ function showStory() {
         mediaContainer.innerHTML = ""
     } else if (story.mediaType === "video") {
         mediaContainer.style.background = "#000"
-        mediaContainer.innerHTML = `<video src="${story.media}" autoplay muted playsinline style="width:100%;height:100%;object-fit:contain;"></video>`
+        mediaContainer.innerHTML = `<video src="${story.media}" autoplay playsinline style="width:100%;height:100%;object-fit:contain;" id="story-video-player"></video>`
     } else {
         mediaContainer.style.background = "#000"
         mediaContainer.innerHTML = `<img src="${story.media}" style="width:100%;height:100%;object-fit:contain;" alt="">`
@@ -167,12 +167,25 @@ function startStoryTimer() {
     const fill = document.getElementById(`progress-fill-${currentStoryIndex}`)
     if (!fill) return
 
-    fill.style.transition = `width ${STORY_DURATION}ms linear`
-    fill.style.width = "100%"
-
-    storyTimer = setTimeout(() => {
-        goToNextStory()
-    }, STORY_DURATION)
+    const video = document.getElementById("story-video-player")
+    if (video) {
+        // Pour les vidéos : durée réelle, max 60s
+        const startTimer = (duration) => {
+            const ms = Math.min(duration * 1000, 60000)
+            fill.style.transition = `width ${ms}ms linear`
+            fill.style.width = "100%"
+            storyTimer = setTimeout(() => goToNextStory(), ms)
+        }
+        if (video.readyState >= 1 && video.duration) {
+            startTimer(video.duration)
+        } else {
+            video.addEventListener("loadedmetadata", () => startTimer(video.duration), { once: true })
+        }
+    } else {
+        fill.style.transition = `width ${STORY_DURATION}ms linear`
+        fill.style.width = "100%"
+        storyTimer = setTimeout(() => goToNextStory(), STORY_DURATION)
+    }
 }
 
 function stopStoryTimer() {
@@ -180,6 +193,8 @@ function stopStoryTimer() {
         clearTimeout(storyTimer)
         storyTimer = null
     }
+    const video = document.getElementById("story-video-player")
+    if (video) video.pause()
 }
 
 function goToNextStory() {
@@ -311,17 +326,32 @@ function renderColorPicker() {
 function handleStoryFileSelect(e) {
     const file = e.target.files[0]
     if (!file) return
-    selectedFile = file
 
     const preview = document.getElementById("story-preview-area")
     const url = URL.createObjectURL(file)
 
     if (file.type.startsWith("video/")) {
-        preview.innerHTML = `<video src="${url}" style="width:100%;height:100%;object-fit:cover;" autoplay muted loop></video>`
+        // Vérifier la durée max 60s
+        const tempVideo = document.createElement("video")
+        tempVideo.preload = "metadata"
+        tempVideo.src = url
+        tempVideo.onloadedmetadata = () => {
+            if (tempVideo.duration > 60) {
+                showStoryToast("La vidéo doit faire moins de 60 secondes.", true)
+                document.getElementById("story-file-input").value = ""
+                selectedFile = null
+                URL.revokeObjectURL(url)
+                return
+            }
+            selectedFile = file
+            preview.innerHTML = `<video src="${url}" style="width:100%;height:100%;object-fit:cover;" autoplay muted loop playsinline></video>`
+            preview.style.background = "none"
+        }
     } else {
+        selectedFile = file
         preview.innerHTML = `<img src="${url}" style="width:100%;height:100%;object-fit:cover;" alt="">`
+        preview.style.background = "none"
     }
-    preview.style.background = "none"
 }
 
 async function publishStory() {
