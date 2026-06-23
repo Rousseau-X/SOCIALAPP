@@ -22,6 +22,14 @@ router.get("/profile/:id", requireAuth, async (req, res) => {
             .populate("commentaires.auteur", "nom photoProfil badges profileEffect")
             .sort({ createdAt: -1 })
         const posts = rawPosts.filter(p => p.auteur != null)
+        const posts = await Post.find({ auteur: profileUser._id })
+    .populate("auteur", "nom photoProfil badges")
+    .populate("commentaires.auteur", "nom photoProfil badges")
+    .populate({
+        path: "sharedFrom",
+        populate: { path: "auteur", select: "nom photoProfil badges" }
+    })
+    .sort({ createdAt: -1 })
 
         const isOwnProfile = profileUser._id.toString() === currentUser._id.toString()
         const isFriend = currentUser.amis.some(id => id.toString() === profileUser._id.toString())
