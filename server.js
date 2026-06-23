@@ -142,23 +142,14 @@ app.use(async (req, res, next) => {
 // ROUTES
 // =============================================
 
-// ===== SPLASH (avant connexion) =====
+// ===== SPLASH =====
 app.get("/", (req, res) => {
+    // Si l'utilisateur est connecté, on le renvoie vers le feed (géré par routes/feed)
     if (req.session && req.session.user) {
-        // Si connecté, on va directement au feed
         return res.redirect("/feed");
     }
     // Sinon, splash
     res.render("splash", { title: "SocialApp" });
-});
-
-// ===== FEED (alias vers la page d'accueil du feed) =====
-app.get("/feed", (req, res) => {
-    if (!req.session || !req.session.user) {
-        return res.redirect("/");
-    }
-    // On redirige vers "/" où le routeur feed est monté
-    res.redirect("/");
 });
 
 app.use("/", require("./routes/push"))
