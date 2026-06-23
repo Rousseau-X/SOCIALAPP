@@ -207,20 +207,6 @@ router.post("/post/:id/share", requireAuth, requireNotRestricted("posts"), async
         await Post.findByIdAndUpdate(originalPost._id, { $inc: { sharesCount: 1 } })
         await User.findByIdAndUpdate(req.session.user.id, { $inc: { xp: 3 } })
 
-        if (originalPost.auteur._id.toString() !== req.session.user.id) {
-            const notification = await Notification.create({
-                destinataire: originalPost.auteur._id,
-                expediteur: req.session.user.id,
-                type: "partage",
-                lien: "/"
-            })
-            if (global.io) {
-                const notifComplete = await Notification.findById(notification._id)
-                    .populate("expediteur", "nom photoProfil")
-                global.io.to(originalPost.auteur._id.toString()).emit("notification", notifComplete)
-            }
-        }
-
         const populated = await Post.findById(sharedPost._id)
             .populate("auteur", "nom photoProfil badges")
             .populate({
@@ -233,6 +219,23 @@ router.post("/post/:id/share", requireAuth, requireNotRestricted("posts"), async
             post: populated,
             sharesCount: originalPost.sharesCount + 1
         })
+
+        // Notification en arrière-plan — ne bloque pas la réponse
+        if (originalPost.auteur._id.toString() !== req.session.user.id) {
+            try {
+                const notification = await Notification.create({
+                    destinataire: originalPost.auteur._id,
+                    expediteur: req.session.user.id,
+                    type: "partage",
+                    lien: "/"
+                })
+                if (global.io) {
+                    const notifComplete = await Notification.findById(notification._id)
+                        .populate("expediteur", "nom photoProfil")
+                    global.io.to(originalPost.auteur._id.toString()).emit("notification", notifComplete)
+                }
+            } catch (e) { console.error("Notif partage:", e.message) }
+        }
     } catch (err) {
         console.error(err)
         res.status(500).json({ error: "Erreur serveur" })

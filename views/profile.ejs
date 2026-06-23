@@ -290,10 +290,32 @@
                         </div>
                     </div>
 
-                    <div class="post-content"><%= post.contenu %></div>
+                    <% if (post.contenu) { %>
+                        <div class="post-content"><%= post.contenu %></div>
+                    <% } %>
 
                     <% if (post.image) { %>
                         <img src="<%= post.image %>" class="post-image" alt="">
+                    <% } %>
+
+                    <% if (post.isShared && post.sharedFrom) { %>
+                        <div style="border:1.5px solid var(--border); border-radius:12px; padding:14px; margin-top:10px; background:var(--bg-secondary);">
+                            <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
+                                <img src="<%= post.sharedFrom.auteur.photoProfil %>" style="width:30px; height:30px; border-radius:50%; object-fit:cover; border:1px solid var(--border);" alt="">
+                                <div>
+                                    <div style="font-weight:700; font-size:13px; color:var(--text-primary);"><%= post.sharedFrom.auteur.nom %></div>
+                                    <div style="font-size:11px; color:var(--text-muted);">
+                                        <%= new Date(post.sharedFrom.createdAt).toLocaleString('fr-FR', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' }) %>
+                                    </div>
+                                </div>
+                            </div>
+                            <% if (post.sharedFrom.contenu) { %>
+                                <div style="font-size:13.5px; color:var(--text-secondary); line-height:1.5; white-space:pre-wrap;"><%= post.sharedFrom.contenu %></div>
+                            <% } %>
+                            <% if (post.sharedFrom.image) { %>
+                                <img src="<%= post.sharedFrom.image %>" style="width:100%; border-radius:8px; margin-top:8px; max-height:200px; object-fit:cover;" alt="">
+                            <% } %>
+                        </div>
                     <% } %>
 
                     <div class="post-actions">
