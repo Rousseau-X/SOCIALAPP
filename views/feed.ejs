@@ -243,7 +243,6 @@
         .story-color-swatch.selected,
         .story-color-swatch:hover { border-color: var(--text-primary); transform: scale(1.1); }
 
-        /* Modal partage */
         .share-modal-overlay {
             display: none;
             position: fixed;
@@ -286,8 +285,16 @@
                 </div>
             </div>
 
-            <!-- Stories -->
-            <div id="stories-container"></div>
+            <!-- ===== STORIES ===== -->
+            <div id="stories-container">
+                <!-- Bouton Ajouter (STATIQUE - toujours visible) -->
+                <div class="story-item" id="addStoryStatic">
+                    <div class="story-add-btn" onclick="openStoryCreator()">
+                        <i class="fa-solid fa-plus"></i>
+                    </div>
+                    <div class="story-label">Ta story</div>
+                </div>
+            </div>
 
             <% if (error && error.length > 0) { %>
                 <div class="alert alert-error">
@@ -528,7 +535,7 @@
         const currentUserId = "<%= currentUserId %>"
 
         // ============================================================
-        // STORIES
+        // STORIES (avec bouton statique)
         // ============================================================
         let currentStoryGroups = []
         let currentGroupIndex = 0
@@ -543,25 +550,36 @@
             try {
                 const res = await fetch("/stories")
                 const data = await res.json()
-                if (!data.success) return
-                currentStoryGroups = data.groups || []
+                if (data.success) {
+                    currentStoryGroups = data.groups || []
+                } else {
+                    currentStoryGroups = []
+                }
                 renderStories()
-            } catch (e) { console.error("Erreur loadStories:", e) }
+            } catch (e) {
+                console.error("Erreur loadStories:", e)
+                currentStoryGroups = []
+                renderStories()
+            }
         }
 
         function renderStories() {
             const container = document.getElementById("stories-container")
             if (!container) return
+
+            // Garder le bouton statique
+            const addBtn = document.getElementById("addStoryStatic")
             container.innerHTML = ""
-            const addItem = document.createElement("div")
-            addItem.className = "story-item"
-            addItem.innerHTML = `<div class="story-add-btn" onclick="openStoryCreator()"><i class="fa-solid fa-plus"></i></div><div class="story-label">Ta story</div>`
-            container.appendChild(addItem)
+            container.appendChild(addBtn)
+
+            if (currentStoryGroups.length === 0) return
+
             currentStoryGroups.forEach((group, idx) => {
                 const item = document.createElement("div")
                 item.className = "story-item"
+                const allSeen = !group.hasUnseen
                 item.innerHTML = `
-                    <div class="story-ring ${!group.hasUnseen ? 'seen' : ''}">
+                    <div class="story-ring ${allSeen ? 'seen' : ''}">
                         <div class="story-ring-inner"><img src="${group.user.photoProfil}" alt=""></div>
                     </div>
                     <div class="story-label">${group.user.nom.split(" ")[0]}</div>
@@ -789,10 +807,8 @@
                 const data = await res.json()
                 if (data.success) {
                     closeShareModal()
-                    // Mettre à jour le compteur
                     const card = document.querySelector(`.post[data-id="${currentSharePostId}"] .shares-count`)
                     if (card) card.innerText = data.sharesCount
-                    // Toast
                     showFeedToast("Publication partagée !")
                 } else {
                     showFeedToast(data.error || "Erreur", true)
