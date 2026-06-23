@@ -138,9 +138,15 @@ app.use(async (req, res, next) => {
     }
     next()
 })
-
-//--------SPLASH---------------//
+// =============================================
+// SPLASH — PAGE D'ACCUEIL (avant connexion)
+// =============================================
 app.get("/", (req, res) => {
+    // Si l'utilisateur est déjà connecté, on le redirige vers le feed
+    if (req.session && req.session.user) {
+        return res.redirect("/feed");
+    }
+    // Sinon, on affiche le splash
     res.render("splash", { title: "SocialApp" });
 });
 
