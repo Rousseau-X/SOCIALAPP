@@ -139,6 +139,11 @@ app.use(async (req, res, next) => {
     next()
 })
 
+//--------SPLASH---------------//
+app.get("/", (req, res) => {
+    res.render("splash", { title: "SocialApp" });
+});
+
 // =============================================
 // ROUTES — TOUTES APRÈS LA SESSION
 // =============================================
