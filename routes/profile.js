@@ -18,29 +18,23 @@ router.get("/profile/:id", requireAuth, async (req, res) => {
         const currentUser = await User.findById(req.session.user.id)
 
         const rawPosts = await Post.find({ auteur: profileUser._id })
-            .populate("auteur", "nom photoProfil badges profileEffect")
-            .populate("commentaires.auteur", "nom photoProfil badges profileEffect")
+            .populate("auteur", "nom photoProfil badges")
+            .populate("commentaires.auteur", "nom photoProfil badges")
+            .populate({
+                path: "sharedFrom",
+                populate: { path: "auteur", select: "nom photoProfil badges" }
+            })
             .sort({ createdAt: -1 })
+
         const posts = rawPosts.filter(p => p.auteur != null)
-        const posts = await Post.find({ auteur: profileUser._id })
-    .populate("auteur", "nom photoProfil badges")
-    .populate("commentaires.auteur", "nom photoProfil badges")
-    .populate({
-        path: "sharedFrom",
-        populate: { path: "auteur", select: "nom photoProfil badges" }
-    })
-    .sort({ createdAt: -1 })
 
         const isOwnProfile = profileUser._id.toString() === currentUser._id.toString()
         const isFriend = currentUser.amis.some(id => id.toString() === profileUser._id.toString())
         const requestSent = currentUser.demandesEnvoyees.some(id => id.toString() === profileUser._id.toString())
         const requestReceived = currentUser.demandesRecues.some(id => id.toString() === profileUser._id.toString())
-
         const amisCommuns = profileUser.amis.filter(id =>
             currentUser.amis.some(myId => myId.toString() === id.toString())
         ).length
-
-        const demandesCount = currentUser.demandesRecues.length
 
         res.render("profile", {
             title: profileUser.nom,
@@ -53,7 +47,7 @@ router.get("/profile/:id", requireAuth, async (req, res) => {
             requestSent,
             requestReceived,
             amisCommuns,
-            demandesCount
+            demandesCount: currentUser.demandesRecues.length
         })
     } catch (err) {
         console.error(err)
@@ -66,13 +60,11 @@ router.get("/profile/:id", requireAuth, async (req, res) => {
 router.get("/profile/edit/me", requireAuth, async (req, res) => {
     try {
         const currentUser = await User.findById(req.session.user.id)
-        const demandesCount = currentUser.demandesRecues.length
-
         res.render("edit-profile", {
             title: "Modifier le profil",
             currentPage: "profile",
             profileUser: currentUser,
-            demandesCount
+            demandesCount: currentUser.demandesRecues.length
         })
     } catch (err) {
         console.error(err)
@@ -95,10 +87,7 @@ router.post("/profile/edit", requireAuth, uploadProfile.single("photoProfil"), a
         }
 
         currentUser.bio = bio ? bio.trim() : ""
-
-        if (req.file) {
-            currentUser.photoProfil = req.file.path
-        }
+        if (req.file) currentUser.photoProfil = req.file.path
 
         await currentUser.save()
 
