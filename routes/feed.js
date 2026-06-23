@@ -251,4 +251,36 @@ router.get("/post/:id/shares", requireAuth, async (req, res) => {
     }
 })
 
+// Route /feed
+router.get("/feed", requireAuth, async (req, res) => {
+    try {
+        const currentUser = await User.findById(req.session.user.id)
+
+        const rawPosts = await Post.find()
+            .populate("auteur", "nom photoProfil badges profileEffect")
+            .populate("commentaires.auteur", "nom photoProfil badges profileEffect")
+            .populate({
+                path: "sharedFrom",
+                populate: { path: "auteur", select: "nom photoProfil badges" }
+            })
+            .sort({ createdAt: -1 })
+            .limit(50)
+
+        const posts = rawPosts.filter(p => p.auteur != null)
+        const demandesCount = currentUser.demandesRecues.length
+
+        res.render("feed", {
+            title: "Accueil",
+            currentPage: "feed",
+            posts,
+            currentUserId: currentUser._id.toString(),
+            demandesCount
+        })
+    } catch (err) {
+        console.error(err)
+        req.flash("error", "Erreur lors du chargement du feed.")
+        res.redirect("/login")
+    }
+})
+
 module.exports = router
