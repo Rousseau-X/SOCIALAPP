@@ -227,17 +227,42 @@ window.updateNotificationBadge = updateNotificationBadge;
 window.notificationEnabled = notificationEnabled;
 
 // =====================================================
-// 9. NAVIGATION AJAX (SPA) — CORRIGÉ
+// 9. NAVIGATION AJAX (SPA)
 // =====================================================
 let _spaScripts = [];
+
+// --- Barre de progression ---
+const _progressBar = document.createElement('div');
+_progressBar.id = 'spa-progress-bar';
+document.body.appendChild(_progressBar);
+
+let _progressTimer = null;
+function _progressStart() {
+    clearTimeout(_progressTimer);
+    _progressBar.style.transition = 'none';
+    _progressBar.style.width = '0%';
+    _progressBar.classList.add('active');
+    requestAnimationFrame(() => {
+        _progressBar.style.transition = 'width 0.4s ease';
+        _progressBar.style.width = '70%';
+    });
+}
+function _progressDone() {
+    _progressBar.style.transition = 'width 0.2s ease, opacity 0.3s ease 0.2s';
+    _progressBar.style.width = '100%';
+    _progressTimer = setTimeout(() => {
+        _progressBar.classList.remove('active');
+        _progressBar.style.width = '0%';
+    }, 500);
+}
 
 async function navigateTo(url, pushState = true) {
     if (!url || url === window.location.href) return;
     if (url.includes('/logout')) { window.location.href = url; return; }
 
-    try {
-        document.body.classList.add('page-loading');
+    _progressStart();
 
+    try {
         const response = await fetch(url);
         if (!response.ok) { window.location.href = url; return; }
 
@@ -245,7 +270,7 @@ async function navigateTo(url, pushState = true) {
         const parser = new DOMParser();
         const doc = parser.parseFromString(html, 'text/html');
 
-        // Pages de chat → rechargement complet (socket.io, WebRTC complexes)
+        // Pages de chat → rechargement complet (Socket.io/WebRTC complexes)
         if (doc.body && doc.body.classList.contains('chat-page')) {
             window.location.href = url;
             return;
@@ -259,14 +284,24 @@ async function navigateTo(url, pushState = true) {
         _spaScripts.forEach(s => { try { s.remove(); } catch(e) {} });
         _spaScripts = [];
 
-        // Remplacer le contenu principal
+        // Remplacer le contenu + animation d'entrée
         curMain.innerHTML = newMain.innerHTML;
+        curMain.classList.remove('spa-fade-enter');
+        void curMain.offsetWidth; // force reflow
+        curMain.classList.add('spa-fade-enter');
 
         // Mettre à jour le titre
         const newTitle = doc.querySelector('title');
         if (newTitle) document.title = newTitle.textContent;
 
-        // ✅ Exécuter les scripts inline de la nouvelle page
+        // Mettre à jour les liens actifs de la navbar
+        document.querySelectorAll('.navbar a[href], .bottom-nav a[href]').forEach(a => {
+            const aPath = new URL(a.href, location.origin).pathname;
+            const curPath = new URL(url, location.origin).pathname;
+            a.classList.toggle('active', aPath === curPath || (aPath !== '/' && curPath.startsWith(aPath)));
+        });
+
+        // Exécuter les scripts inline de la nouvelle page
         doc.querySelectorAll('body script:not([src])').forEach(oldScript => {
             const content = oldScript.textContent.trim();
             if (!content) return;
@@ -276,12 +311,10 @@ async function navigateTo(url, pushState = true) {
             _spaScripts.push(s);
         });
 
-        // ✅ Charger les scripts externes (boutique, etc.)
+        // Charger les scripts externes non encore présents
         doc.querySelectorAll('body script[src]').forEach(oldScript => {
             const src = oldScript.getAttribute('src');
-            if (!src) return;
-            // Éviter les doublons
-            if (document.querySelector(`script[src="${src}"]`)) return;
+            if (!src || document.querySelector(`script[src="${src}"]`)) return;
             const s = document.createElement('script');
             s.src = src;
             s.async = true;
@@ -289,23 +322,19 @@ async function navigateTo(url, pushState = true) {
             _spaScripts.push(s);
         });
 
-        // ✅ Réinitialiser les effets de profil sur la nouvelle page
-        requestAnimationFrame(function() { initProfileEffects(); });
-
-        // ✅ Déclencher un événement pour dire que la page est chargée
-        document.dispatchEvent(new CustomEvent('page-loaded'));
+        requestAnimationFrame(() => { initProfileEffects(); });
+        document.dispatchEvent(new CustomEvent('page-loaded', { detail: { url } }));
 
         if (pushState) {
-            history.pushState({ url: url, scroll: window.scrollY }, '', url);
+            history.pushState({ url, scroll: 0 }, '', url);
         }
-
         window.scrollTo(0, 0);
 
     } catch (err) {
         console.log('Erreur navigation AJAX:', err);
         window.location.href = url;
     } finally {
-        document.body.classList.remove('page-loading');
+        _progressDone();
     }
 }
 
@@ -322,13 +351,9 @@ document.addEventListener('click', function(e) {
     navigateTo(new URL(href, location.origin).href);
 });
 
-// ✅ Gestion de la touche RETOUR (popstate)
+// Gestion du bouton RETOUR
 window.addEventListener('popstate', function(e) {
-    if (e.state && e.state.url) {
-        navigateTo(e.state.url, false);
-        return;
-    }
-    navigateTo(window.location.href, false);
+    navigateTo(e.state?.url || window.location.href, false);
 });
 
 // =====================================================
@@ -425,32 +450,60 @@ function initSocketNotifications() {
 }
 
 // =====================================================
-// 11. RÉINITIALISATION DES ÉVÉNEMENTS APRÈS CHARGEMENT AJAX
+// 11. RÉINITIALISATION DES MODULES APRÈS NAVIGATION AJAX
 // =====================================================
 document.addEventListener('page-loaded', function() {
-    console.log('📄 Page chargée dynamiquement, réinitialisation des événements...');
+    // Stories — recharger si le conteneur est présent
+    if (typeof loadStories === 'function' && document.getElementById('stories-bubbles')) {
+        loadStories();
+    }
 
-    // ✅ Réinitialiser les événements de la boutique (shop)
+    // Badges de notifications/messages/demandes
+    updateNotificationBadge();
+    _refreshBadges();
+
+    // Effets de profil
+    if (typeof initProfileEffects === 'function') initProfileEffects();
+
+    // Boutique
     document.querySelectorAll('.btn-shop-buy').forEach(btn => {
-        // Supprimer les anciens événements pour éviter les doublons
         btn.removeEventListener('click', handleShopBuy);
         btn.addEventListener('click', handleShopBuy);
     });
 
-    // ✅ Réinitialiser les événements des primes (bounties)
+    // Primes (bounties)
     document.querySelectorAll('.btn-accomplish').forEach(btn => {
         btn.removeEventListener('click', handleBountyAccomplish);
         btn.addEventListener('click', handleBountyAccomplish);
     });
-
     document.querySelectorAll('.btn-view-applicants').forEach(btn => {
         btn.removeEventListener('click', handleViewApplicants);
         btn.addEventListener('click', handleViewApplicants);
     });
-
-    // ✅ Ajoute ici d'autres initialisations si besoin
-    // (ex: création de primes, wallet, etc.)
 });
+
+async function _refreshBadges() {
+    try {
+        const res = await fetch('/notifications/unread');
+        const data = await res.json();
+        // Badge notifs
+        ['notifBadge', 'notifBadgeMobile'].forEach(id => {
+            const el = document.getElementById(id);
+            if (!el) return;
+            el.textContent = data.count > 0 ? data.count : '';
+            el.style.display = data.count > 0 ? 'inline-block' : 'none';
+        });
+    } catch (e) {}
+    try {
+        const res = await fetch('/api/messages/unread-count');
+        const data = await res.json();
+        const el = document.getElementById('messagesBadge');
+        if (el) {
+            el.textContent = data.count > 0 ? data.count : '';
+            el.style.display = data.count > 0 ? 'inline-block' : 'none';
+        }
+    } catch (e) {}
+}
 
 // =====================================================
 // 12. GESTIONNAIRES D'ÉVÉNEMENTS (BOUTIQUE, PRIMES, etc.)

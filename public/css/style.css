@@ -3592,13 +3592,29 @@ body[data-theme="forest"] {
 }
 
 /* === PAGE LOADING (SPA nav) === */
-body.page-loading .main-container {
-    opacity: 0.75;
-    transition: opacity 0.12s ease;
+#spa-progress-bar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 3px;
+    width: 0%;
+    background: linear-gradient(90deg, var(--primary), #7c3aed);
+    z-index: 99999;
+    border-radius: 0 2px 2px 0;
+    transition: width 0.25s ease, opacity 0.3s ease;
+    pointer-events: none;
+    opacity: 0;
 }
-body:not(.page-loading) .main-container {
+#spa-progress-bar.active {
     opacity: 1;
-    transition: opacity 0.1s ease;
+}
+
+.spa-fade-enter {
+    animation: spaFadeIn 0.2s ease forwards;
+}
+@keyframes spaFadeIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
 }
 
 /* === FLASH MESSAGES === */

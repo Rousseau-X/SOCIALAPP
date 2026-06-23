@@ -6,6 +6,16 @@ const Group = require("../models/Group");
 const { requireAuth } = require("../middleware/auth");
 const { uploadAudio, uploadPost } = require("../lib/cloudinary");
 
+// Nombre de messages non lus (pour badges SPA)
+router.get("/api/messages/unread-count", requireAuth, async (req, res) => {
+    try {
+        const count = await Message.countDocuments({ destinataire: req.session.user.id, lu: false })
+        res.json({ count })
+    } catch (e) {
+        res.json({ count: 0 })
+    }
+})
+
 // Liste des conversations
 router.get("/messages", requireAuth, async (req, res) => {
     try {
