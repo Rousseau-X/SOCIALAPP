@@ -7,10 +7,11 @@ const postSchema = new mongoose.Schema({
         required: true
     },
     contenu: {
-        type: String,
-        required: true,
-        maxlength: 1000
-    },
+    type: String,
+    required: false,
+    default: "",
+    maxlength: 1000
+},
     image: {
         type: String,
         default: null
