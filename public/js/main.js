@@ -287,8 +287,13 @@ async function navigateTo(url, pushState = true) {
         _spaStyles.forEach(s => { try { s.remove(); } catch(e) {} });
         _spaStyles = [];
 
-        // Injecter les <style> du <head> de la nouvelle page
-        doc.querySelectorAll('head style').forEach(oldStyle => {
+        // Injecter tous les <style> de la nouvelle page
+        // (head + body hors .main-container) dans le <head> courant
+        const _styleNodes = [
+            ...doc.querySelectorAll('head style'),
+            ...Array.from(doc.querySelectorAll('body style')).filter(s => !newMain.contains(s))
+        ];
+        _styleNodes.forEach(oldStyle => {
             const s = document.createElement('style');
             s.setAttribute('data-spa', '1');
             s.textContent = oldStyle.textContent;
