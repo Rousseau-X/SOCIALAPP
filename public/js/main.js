@@ -230,6 +230,7 @@ window.notificationEnabled = notificationEnabled;
 // 9. NAVIGATION AJAX (SPA)
 // =====================================================
 let _spaScripts = [];
+let _spaStyles = [];
 
 // --- Barre de progression ---
 const _progressBar = document.createElement('div');
@@ -280,9 +281,20 @@ async function navigateTo(url, pushState = true) {
         const curMain = document.querySelector('.main-container');
         if (!newMain || !curMain) { window.location.href = url; return; }
 
-        // Nettoyer les scripts injectés précédemment
+        // Nettoyer les scripts et styles injectés précédemment
         _spaScripts.forEach(s => { try { s.remove(); } catch(e) {} });
         _spaScripts = [];
+        _spaStyles.forEach(s => { try { s.remove(); } catch(e) {} });
+        _spaStyles = [];
+
+        // Injecter les <style> du <head> de la nouvelle page
+        doc.querySelectorAll('head style').forEach(oldStyle => {
+            const s = document.createElement('style');
+            s.setAttribute('data-spa', '1');
+            s.textContent = oldStyle.textContent;
+            document.head.appendChild(s);
+            _spaStyles.push(s);
+        });
 
         // Remplacer le contenu + animation d'entrée
         curMain.innerHTML = newMain.innerHTML;
