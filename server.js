@@ -21,7 +21,6 @@ const Post = require("./models/Post")
 const { isRestricted } = require("./middleware/auth")
 const { sendPushToUser, sendPushToUsers, buildPayload } = require("./lib/webpush")
 
-// Compteur activité quotidienne (messages → crédits)
 const dailyGroupMsgMap = new Map()
 
 const app = express()
@@ -91,7 +90,7 @@ app.use('/api/', apiLimiter)
 app.use(globalLimiter)
 
 // =============================================
-// ✅ SESSION — DOIT ÊTRE AVANT TOUTES LES ROUTES
+// SESSION
 // =============================================
 app.set("trust proxy", 1)
 app.set("view engine", "ejs")
@@ -138,29 +137,30 @@ app.use(async (req, res, next) => {
     }
     next()
 })
-// ===== SPLASH =====
+
+// =============================================
+// ROUTES
+// =============================================
+
+// ===== SPLASH (avant connexion) =====
 app.get("/", (req, res) => {
-    // Si déjà connecté → feed
     if (req.session && req.session.user) {
+        // Si connecté, on va directement au feed
         return res.redirect("/feed");
     }
-    // Sinon → splash
+    // Sinon, splash
     res.render("splash", { title: "SocialApp" });
 });
 
-// ===== FEED =====
+// ===== FEED (alias vers la page d'accueil du feed) =====
 app.get("/feed", (req, res) => {
-    // Si pas connecté → splash
     if (!req.session || !req.session.user) {
         return res.redirect("/");
     }
-    // Sinon → afficher le feed (existe déjà via routes/feed)
+    // On redirige vers "/" où le routeur feed est monté
     res.redirect("/");
 });
 
-// =============================================
-// ROUTES — TOUTES APRÈS LA SESSION
-// =============================================
 app.use("/", require("./routes/push"))
 app.use("/", require("./routes/auth"))
 app.use("/", require("./routes/feed"))
@@ -178,7 +178,7 @@ app.use("/", require("./routes/voicerooms"))
 app.use("/", require("./routes/dailytasks"))
 app.use("/", require("./routes/stories"))
 
-// Route pour servir les icônes PWA générées dynamiquement
+// Route pour les icônes PWA
 app.get("/icons/icon-:size.png", async (req, res) => {
     const size = parseInt(req.params.size) || 192
     const validSizes = [72, 96, 128, 144, 152, 192, 384, 512]
@@ -217,9 +217,6 @@ io.on("connection", async (socket) => {
         }
     } catch (e) {}
 
-    // =========================================
-    // MESSAGERIE PRIVÉE
-    // =========================================
     socket.on("send-message", async (data) => {
         try {
             const { from, to, contenu, type, audio, duration, replyTo } = data
@@ -230,7 +227,6 @@ io.on("connection", async (socket) => {
                 if (!audio) return
             } else return
 
-            // === VÉRIFICATION RESTRICTION MESSAGES ===
             const senderCheck = await User.findById(from)
             if (senderCheck && isRestricted(senderCheck, "messages")) {
                 const until = new Date(senderCheck.restrictions.messages.until)
@@ -244,7 +240,6 @@ io.on("connection", async (socket) => {
 
             const textContent = type === 'text' ? contenu.trim() : ''
 
-            // Commandes IA
             if (type === 'text' && textContent.match(/^\/[a-z+]/i)) {
                 const cmdResult = await dispatchCommand(textContent, from, { destinataireId: to, replyToId: replyTo || null })
                 if (cmdResult && !cmdResult.error) {
@@ -311,7 +306,6 @@ io.on("connection", async (socket) => {
             }
 
             io.to(to).emit("new-message", payload)
-            // Notification push si l'utilisateur est hors ligne
             const recipientForPush = await User.findById(to, "enLigne nom")
             if (!recipientForPush?.enLigne) {
                 const senderForPush = await User.findById(from, "nom")
@@ -323,7 +317,6 @@ io.on("connection", async (socket) => {
             }
             io.to(from).emit("new-message", payload)
 
-            // Clone IA
             if (type === 'text' && textContent && from !== to) {
                 try {
                     const recipientUser = await User.findById(to, "aiCloneActive aiCloneInstructions nom")
@@ -341,7 +334,6 @@ io.on("connection", async (socket) => {
                 } catch (e) { console.log("Clone IA:", e.message) }
             }
 
-            // Notification
             const isUrgent = /urgent|important|aide|help|sos|asap/i.test(textContent)
             if (isUrgent || type === 'audio') {
                 const notification = await Notification.create({ destinataire: to, expediteur: from, type: "message", lien: "/messages/" + from })
@@ -349,7 +341,6 @@ io.on("connection", async (socket) => {
                 io.to(to).emit("notification", notifComplete)
             }
 
-            // Assistant
             if (type === 'text') {
                 const assistantUser = await User.findOne({ isBot: true })
                 const isForAssistant = to === assistantUser?._id?.toString() && from !== assistantUser?._id?.toString()
@@ -380,9 +371,6 @@ io.on("connection", async (socket) => {
         socket.to(to).emit("typing", { from, isTyping })
     })
 
-    // =========================================
-    // GROUPES
-    // =========================================
     socket.on("join-group", (groupId) => {
         socket.join("group_" + groupId)
         const wp = watchPartyState[groupId]
@@ -401,7 +389,6 @@ io.on("connection", async (socket) => {
             else if (type === 'audio') { if (!audio) return }
             else return
 
-            // === VÉRIFICATION RESTRICTION MESSAGES ===
             const senderCheck = await User.findById(from)
             if (senderCheck && isRestricted(senderCheck, "messages")) {
                 const until = new Date(senderCheck.restrictions.messages.until)
@@ -418,7 +405,6 @@ io.on("connection", async (socket) => {
             const membre = group.membres.find(m => m.user._id.toString() === from)
             if (!membre) return
 
-            // Vérifier si chaos mode expiré
             if (group.isChaosMode && group.chaosExpiresAt && new Date() > group.chaosExpiresAt) {
                 group.isChaosMode = false
                 group.membres.forEach(m => { m.chaosName = null; m.chaosAvatar = null })
@@ -427,7 +413,6 @@ io.on("connection", async (socket) => {
 
             const textContent = type === 'text' ? contenu.trim() : ''
 
-            // Commandes IA dans les groupes
             if (type === 'text' && textContent.match(/^\/[a-z+]/i)) {
                 const cmdResult = await dispatchCommand(textContent, from, { replyToId: repondA || null, groupId })
                 if (cmdResult && !cmdResult.error) {
@@ -469,7 +454,6 @@ io.on("connection", async (socket) => {
                 }
             }
 
-            // Sous-profil anonyme ?
             const senderUser = await User.findById(from).populate("activeSubProfile")
             const activeSubProfile = senderUser?.activeSubProfile
             const chaosOverride = group.isChaosMode ? group.membres.find(m => m.user._id.toString() === from) : null
@@ -513,7 +497,6 @@ io.on("connection", async (socket) => {
 
             io.to("group_" + groupId).emit("new-group-message", payload)
 
-            // Récompense activité : +5 crédits tous les 5 messages groupe (silencieux)
             const _today = new Date().toISOString().slice(0, 10)
             const _actKey = `${from}:${_today}`
             const _cnt = (dailyGroupMsgMap.get(_actKey) || 0) + 1
@@ -522,7 +505,6 @@ io.on("connection", async (socket) => {
                 await User.findByIdAndUpdate(from, { $inc: { walletBalance: 5 } })
             }
 
-            // Mentions
             const mentionMatches = textContent.match(/@(\w+)/g)
             if (mentionMatches) {
                 for (const mention of mentionMatches) {
@@ -555,7 +537,6 @@ io.on("connection", async (socket) => {
         } catch (e) {}
     })
 
-    // === CHAOS MODE ===
     socket.on("start-chaos-mode", async (data) => {
         try {
             const { groupId, durationMinutes } = data
@@ -601,7 +582,6 @@ io.on("connection", async (socket) => {
         } catch (e) {}
     })
 
-    // === VOICE ROOM WebRTC SIGNALING ===
     socket.on("voice-offer", (data) => {
         const { to, from, offer, groupId } = data
         io.to(to).emit("voice-offer", { from, offer, groupId })
@@ -615,7 +595,6 @@ io.on("connection", async (socket) => {
         io.to(to).emit("voice-ice", { from: userId, candidate, groupId })
     })
 
-    // === WATCH PARTY ===
     socket.on("watch-party-sync", (data) => {
         const { groupId, action, currentTime, url } = data
         if (!groupId) return
@@ -635,13 +614,11 @@ io.on("connection", async (socket) => {
         socket.to("group_" + groupId).emit("watch-party-sync", { action, currentTime, url, from: userId })
     })
 
-    // === FOCUS MODE (éditeur collaboratif) ===
     socket.on("focus-update", (data) => {
         const { groupId, content } = data
         socket.to("group_" + groupId).emit("focus-update", { content, from: userId })
     })
 
-    // Déconnexion
     socket.on("disconnect", async () => {
         try {
             const user = await User.findById(userId)
@@ -651,7 +628,6 @@ io.on("connection", async (socket) => {
                 await user.save()
                 io.emit("user-status", { userId, enLigne: false })
             }
-            // Retirer des salons vocaux
             const groupsWithVoice = await Group.find({ voiceRoomMembers: userId })
             for (const grp of groupsWithVoice) {
                 grp.voiceRoomMembers = grp.voiceRoomMembers.filter(m => m.toString() !== userId)
@@ -687,7 +663,7 @@ async function sendSystemAlert(content) {
 }
 
 // =============================================
-// NETTOYAGE SALONS ÉPHÉMÈRES (toutes les heures)
+// NETTOYAGE SALONS ÉPHÉMÈRES
 // =============================================
 setInterval(async () => {
     try {
