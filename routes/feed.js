@@ -283,7 +283,7 @@ router.get("/feed", requireAuth, async (req, res) => {
     }
 })
 // ============================================================
-// STORIES — Tout en un (à ajouter en bas de feed.js)
+// STORIES — TOUT EN UN (À AJOUTER EN BAS DE feed.js)
 // ============================================================
 
 let currentStoryGroups = [];
@@ -294,10 +294,6 @@ const STORY_DURATION = 5000;
 const storyColors = ["#4f46e5","#7c3aed","#db2777","#dc2626","#d97706","#16a34a","#0891b2","#0f172a"];
 let selectedColor = storyColors[0];
 let selectedFile = null;
-
-// ============================================================
-// CHARGEMENT ET AFFICHAGE
-// ============================================================
 
 async function loadStories() {
     try {
@@ -320,7 +316,6 @@ function renderStories() {
     const container = document.getElementById("stories-container");
     if (!container) return;
 
-    // Garder le bouton statique
     const addBtn = document.getElementById("addStoryStatic");
     container.innerHTML = "";
     container.appendChild(addBtn);
@@ -341,10 +336,6 @@ function renderStories() {
         container.appendChild(item);
     });
 }
-
-// ============================================================
-// VISIONNEUSE DE STORY
-// ============================================================
 
 function openStoryViewer(groupIndex, storyIndex = 0) {
     currentGroupIndex = groupIndex;
@@ -369,7 +360,6 @@ function showStory() {
 
     fetch(`/stories/${story._id}/view`, { method: "POST" });
 
-    // Barres de progression
     const progressContainer = document.getElementById("story-progress-container");
     progressContainer.innerHTML = "";
     group.stories.forEach((_, i) => {
@@ -382,12 +372,10 @@ function showStory() {
         progressContainer.appendChild(seg);
     });
 
-    // Header
     document.getElementById("story-author-avatar").src = group.user.photoProfil;
     document.getElementById("story-author-name").textContent = group.user.nom;
     document.getElementById("story-time").textContent = "à l'instant";
 
-    // Média
     const mediaContainer = document.getElementById("story-media-container");
     if (story.couleurFond) {
         mediaContainer.style.background = story.couleurFond;
@@ -400,13 +388,13 @@ function showStory() {
         mediaContainer.innerHTML = `<img src="${story.media}" style="width:100%;height:100%;object-fit:contain;" alt="">`;
     }
 
-    // Texte
     const textEl = document.getElementById("story-text-overlay");
     textEl.textContent = story.texte || "";
     textEl.style.display = story.texte ? "block" : "none";
-
-    // Vues
     document.getElementById("story-views-count").textContent = story.vues?.length || 0;
+
+    const viewsCountEl = document.getElementById("storyViewsCount");
+    viewsCountEl.onclick = () => toggleStoryViews(story._id);
 
     startStoryTimer();
 }
@@ -461,11 +449,64 @@ async function reactToStory(emoji) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ emoji })
     });
+    showReactionAnimation(emoji);
 }
 
-// ============================================================
-// CRÉATEUR DE STORY
-// ============================================================
+function showReactionAnimation(emoji) {
+    const overlay = document.getElementById("story-viewer-overlay");
+    const el = document.createElement("div");
+    el.style.cssText = `
+        position:absolute; bottom:120px; left:50%; transform:translateX(-50%);
+        font-size:48px; animation:storyReactionPop 1s ease forwards;
+        z-index:20; pointer-events:none;
+    `;
+    el.innerText = emoji;
+    overlay.appendChild(el);
+    setTimeout(() => el.remove(), 1000);
+}
+
+async function toggleStoryViews(storyId) {
+    const container = document.getElementById("story-views-list");
+    if (!container) {
+        const footer = document.getElementById("story-viewer-footer");
+        const list = document.createElement("div");
+        list.id = "story-views-list";
+        list.style.cssText = `
+            position:absolute; bottom:80px; left:0; right:0;
+            max-height:200px; background:rgba(0,0,0,0.9);
+            border-radius:12px 12px 0 0; padding:16px;
+            z-index:20; overflow-y:auto; display:none;
+            backdrop-filter:blur(8px);
+        `;
+        footer.parentNode.appendChild(list);
+    }
+
+    const listEl = document.getElementById("story-views-list");
+    if (listEl.style.display === "block") {
+        listEl.style.display = "none";
+        return;
+    }
+
+    try {
+        const res = await fetch(`/stories/${storyId}/viewers`);
+        const data = await res.json();
+        if (!data.success) return;
+        const viewers = data.viewers || [];
+        if (viewers.length === 0) {
+            listEl.innerHTML = `<div style="color:rgba(255,255,255,0.6); text-align:center; padding:10px;">Aucune vue</div>`;
+        } else {
+            listEl.innerHTML = viewers.map(v => `
+                <div style="display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid rgba(255,255,255,0.05); color:#fff;">
+                    <img src="${v.user?.photoProfil || 'https://ui-avatars.com/api/?background=4f46e5&color=fff&name=' + v.user?.nom}" style="width:30px;height:30px;border-radius:50%;object-fit:cover;">
+                    <span style="font-size:13px;">${v.user?.nom || 'Inconnu'}</span>
+                </div>
+            `).join('');
+        }
+        listEl.style.display = "block";
+    } catch (e) {
+        console.error("Erreur chargement vues:", e);
+    }
+}
 
 function openStoryCreator() {
     document.getElementById("story-creator-overlay").classList.add("active");
@@ -554,15 +595,10 @@ async function publishStory() {
     }
 }
 
-// ============================================================
-// INITIALISATION
-// ============================================================
-
 document.addEventListener("DOMContentLoaded", function() {
     loadStories();
 
     document.getElementById("story-viewer-close")?.addEventListener("click", closeStoryViewer);
-
     document.addEventListener("keydown", function(e) {
         if (e.key === "Escape") {
             closeStoryViewer();
@@ -572,10 +608,22 @@ document.addEventListener("DOMContentLoaded", function() {
         if (e.key === "ArrowRight") goToNextStory();
         if (e.key === "ArrowLeft") goToPrevStory();
     });
-
     document.getElementById("share-modal-overlay")?.addEventListener("click", function(e) {
         if (e.target.id === "share-modal-overlay") closeShareModal();
     });
+
+    if (!document.getElementById("storyReactionStyle")) {
+        const style = document.createElement("style");
+        style.id = "storyReactionStyle";
+        style.textContent = `
+            @keyframes storyReactionPop {
+                0% { opacity:1; transform:translateX(-50%) scale(0.8); }
+                50% { opacity:1; transform:translateX(-50%) translateY(-30px) scale(1.3); }
+                100% { opacity:0; transform:translateX(-50%) translateY(-60px) scale(0.8); }
+            }
+        `;
+        document.head.appendChild(style);
+    }
 });
 
 console.log("📸 Stories chargées (depuis feed.js)");
