@@ -17,9 +17,11 @@
 </audio>
 <script src="/js/main.js?v=5" defer></script>
 <script src="/js/push.js" defer></script>
-<!-- vConsole DEBUG MOBILE — À RETIRER APRÈS -->
+<!-- vConsole DEBUG — ADMIN ONLY -->
+<% if (locals.user && locals.user.role === 'admin') { %>
 <script src="https://unpkg.com/vconsole@latest/dist/vconsole.min.js"></script>
 <script>var vConsole = new VConsole()</script>
+<% } %>
 <!-- Thème dynamique -->
 <script>
 (function() {
