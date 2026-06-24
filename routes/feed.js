@@ -5,6 +5,7 @@ const User = require("../models/User")
 const Notification = require("../models/Notification")
 const { requireAuth, requireNotRestricted } = require("../middleware/auth")
 const { uploadPost } = require("../lib/cloudinary")
+const { track } = require("../lib/analytics") // ← AJOUT
 
 // Page d'accueil — Feed
 router.get("/", requireAuth, async (req, res) => {
@@ -54,6 +55,12 @@ router.post("/post", requireAuth, requireNotRestricted("posts"), uploadPost.sing
         })
 
         await newPost.save()
+
+        // =============================================
+        // === ORACLE / ANALYTICS : tracker POST ===
+        // =============================================
+        await track(req.session.user.id, 'POST')
+
         res.redirect("/")
     } catch (err) {
         console.error(err)
@@ -113,6 +120,11 @@ router.post("/post/:id/like", requireAuth, requireNotRestricted("likes"), async 
 
         await post.save()
 
+        // =============================================
+        // === ORACLE / ANALYTICS : tracker LIKE ===
+        // =============================================
+        await track(userId, 'LIKE')
+
         res.json({
             success: true,
             likesCount: post.likes.length,
@@ -157,6 +169,11 @@ router.post("/post/:id/comment", requireAuth, requireNotRestricted("messages"), 
         }
 
         const currentUser = await User.findById(req.session.user.id)
+
+        // =============================================
+        // === ORACLE / ANALYTICS : tracker COMMENT ===
+        // =============================================
+        await track(req.session.user.id, 'COMMENT')
 
         res.json({
             success: true,
@@ -206,6 +223,11 @@ router.post("/post/:id/share", requireAuth, requireNotRestricted("posts"), async
 
         await Post.findByIdAndUpdate(originalPost._id, { $inc: { sharesCount: 1 } })
         await User.findByIdAndUpdate(req.session.user.id, { $inc: { xp: 3 } })
+
+        // =============================================
+        // === ORACLE / ANALYTICS : tracker SHARE ===
+        // =============================================
+        await track(req.session.user.id, 'SHARE')
 
         const populated = await Post.findById(sharedPost._id)
             .populate("auteur", "nom photoProfil badges")
