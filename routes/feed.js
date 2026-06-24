@@ -61,6 +61,15 @@ router.post("/post", requireAuth, requireNotRestricted("posts"), uploadPost.sing
         // =============================================
         await track(req.session.user.id, 'POST')
 
+        // Diffuser le nouveau post en temps réel à tous les utilisateurs connectés
+        if (global.io) {
+            try {
+                const populated = await Post.findById(newPost._id)
+                    .populate("auteur", "nom photoProfil badges profileEffect")
+                global.io.emit("new-post", populated)
+            } catch (e) { console.error("Socket new-post:", e.message) }
+        }
+
         res.redirect("/")
     } catch (err) {
         console.error(err)

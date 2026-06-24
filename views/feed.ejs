@@ -909,5 +909,79 @@
     console.log("📸 Stories chargées (depuis feed.ejs)");
 
     </script>
+
+    <script src="/js/feed.js"></script>
+
+    <script>
+    // =============================================
+    // RECHARGEMENT AUTOMATIQUE DU FEED (Socket.io)
+    // =============================================
+    (function() {
+        const feedEl = document.querySelector(".feed");
+        if (!feedEl) return;
+
+        const socket = window.notificationSocket || (typeof io !== 'undefined' ? io({ query: { userId: "<%= currentUserId %>" } }) : null);
+        if (!socket) return;
+
+        socket.on("new-post", function(post) {
+            if (!post || !post._id) return;
+            if (document.querySelector(`.post[data-id="${post._id}"]`)) return;
+
+            const div = document.createElement("div");
+            div.className = "card post";
+            div.setAttribute("data-id", post._id);
+
+            const date = new Date(post.createdAt).toLocaleString("fr-FR", {
+                day: "numeric", month: "short", hour: "2-digit", minute: "2-digit"
+            });
+
+            div.innerHTML = `
+                <div class="post-header">
+                    <img src="${post.auteur.photoProfil}" class="post-avatar" alt="">
+                    <div>
+                        <div class="post-author">${post.auteur.nom}</div>
+                        <div class="post-date">${date}</div>
+                    </div>
+                </div>
+                ${post.contenu ? `<div class="post-content">${post.contenu}</div>` : ""}
+                ${post.image ? `<img src="${post.image}" class="post-image" alt="">` : ""}
+                <div class="post-actions">
+                    <button class="like-btn" data-id="${post._id}">
+                        <i class="fa-solid fa-thumbs-up"></i>
+                        <span class="likes-count">0</span> J'aime
+                    </button>
+                    <button onclick="toggleComments('${post._id}')">
+                        <i class="fa-solid fa-comment"></i>
+                        <span class="comments-count">0</span> Commentaires
+                    </button>
+                    <button onclick="openShareModal('${post._id}')">
+                        <i class="fa-solid fa-share-nodes"></i>
+                        <span class="shares-count" data-id="${post._id}">0</span> Partager
+                    </button>
+                </div>
+                <div class="comments-section" id="comments-${post._id}" style="display:none;">
+                    <div class="comments-list"></div>
+                    <form class="comment-form ajax-comment-form" data-id="${post._id}">
+                        <input type="text" name="texte" placeholder="Écrire un commentaire..." required>
+                        <button type="submit"><i class="fa-solid fa-paper-plane"></i></button>
+                    </form>
+                </div>
+            `;
+
+            const firstPost = feedEl.querySelector(".post");
+            if (firstPost) feedEl.insertBefore(div, firstPost);
+            else feedEl.appendChild(div);
+
+            if (typeof initInteractions === 'function') initInteractions();
+
+            // Toast "nouveau post"
+            const toast = document.createElement("div");
+            toast.style.cssText = "position:fixed;top:70px;left:50%;transform:translateX(-50%);background:#4f46e5;color:#fff;padding:8px 18px;border-radius:20px;font-size:13px;font-weight:600;z-index:9999;box-shadow:0 4px 12px rgba(79,70,229,0.3);";
+            toast.innerHTML = `<i class="fa-solid fa-arrow-up"></i> Nouvelle publication de ${post.auteur.nom}`;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 4000);
+        });
+    })();
+    </script>
 </body>
 </html>

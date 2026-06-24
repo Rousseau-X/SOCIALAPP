@@ -3,37 +3,38 @@
 // =====================================================
 document.addEventListener('DOMContentLoaded', function() {
     const themeToggle = document.getElementById('themeToggle');
-    if (!themeToggle) return;
 
-    const currentTheme = localStorage.getItem('theme');
+    if (themeToggle) {
+        const currentTheme = localStorage.getItem('theme');
 
-    if (currentTheme === 'dark') {
-        document.body.classList.add('dark-mode');
-        const icon = themeToggle.querySelector('i');
-        if (icon) icon.className = 'fa-solid fa-sun';
-    }
-
-    themeToggle.addEventListener('click', function(e) {
-        e.preventDefault();
-        document.body.classList.toggle('dark-mode');
-        
-        const icon = this.querySelector('i');
-        if (document.body.classList.contains('dark-mode')) {
-            localStorage.setItem('theme', 'dark');
-            if (icon) icon.className = 'fa-solid fa-sun';
-        } else {
-            localStorage.setItem('theme', 'light');
-            if (icon) icon.className = 'fa-solid fa-moon';
-        }
-    });
-
-    if (!localStorage.getItem('theme')) {
-        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-        if (prefersDark) {
+        if (currentTheme === 'dark') {
             document.body.classList.add('dark-mode');
             const icon = themeToggle.querySelector('i');
             if (icon) icon.className = 'fa-solid fa-sun';
-            localStorage.setItem('theme', 'dark');
+        }
+
+        themeToggle.addEventListener('click', function(e) {
+            e.preventDefault();
+            document.body.classList.toggle('dark-mode');
+            
+            const icon = this.querySelector('i');
+            if (document.body.classList.contains('dark-mode')) {
+                localStorage.setItem('theme', 'dark');
+                if (icon) icon.className = 'fa-solid fa-sun';
+            } else {
+                localStorage.setItem('theme', 'light');
+                if (icon) icon.className = 'fa-solid fa-moon';
+            }
+        });
+
+        if (!localStorage.getItem('theme')) {
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            if (prefersDark) {
+                document.body.classList.add('dark-mode');
+                const icon = themeToggle.querySelector('i');
+                if (icon) icon.className = 'fa-solid fa-sun';
+                localStorage.setItem('theme', 'dark');
+            }
         }
     }
 
@@ -42,7 +43,7 @@ document.addEventListener('DOMContentLoaded', function() {
     updateNotificationBadge();
 
     initSocketNotifications();
-    initInteractions(); // ← AJOUT POUR LES LIKES ET COMMENTAIRES
+    initInteractions();
 });
 
 // =====================================================
@@ -419,15 +420,21 @@ async function handleComment(e) {
     }
 }
 
-function toggleComments(e) {
-    const btn = e.currentTarget;
-    const postId = btn.dataset.id || btn.getAttribute('data-post-id');
+function toggleComments(eOrPostId) {
+    let postId;
+    if (typeof eOrPostId === 'string') {
+        postId = eOrPostId;
+    } else {
+        const btn = eOrPostId.currentTarget;
+        postId = btn.dataset.id || btn.getAttribute('data-post-id');
+    }
     if (!postId) return;
     const section = document.getElementById(`comments-${postId}`);
     if (section) {
         section.style.display = section.style.display === 'none' ? 'block' : 'none';
     }
 }
+window.toggleComments = toggleComments;
 
 async function handleDelete(e) {
     const btn = e.currentTarget;
