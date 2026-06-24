@@ -28,7 +28,11 @@ const userSchema = new mongoose.Schema({
     // === GAMIFICATION ===
     xp: { type: Number, default: 0 },
     walletBalance: { type: Number, default: 0 },
-    theme: { type: String, default: "default", enum: ["default", "dark", "neon", "ocean", "sunset", "forest", "cyberpunk", "rose", "galaxie", "minuit"] },
+    theme: {
+        type: String,
+        default: "default",
+        enum: ["default", "dark", "neon", "ocean", "sunset", "forest", "cyberpunk", "rose", "galaxie", "minuit"]
+    },
 
     // === CLONE IA ===
     aiCloneActive: { type: Boolean, default: false },
@@ -40,11 +44,21 @@ const userSchema = new mongoose.Schema({
     profileFrame: { type: String, default: null, enum: [null, "bronze", "argent", "or", "diamant"] },
     lastFreeCredits: { type: Date, default: null },
 
-    // === ANIMATIONS DE PROFIL (NOUVEAU) ===
+    // === ANIMATIONS DE PROFIL ===
     profileEffect: {
         type: String,
         default: null,
         enum: [null, "sparkle", "flame", "star", "diamond", "butterfly"]
+    },
+
+    // === RÉINITIALISATION DU MOT DE PASSE (NOUVEAU) ===
+    resetCode: {
+        type: String,
+        default: null
+    },
+    resetCodeExpires: {
+        type: Date,
+        default: null
     },
 
     // === SÉCURITÉ & INCOGNITO ===
@@ -58,10 +72,10 @@ const userSchema = new mongoose.Schema({
     disableContact: { type: String, default: null },
 
     restrictions: {
-        messages:    { until: { type: Date, default: null } },
+        messages: { until: { type: Date, default: null } },
         invitations: { until: { type: Date, default: null } },
-        likes:       { until: { type: Date, default: null } },
-        posts:       { until: { type: Date, default: null } }
+        likes: { until: { type: Date, default: null } },
+        posts: { until: { type: Date, default: null } }
     },
 
     warnings: [{
@@ -75,14 +89,6 @@ userSchema.pre("save", async function(next) {
     if (!this.isModified("motDePasse")) return next()
     this.motDePasse = await bcrypt.hash(this.motDePasse, 10)
     next()
-}),
-resetCode: {
-    type: String,
-    default: null
-},
-resetCodeExpires: {
-    type: Date,
-    default: null
-        }
+})
 
 module.exports = mongoose.models.User || mongoose.model("User", userSchema)
