@@ -42,6 +42,7 @@ document.addEventListener('DOMContentLoaded', function() {
     updateNotificationBadge();
 
     initSocketNotifications();
+    initInteractions(); // ← AJOUT POUR LES LIKES ET COMMENTAIRES
 });
 
 // =====================================================
@@ -199,7 +200,7 @@ async function updateNotificationBadge() {
 }
 
 // =====================================================
-// 7. NOTIFICATION UNIFIÉE (VERSION FINALE)
+// 7. NOTIFICATION UNIFIÉE
 // =====================================================
 function notifyUser(notif) {
     console.log('🔔 notifyUser() appelé avec :', notif);
@@ -217,165 +218,6 @@ function notifyUser(notif) {
     showNotificationToast(notif);
 }
 
-// =====================================================
-// 8. EXPOSITION GLOBALE
-// =====================================================
-window.notifyUser = notifyUser;
-window.playNotificationSound = playNotificationSound;
-window.sendPushNotification = sendPushNotification;
-window.updateNotificationBadge = updateNotificationBadge;
-window.notificationEnabled = notificationEnabled;
-
-// =====================================================
-// 9. NAVIGATION AJAX (SPA)
-// =====================================================
-let _spaScripts = [];
-let _spaStyles = [];
-
-// --- Barre de progression ---
-const _progressBar = document.createElement('div');
-_progressBar.id = 'spa-progress-bar';
-document.body.appendChild(_progressBar);
-
-let _progressTimer = null;
-function _progressStart() {
-    clearTimeout(_progressTimer);
-    _progressBar.style.transition = 'none';
-    _progressBar.style.width = '0%';
-    _progressBar.classList.add('active');
-    requestAnimationFrame(() => {
-        _progressBar.style.transition = 'width 0.4s ease';
-        _progressBar.style.width = '70%';
-    });
-}
-function _progressDone() {
-    _progressBar.style.transition = 'width 0.2s ease, opacity 0.3s ease 0.2s';
-    _progressBar.style.width = '100%';
-    _progressTimer = setTimeout(() => {
-        _progressBar.classList.remove('active');
-        _progressBar.style.width = '0%';
-    }, 500);
-}
-
-async function navigateTo(url, pushState = true) {
-    if (!url || url === window.location.href) return;
-    if (url.includes('/logout')) { window.location.href = url; return; }
-
-    _progressStart();
-
-    try {
-        const response = await fetch(url);
-        if (!response.ok) { window.location.href = url; return; }
-
-        const html = await response.text();
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(html, 'text/html');
-
-        // Pages de chat → rechargement complet (Socket.io/WebRTC complexes)
-        if (doc.body && doc.body.classList.contains('chat-page')) {
-            window.location.href = url;
-            return;
-        }
-
-        const newMain = doc.querySelector('.main-container');
-        const curMain = document.querySelector('.main-container');
-        if (!newMain || !curMain) { window.location.href = url; return; }
-
-        // Nettoyer les scripts et styles injectés précédemment
-        _spaScripts.forEach(s => { try { s.remove(); } catch(e) {} });
-        _spaScripts = [];
-        _spaStyles.forEach(s => { try { s.remove(); } catch(e) {} });
-        _spaStyles = [];
-
-        // Injecter tous les <style> de la nouvelle page
-        // (head + body hors .main-container) dans le <head> courant
-        const _styleNodes = [
-            ...doc.querySelectorAll('head style'),
-            ...Array.from(doc.querySelectorAll('body style')).filter(s => !newMain.contains(s))
-        ];
-        _styleNodes.forEach(oldStyle => {
-            const s = document.createElement('style');
-            s.setAttribute('data-spa', '1');
-            s.textContent = oldStyle.textContent;
-            document.head.appendChild(s);
-            _spaStyles.push(s);
-        });
-
-        // Remplacer le contenu + animation d'entrée
-        curMain.innerHTML = newMain.innerHTML;
-        curMain.classList.remove('spa-fade-enter');
-        void curMain.offsetWidth; // force reflow
-        curMain.classList.add('spa-fade-enter');
-
-        // Mettre à jour le titre
-        const newTitle = doc.querySelector('title');
-        if (newTitle) document.title = newTitle.textContent;
-
-        // Mettre à jour les liens actifs de la navbar
-        document.querySelectorAll('.navbar a[href], .bottom-nav a[href]').forEach(a => {
-            const aPath = new URL(a.href, location.origin).pathname;
-            const curPath = new URL(url, location.origin).pathname;
-            a.classList.toggle('active', aPath === curPath || (aPath !== '/' && curPath.startsWith(aPath)));
-        });
-
-        // Exécuter les scripts inline de la nouvelle page
-        doc.querySelectorAll('body script:not([src])').forEach(oldScript => {
-            const content = oldScript.textContent.trim();
-            if (!content) return;
-            const s = document.createElement('script');
-            s.textContent = '(()=>{\n' + content + '\n})();';
-            document.body.appendChild(s);
-            _spaScripts.push(s);
-        });
-
-        // Charger les scripts externes non encore présents
-        doc.querySelectorAll('body script[src]').forEach(oldScript => {
-            const src = oldScript.getAttribute('src');
-            if (!src || document.querySelector(`script[src="${src}"]`)) return;
-            const s = document.createElement('script');
-            s.src = src;
-            s.async = true;
-            document.body.appendChild(s);
-            _spaScripts.push(s);
-        });
-
-        requestAnimationFrame(() => { initProfileEffects(); });
-        document.dispatchEvent(new CustomEvent('page-loaded', { detail: { url } }));
-
-        if (pushState) {
-            history.pushState({ url, scroll: 0 }, '', url);
-        }
-        window.scrollTo(0, 0);
-
-    } catch (err) {
-        console.log('Erreur navigation AJAX:', err);
-        window.location.href = url;
-    } finally {
-        _progressDone();
-    }
-}
-
-// Délégation globale — intercepte tous les liens internes
-document.addEventListener('click', function(e) {
-    const a = e.target.closest('a[href]');
-    if (!a) return;
-    const href = a.getAttribute('href');
-    if (!href || href === '#' || href === '/logout') return;
-    if (href.startsWith('http') || href.startsWith('//') || href.startsWith('mailto:') || href.startsWith('tel:')) return;
-    if (a.hasAttribute('download')) return;
-    if (a.getAttribute('target') && a.getAttribute('target') !== '_self') return;
-    e.preventDefault();
-    navigateTo(new URL(href, location.origin).href);
-});
-
-// Gestion du bouton RETOUR
-window.addEventListener('popstate', function(e) {
-    navigateTo(e.state?.url || window.location.href, false);
-});
-
-// =====================================================
-// 10. SOCKET.IO NOTIFICATIONS (SOCKET UNIQUE)
-// =====================================================
 function getNotificationMessage(notif) {
     const expediteurNom = notif.expediteur?.nom || 'Quelqu\'un';
     switch (notif.type) {
@@ -388,14 +230,24 @@ function getNotificationMessage(notif) {
     }
 }
 
+// =====================================================
+// 8. EXPOSITION GLOBALE
+// =====================================================
+window.notifyUser = notifyUser;
+window.playNotificationSound = playNotificationSound;
+window.sendPushNotification = sendPushNotification;
+window.updateNotificationBadge = updateNotificationBadge;
+window.notificationEnabled = notificationEnabled;
+
+// =====================================================
+// 9. SOCKET.IO NOTIFICATIONS
+// =====================================================
 function initSocketNotifications() {
-    // Éviter les connexions multiples
     if (window.notificationSocket) {
         console.log('ℹ️ Socket déjà initialisé');
         return;
     }
 
-    // Récupération de currentUserId
     let currentUserId = null;
     
     const userElement = document.querySelector('[data-user-id]');
@@ -434,7 +286,6 @@ function initSocketNotifications() {
         return;
     }
 
-    // Socket unique avec userId
     window.notificationSocket = io({
         query: { userId: currentUserId }
     });
@@ -449,7 +300,6 @@ function initSocketNotifications() {
         console.error('❌ Erreur de connexion Socket.IO:', err);
     });
 
-    // Écoute des notifications
     socket.on('notification', function(notif) {
         console.log('🔔 Événement notification reçu brut :', notif);
         console.log('🔔 Destinataire reçu:', notif.destinataire, '| CurrentUserId:', currentUserId);
@@ -467,150 +317,171 @@ function initSocketNotifications() {
 }
 
 // =====================================================
-// 11. RÉINITIALISATION DES MODULES APRÈS NAVIGATION AJAX
+// 10. INTERACTIONS (LIKES, COMMENTAIRES, SHARE, DELETE)
 // =====================================================
-document.addEventListener('page-loaded', function() {
-    // Stories — recharger si le conteneur est présent
-    if (typeof loadStories === 'function' && document.getElementById('stories-bubbles')) {
-        loadStories();
-    }
+function initInteractions() {
+    console.log('🔄 Initialisation des interactions...');
 
-    // Badges de notifications/messages/demandes
-    updateNotificationBadge();
-    _refreshBadges();
-
-    // Effets de profil
-    if (typeof initProfileEffects === 'function') initProfileEffects();
-
-    // Boutique
-    document.querySelectorAll('.btn-shop-buy').forEach(btn => {
-        btn.removeEventListener('click', handleShopBuy);
-        btn.addEventListener('click', handleShopBuy);
+    // === LIKES ===
+    document.querySelectorAll('.like-btn, [data-like-btn]').forEach(btn => {
+        btn.removeEventListener('click', handleLike);
+        btn.addEventListener('click', handleLike);
     });
 
-    // Primes (bounties)
-    document.querySelectorAll('.btn-accomplish').forEach(btn => {
-        btn.removeEventListener('click', handleBountyAccomplish);
-        btn.addEventListener('click', handleBountyAccomplish);
+    // === COMMENTAIRES ===
+    document.querySelectorAll('.comment-form, [data-comment-form]').forEach(form => {
+        form.removeEventListener('submit', handleComment);
+        form.addEventListener('submit', handleComment);
     });
-    document.querySelectorAll('.btn-view-applicants').forEach(btn => {
-        btn.removeEventListener('click', handleViewApplicants);
-        btn.addEventListener('click', handleViewApplicants);
-    });
-});
 
-async function _refreshBadges() {
-    try {
-        const res = await fetch('/notifications/unread');
-        const data = await res.json();
-        // Badge notifs
-        ['notifBadge', 'notifBadgeMobile'].forEach(id => {
-            const el = document.getElementById(id);
-            if (!el) return;
-            el.textContent = data.count > 0 ? data.count : '';
-            el.style.display = data.count > 0 ? 'inline-block' : 'none';
-        });
-    } catch (e) {}
-    try {
-        const res = await fetch('/api/messages/unread-count');
-        const data = await res.json();
-        const el = document.getElementById('messagesBadge');
-        if (el) {
-            el.textContent = data.count > 0 ? data.count : '';
-            el.style.display = data.count > 0 ? 'inline-block' : 'none';
-        }
-    } catch (e) {}
+    // === TOGGLE COMMENTAIRES ===
+    document.querySelectorAll('.toggle-comments, [data-toggle-comments]').forEach(btn => {
+        btn.removeEventListener('click', toggleComments);
+        btn.addEventListener('click', toggleComments);
+    });
+
+    // === SUPPRESSION DE POST ===
+    document.querySelectorAll('.delete-post, [data-delete-post]').forEach(btn => {
+        btn.removeEventListener('click', handleDelete);
+        btn.addEventListener('click', handleDelete);
+    });
+
+    // === PARTAGE ===
+    document.querySelectorAll('.share-btn, [data-share-btn]').forEach(btn => {
+        btn.removeEventListener('click', handleShare);
+        btn.addEventListener('click', handleShare);
+    });
 }
 
-// =====================================================
-// 12. GESTIONNAIRES D'ÉVÉNEMENTS (BOUTIQUE, PRIMES, etc.)
-// =====================================================
-
-// Boutique : Acheter un article
-async function handleShopBuy(e) {
+// === GESTIONNAIRES D'ÉVÉNEMENTS ===
+async function handleLike(e) {
     const btn = e.currentTarget;
-    const itemId = btn.dataset.itemId;
-    if (!itemId) return;
-
-    btn.disabled = true;
-    btn.textContent = '⏳...';
+    const postId = btn.dataset.id || btn.getAttribute('data-post-id');
+    if (!postId) {
+        console.warn('❌ Like : postId manquant');
+        return;
+    }
 
     try {
-        const res = await fetch('/api/shop/buy', {
+        const res = await fetch(`/post/${postId}/like`, { method: 'POST' });
+        const data = await res.json();
+        if (data.success) {
+            const countSpan = btn.querySelector('.likes-count, [data-likes-count]');
+            if (countSpan) countSpan.textContent = data.likesCount;
+            btn.classList.toggle('liked');
+        }
+    } catch (err) {
+        console.error('❌ Erreur like:', err);
+    }
+}
+
+async function handleComment(e) {
+    e.preventDefault();
+    const form = e.currentTarget;
+    const postId = form.dataset.id || form.getAttribute('data-post-id');
+    if (!postId) {
+        console.warn('❌ Commentaire : postId manquant');
+        return;
+    }
+
+    const input = form.querySelector('input[name="texte"]');
+    if (!input) return;
+    const texte = input.value.trim();
+    if (!texte) return;
+
+    try {
+        const res = await fetch(`/post/${postId}/comment`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ itemId })
+            body: JSON.stringify({ texte })
         });
         const data = await res.json();
         if (data.success) {
-            alert('✅ Achat réussi !');
-            location.reload(); // ou mettre à jour le solde dynamiquement
-        } else {
-            alert('❌ ' + (data.error || 'Erreur'));
+            const commentsSection = document.getElementById(`comments-${postId}`);
+            if (commentsSection) {
+                const commentDiv = document.createElement('div');
+                commentDiv.className = 'comment';
+                commentDiv.innerHTML = `
+                    <img src="${data.comment.auteur.photoProfil}" class="comment-avatar" alt="">
+                    <div class="comment-bubble">
+                        <div class="comment-author">${data.comment.auteur.nom}</div>
+                        <div>${data.comment.texte}</div>
+                    </div>
+                `;
+                commentsSection.appendChild(commentDiv);
+                const countSpan = document.querySelector(`.comments-count[data-id="${postId}"]`);
+                if (countSpan) countSpan.textContent = data.commentsCount;
+            }
+            input.value = '';
         }
     } catch (err) {
-        alert('❌ Erreur réseau');
-        console.error(err);
-    } finally {
-        btn.disabled = false;
-        btn.textContent = 'Acheter';
+        console.error('❌ Erreur commentaire:', err);
     }
 }
 
-// Primes : Accomplir une prime
-async function handleBountyAccomplish(e) {
+function toggleComments(e) {
     const btn = e.currentTarget;
-    const bountyId = btn.dataset.id;
-    if (!bountyId) return;
-
-    btn.disabled = true;
-    btn.textContent = '⏳...';
-
-    try {
-        const res = await fetch(`/api/bounties/${bountyId}/accomplish`, {
-            method: 'POST'
-        });
-        const data = await res.json();
-        if (data.ok) {
-            alert(`✅ Félicitations ! +${data.reward} crédits !`);
-            location.reload();
-        } else {
-            alert('❌ ' + (data.reason || 'Erreur'));
-        }
-    } catch (err) {
-        alert('❌ Erreur réseau');
-        console.error(err);
-    } finally {
-        btn.disabled = false;
-        btn.textContent = 'Accomplir';
+    const postId = btn.dataset.id || btn.getAttribute('data-post-id');
+    if (!postId) return;
+    const section = document.getElementById(`comments-${postId}`);
+    if (section) {
+        section.style.display = section.style.display === 'none' ? 'block' : 'none';
     }
 }
 
-// Primes : Voir les candidats
-async function handleViewApplicants(e) {
+async function handleDelete(e) {
     const btn = e.currentTarget;
-    const bountyId = btn.dataset.id;
-    if (!bountyId) return;
+    const postId = btn.dataset.id || btn.getAttribute('data-post-id');
+    if (!postId) return;
+    if (!confirm('Supprimer cette publication ?')) return;
 
     try {
-        const res = await fetch(`/api/bounties/${bountyId}/applicants`);
+        const res = await fetch(`/post/${postId}/delete`, { method: 'POST' });
         const data = await res.json();
         if (data.success) {
-            // Afficher les candidats dans une modal ou une alerte
-            const names = data.applicants.map(a => a.user?.nom || 'Inconnu').join('\n');
-            alert(`👥 Candidats :\n${names || 'Aucun'}`);
-        } else {
-            alert('❌ ' + (data.error || 'Erreur'));
+            const card = btn.closest('.post-card, .post');
+            if (card) card.remove();
         }
     } catch (err) {
-        alert('❌ Erreur réseau');
-        console.error(err);
+        console.error('❌ Erreur suppression:', err);
+    }
+}
+
+async function handleShare(e) {
+    const btn = e.currentTarget;
+    const postId = btn.dataset.id || btn.getAttribute('data-post-id');
+    if (!postId) return;
+
+    const message = prompt('Ajouter un commentaire à ton partage ? (facultatif)');
+    if (message === null) return;
+
+    try {
+        const res = await fetch(`/post/${postId}/share`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message: message || '' })
+        });
+        const data = await res.json();
+        if (data.success) {
+            const feed = document.querySelector('.feed');
+            if (feed) {
+                const postHTML = createPostHTML(data.post);
+                feed.insertAdjacentHTML('afterbegin', postHTML);
+                const countSpan = btn.querySelector('.shares-count, [data-shares-count]');
+                if (countSpan) countSpan.textContent = data.sharesCount;
+                initInteractions();
+                alert('✅ Publication partagée !');
+            }
+        } else {
+            alert(data.error || 'Erreur lors du partage.');
+        }
+    } catch (err) {
+        console.error('❌ Erreur partage:', err);
     }
 }
 
 // =====================================================
-// =====================================================
-// 13. EFFETS DE PROFIL — Particules thématiques
+// 11. EFFETS DE PROFIL
 // =====================================================
 (function() {
     const FX = {
@@ -695,7 +566,6 @@ async function handleViewApplicants(e) {
             var orbitR = Math.round(imgW / 2) + (imgW > 60 ? 22 : 14);
             var L = imgW > 60;
 
-            // Forcer overflow visible sur le wrapper et son parent pour que les particules ne soient pas coupées
             wrapper.style.overflow = 'visible';
             if (wrapper.parentElement) wrapper.parentElement.style.overflow = 'visible';
 
@@ -765,8 +635,148 @@ async function handleViewApplicants(e) {
 }());
 
 // =====================================================
-// 14. DÉMARRAGE
+// 12. NAVIGATION AJAX (SPA)
 // =====================================================
-// Backup : relancer les effets une fois tout chargé (images incluses)
-window.addEventListener('load', function() { initProfileEffects(); });
+let _spaScripts = [];
+let _spaStyles = [];
+
+const _progressBar = document.createElement('div');
+_progressBar.id = 'spa-progress-bar';
+document.body.appendChild(_progressBar);
+
+let _progressTimer = null;
+function _progressStart() {
+    clearTimeout(_progressTimer);
+    _progressBar.style.transition = 'none';
+    _progressBar.style.width = '0%';
+    _progressBar.classList.add('active');
+    requestAnimationFrame(() => {
+        _progressBar.style.transition = 'width 0.4s ease';
+        _progressBar.style.width = '70%';
+    });
+}
+function _progressDone() {
+    _progressBar.style.transition = 'width 0.2s ease, opacity 0.3s ease 0.2s';
+    _progressBar.style.width = '100%';
+    _progressTimer = setTimeout(() => {
+        _progressBar.classList.remove('active');
+        _progressBar.style.width = '0%';
+    }, 500);
+}
+
+async function navigateTo(url, pushState = true) {
+    if (!url || url === window.location.href) return;
+    if (url.includes('/logout')) { window.location.href = url; return; }
+
+    _progressStart();
+
+    try {
+        const response = await fetch(url);
+        if (!response.ok) { window.location.href = url; return; }
+
+        const html = await response.text();
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, 'text/html');
+
+        if (doc.body && doc.body.classList.contains('chat-page')) {
+            window.location.href = url;
+            return;
+        }
+
+        const newMain = doc.querySelector('.main-container');
+        const curMain = document.querySelector('.main-container');
+        if (!newMain || !curMain) { window.location.href = url; return; }
+
+        _spaScripts.forEach(s => { try { s.remove(); } catch(e) {} });
+        _spaScripts = [];
+        _spaStyles.forEach(s => { try { s.remove(); } catch(e) {} });
+        _spaStyles = [];
+
+        const _styleNodes = [
+            ...doc.querySelectorAll('head style'),
+            ...Array.from(doc.querySelectorAll('body style')).filter(s => !newMain.contains(s))
+        ];
+        _styleNodes.forEach(oldStyle => {
+            const s = document.createElement('style');
+            s.setAttribute('data-spa', '1');
+            s.textContent = oldStyle.textContent;
+            document.head.appendChild(s);
+            _spaStyles.push(s);
+        });
+
+        curMain.innerHTML = newMain.innerHTML;
+        curMain.classList.remove('spa-fade-enter');
+        void curMain.offsetWidth;
+        curMain.classList.add('spa-fade-enter');
+
+        const newTitle = doc.querySelector('title');
+        if (newTitle) document.title = newTitle.textContent;
+
+        document.querySelectorAll('.navbar a[href], .bottom-nav a[href]').forEach(a => {
+            const aPath = new URL(a.href, location.origin).pathname;
+            const curPath = new URL(url, location.origin).pathname;
+            a.classList.toggle('active', aPath === curPath || (aPath !== '/' && curPath.startsWith(aPath)));
+        });
+
+        doc.querySelectorAll('body script:not([src])').forEach(oldScript => {
+            const content = oldScript.textContent.trim();
+            if (!content) return;
+            const s = document.createElement('script');
+            s.textContent = '(()=>{\n' + content + '\n})();';
+            document.body.appendChild(s);
+            _spaScripts.push(s);
+        });
+
+        doc.querySelectorAll('body script[src]').forEach(oldScript => {
+            const src = oldScript.getAttribute('src');
+            if (!src || document.querySelector(`script[src="${src}"]`)) return;
+            const s = document.createElement('script');
+            s.src = src;
+            s.async = true;
+            document.body.appendChild(s);
+            _spaScripts.push(s);
+        });
+
+        // === RÉATTACHER LES INTERACTIONS APRÈS CHARGEMENT ===
+        initInteractions();
+
+        requestAnimationFrame(() => { initProfileEffects(); });
+        document.dispatchEvent(new CustomEvent('page-loaded', { detail: { url } }));
+
+        if (pushState) {
+            history.pushState({ url, scroll: 0 }, '', url);
+        }
+        window.scrollTo(0, 0);
+
+    } catch (err) {
+        console.log('Erreur navigation AJAX:', err);
+        window.location.href = url;
+    } finally {
+        _progressDone();
+    }
+}
+
+document.addEventListener('click', function(e) {
+    const a = e.target.closest('a[href]');
+    if (!a) return;
+    const href = a.getAttribute('href');
+    if (!href || href === '#' || href === '/logout') return;
+    if (href.startsWith('http') || href.startsWith('//') || href.startsWith('mailto:') || href.startsWith('tel:')) return;
+    if (a.hasAttribute('download')) return;
+    if (a.getAttribute('target') && a.getAttribute('target') !== '_self') return;
+    e.preventDefault();
+    navigateTo(new URL(href, location.origin).href);
+});
+
+window.addEventListener('popstate', function(e) {
+    navigateTo(e.state?.url || window.location.href, false);
+});
+
+// =====================================================
+// 13. DÉMARRAGE
+// =====================================================
+window.addEventListener('load', function() { 
+    initProfileEffects();
+    initInteractions();
+});
 console.log('📦 main.js chargé');
