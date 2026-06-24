@@ -7,6 +7,7 @@ const Message = require("../models/Message");
 const Notification = require("../models/Notification");
 const { requireAdmin } = require("../middleware/auth");
 const assistant = require("../lib/assistant");
+const { getTodayStats, getWeekStats, getRankings } = require("../lib/analytics"); // ← AJOUT
 
 // Dashboard principal
 router.get("/admin", requireAdmin, async (req, res) => {
@@ -35,6 +36,31 @@ router.get("/admin", requireAdmin, async (req, res) => {
     } catch (err) {
         console.error(err);
         res.redirect("/");
+    }
+});
+
+// ============================================================
+// === ORACLE / ANALYTICS DASHBOARD ===
+// ============================================================
+router.get("/admin/analytics", requireAdmin, async (req, res) => {
+    try {
+        const [today, week, rankings] = await Promise.all([
+            getTodayStats(),
+            getWeekStats(),
+            getRankings()
+        ]);
+
+        res.render("admin-analytics", {
+            title: "Oracle — Analytics",
+            currentPage: "admin",
+            today,
+            week,
+            rankings
+        });
+    } catch (err) {
+        console.error("Erreur analytics:", err);
+        req.flash("error", "Erreur lors du chargement des statistiques.");
+        res.redirect("/admin");
     }
 });
 
@@ -136,14 +162,9 @@ router.post("/admin/users/:id/delete", requireAdmin, async (req, res) => {
             return res.status(400).json({ error: "Tu ne peux pas supprimer ton propre compte." });
         }
 
-        // Sauvegarder le motif dans un champ avant suppression
-        // (pour affichage côté login si jamais on veut garder une trace)
         targetUser.deletionReason = reason || "Non spécifié";
         targetUser.isDisabled = true;
 
-        // On ne supprime pas vraiment — on marque comme "supprimé" avec motif
-        // pour que l'utilisateur voit le message à la prochaine connexion
-        // puis on nettoie ses données mais on garde le doc pour la raison
         await Post.deleteMany({ auteur: targetUser._id });
         await Message.deleteMany({ $or: [{ expediteur: targetUser._id }, { destinataire: targetUser._id }] });
         await User.updateMany({}, {
@@ -154,7 +175,6 @@ router.post("/admin/users/:id/delete", requireAdmin, async (req, res) => {
             }
         });
 
-        // Anonymiser le compte mais garder le motif visible à la connexion
         targetUser.nom = "Compte supprimé";
         targetUser.email = `deleted_${targetUser._id}@supprimé.com`;
         targetUser.bio = "";
@@ -180,10 +200,8 @@ router.post("/admin/users/:id/delete", requireAdmin, async (req, res) => {
 router.post("/admin/users/:id/restrict", requireAdmin, async (req, res) => {
     try {
         const { type, duree } = req.body;
-        // type: "messages" | "invitations" | "likes" | "posts"
-        // duree: nombre de minutes
-
         const types = ["messages", "invitations", "likes", "posts"];
+
         if (!types.includes(type)) {
             return res.status(400).json({ error: "Type de restriction invalide." });
         }
@@ -203,7 +221,6 @@ router.post("/admin/users/:id/restrict", requireAdmin, async (req, res) => {
         targetUser.markModified("restrictions");
         await targetUser.save();
 
-        // Notification à l'utilisateur
         await Notification.create({
             destinataire: targetUser._id,
             expediteur: req.session.user.id,
@@ -263,14 +280,13 @@ router.post("/admin/users/:id/send-coins", requireAdmin, async (req, res) => {
 
         targetUser.walletBalance = (targetUser.walletBalance || 0) + coins;
         await targetUser.save();
-        // Push notification coins
-const { sendPushToUser, buildPayload } = require("../lib/webpush")
-await sendPushToUser(targetUser._id, buildPayload("coins", {
-    amount: coins,
-    reason: reason || ""
-}))
 
-        // Notification à l'utilisateur
+        const { sendPushToUser, buildPayload } = require("../lib/webpush");
+        await sendPushToUser(targetUser._id, buildPayload("coins", {
+            amount: coins,
+            reason: reason || ""
+        }));
+
         await Notification.create({
             destinataire: targetUser._id,
             expediteur: req.session.user.id,
@@ -310,11 +326,11 @@ router.post("/admin/users/:id/warn", requireAdmin, async (req, res) => {
         if (!targetUser.warnings) targetUser.warnings = [];
         targetUser.warnings.push({ motif: motif.trim() });
         await targetUser.save();
-        // Push notification avertissement
-const { sendPushToUser, buildPayload } = require("../lib/webpush")
-await sendPushToUser(targetUser._id, buildPayload("warning", {
-    motif: motif.trim()
-}))
+
+        const { sendPushToUser, buildPayload } = require("../lib/webpush");
+        await sendPushToUser(targetUser._id, buildPayload("warning", {
+            motif: motif.trim()
+        }));
 
         await Notification.create({
             destinataire: targetUser._id,
