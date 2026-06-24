@@ -5,6 +5,7 @@ const User = require("../models/User");
 const Group = require("../models/Group");
 const { requireAuth } = require("../middleware/auth");
 const { uploadAudio, uploadPost } = require("../lib/cloudinary");
+const { track } = require("../lib/analytics"); // ← AJOUT
 
 // Nombre de messages non lus (pour badges SPA)
 router.get("/api/messages/unread-count", requireAuth, async (req, res) => {
@@ -182,6 +183,11 @@ router.post("/messages/audio", requireAuth, uploadAudio.single("audio"), async (
         // XP pour message envoyé
         await User.findByIdAndUpdate(currentUserId, { $inc: { xp: 1 } });
 
+        // =============================================
+        // === ORACLE / ANALYTICS : tracker MESSAGE ===
+        // =============================================
+        await track(currentUserId, 'MESSAGE');
+
         const expediteur = await User.findById(currentUserId);
         const payload = {
             _id: newMessage._id,
@@ -228,6 +234,11 @@ router.post("/messages/photo", requireAuth, uploadPost.single("image"), async (r
             lu: false
         });
         await newMessage.save();
+
+        // =============================================
+        // === ORACLE / ANALYTICS : tracker MESSAGE ===
+        // =============================================
+        await track(currentUserId, 'MESSAGE');
 
         const expediteur = await User.findById(currentUserId);
         const payload = {
