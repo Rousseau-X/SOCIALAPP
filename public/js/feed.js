@@ -234,9 +234,8 @@ document.addEventListener("click", (e) => {
         closeShareModal()
     }
 })
-
 // ============================================================
-// STORIES — TOUT EN UN (À AJOUTER EN BAS DE feed.js)
+// STORIES — TOUT EN UN (VERSION CORRIGÉE AVEC EXPOSITION GLOBALE)
 // ============================================================
 
 let currentStoryGroups = [];
@@ -247,6 +246,10 @@ const STORY_DURATION = 5000;
 const storyColors = ["#4f46e5","#7c3aed","#db2777","#dc2626","#d97706","#16a34a","#0891b2","#0f172a"];
 let selectedColor = storyColors[0];
 let selectedFile = null;
+
+// ============================================================
+// CHARGEMENT ET AFFICHAGE
+// ============================================================
 
 async function loadStories() {
     try {
@@ -289,6 +292,10 @@ function renderStories() {
         container.appendChild(item);
     });
 }
+
+// ============================================================
+// VISIONNEUSE DE STORY
+// ============================================================
 
 function openStoryViewer(groupIndex, storyIndex = 0) {
     currentGroupIndex = groupIndex;
@@ -461,6 +468,10 @@ async function toggleStoryViews(storyId) {
     }
 }
 
+// ============================================================
+// CRÉATEUR DE STORY
+// ============================================================
+
 function openStoryCreator() {
     document.getElementById("story-creator-overlay").classList.add("active");
     document.body.style.overflow = "hidden";
@@ -547,6 +558,25 @@ async function publishStory() {
         btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Publier';
     }
 }
+
+// ============================================================
+// EXPOSITION GLOBALE POUR LES ATTRIBUTS onclick
+// ============================================================
+
+window.openStoryCreator = openStoryCreator;
+window.openStoryViewer = openStoryViewer;
+window.goToNextStory = goToNextStory;
+window.goToPrevStory = goToPrevStory;
+window.reactToStory = reactToStory;
+window.closeStoryViewer = closeStoryViewer;
+window.closeStoryCreator = closeStoryCreator;
+window.handleStoryFileSelect = handleStoryFileSelect;
+window.publishStory = publishStory;
+window.toggleStoryViews = toggleStoryViews;
+
+// ============================================================
+// INITIALISATION
+// ============================================================
 
 document.addEventListener("DOMContentLoaded", function() {
     loadStories();
