@@ -7,6 +7,134 @@ const { redirectIfAuth } = require("../middleware/auth")
 const { nomValide } = require("../lib/validation")
 const assistant = require("../lib/assistant")
 const crypto = require("crypto")
+const { sendResetEmail } = require("../lib/email")
+
+// =============================================
+// PAGE DEMANDE DE RÉINITIALISATION
+// =============================================
+router.get("/forgot-password", redirectIfAuth, (req, res) => {
+    res.render("forgot-password", {
+        title: "Mot de passe oublié",
+        error: req.flash("error"),
+        success: req.flash("success")
+    })
+})
+
+// =============================================
+// ENVOI DU CODE PAR EMAIL
+// =============================================
+router.post("/forgot-password", redirectIfAuth, async (req, res) => {
+    try {
+        const { email } = req.body
+
+        if (!email) {
+            req.flash("error", "Veuillez entrer votre adresse email.")
+            return res.redirect("/forgot-password")
+        }
+
+        const user = await User.findOne({ email: email.toLowerCase() })
+        if (!user) {
+            req.flash("error", "Aucun compte associé à cet email.")
+            return res.redirect("/forgot-password")
+        }
+
+        // Générer un code à 6 chiffres
+        const code = Math.floor(100000 + Math.random() * 900000).toString()
+
+        // Enregistrer dans la base
+        user.resetCode = code
+        user.resetCodeExpires = Date.now() + 15 * 60 * 1000 // 15 minutes
+        await user.save()
+
+        // Envoyer l'email
+        await sendResetEmail(email, code)
+
+        req.flash("success", "Un code de réinitialisation a été envoyé à votre email.")
+        req.session.resetEmail = email
+        res.redirect("/reset-password")
+
+    } catch (err) {
+        console.error("Erreur forgot-password:", err)
+        req.flash("error", "Erreur lors de l'envoi du code. Veuillez réessayer.")
+        res.redirect("/forgot-password")
+    }
+})
+
+// =============================================
+// PAGE SAISIE DU CODE + NOUVEAU MOT DE PASSE
+// =============================================
+router.get("/reset-password", redirectIfAuth, (req, res) => {
+    if (!req.session.resetEmail) {
+        req.flash("error", "Veuillez d'abord demander un code de réinitialisation.")
+        return res.redirect("/forgot-password")
+    }
+
+    res.render("reset-password", {
+        title: "Réinitialiser le mot de passe",
+        email: req.session.resetEmail,
+        error: req.flash("error"),
+        success: req.flash("success")
+    })
+})
+
+// =============================================
+// VALIDER LE CODE ET CHANGER LE MOT DE PASSE
+// =============================================
+router.post("/reset-password", redirectIfAuth, async (req, res) => {
+    try {
+        const { code, motDePasse, confirmMotDePasse } = req.body
+
+        if (!code || !motDePasse || !confirmMotDePasse) {
+            req.flash("error", "Tous les champs sont obligatoires.")
+            return res.redirect("/reset-password")
+        }
+
+        if (motDePasse !== confirmMotDePasse) {
+            req.flash("error", "Les mots de passe ne correspondent pas.")
+            return res.redirect("/reset-password")
+        }
+
+        if (motDePasse.length < 6) {
+            req.flash("error", "Le mot de passe doit contenir au moins 6 caractères.")
+            return res.redirect("/reset-password")
+        }
+
+        const email = req.session.resetEmail
+        const user = await User.findOne({ email })
+
+        if (!user) {
+            req.flash("error", "Utilisateur introuvable.")
+            return res.redirect("/forgot-password")
+        }
+
+        // Vérifier le code
+        if (user.resetCode !== code) {
+            req.flash("error", "Code invalide.")
+            return res.redirect("/reset-password")
+        }
+
+        // Vérifier l'expiration
+        if (Date.now() > user.resetCodeExpires) {
+            req.flash("error", "Le code a expiré. Veuillez en demander un nouveau.")
+            return res.redirect("/forgot-password")
+        }
+
+        // Changer le mot de passe
+        user.motDePasse = motDePasse // Le middleware pre("save") va le hasher
+        user.resetCode = null
+        user.resetCodeExpires = null
+        await user.save()
+
+        req.session.resetEmail = null
+        req.flash("success", "Votre mot de passe a été réinitialisé avec succès !")
+        res.redirect("/login")
+
+    } catch (err) {
+        console.error("Erreur reset-password:", err)
+        req.flash("error", "Erreur lors de la réinitialisation. Veuillez réessayer.")
+        res.redirect("/reset-password")
+    }
+})
 
 // Assurer que les groupes système existent
 async function ensureSystemGroups() {
