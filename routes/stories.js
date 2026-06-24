@@ -5,6 +5,7 @@ const User = require("../models/User")
 const Notification = require("../models/Notification")
 const { requireAuth } = require("../middleware/auth")
 const { uploadStory } = require("../lib/cloudinary")
+const { track } = require("../lib/analytics") // ← AJOUT
 
 // Récupérer les stories du feed (amis + soi-même)
 router.get("/stories", requireAuth, async (req, res) => {
@@ -67,6 +68,11 @@ router.post("/stories", requireAuth, uploadStory.single("media"), async (req, re
         // XP pour story créée
         await User.findByIdAndUpdate(req.session.user.id, { $inc: { xp: 5 } })
 
+        // =============================================
+        // === ORACLE / ANALYTICS : tracker STORY ===
+        // =============================================
+        await track(req.session.user.id, 'STORY')
+
         res.json({ success: true, story })
     } catch (err) {
         console.error(err)
@@ -94,6 +100,11 @@ router.post("/stories/text", requireAuth, async (req, res) => {
 
         await story.populate("auteur", "nom photoProfil")
         await User.findByIdAndUpdate(req.session.user.id, { $inc: { xp: 3 } })
+
+        // =============================================
+        // === ORACLE / ANALYTICS : tracker STORY ===
+        // =============================================
+        await track(req.session.user.id, 'STORY')
 
         res.json({ success: true, story })
     } catch (err) {
