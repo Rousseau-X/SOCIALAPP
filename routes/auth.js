@@ -8,6 +8,7 @@ const { nomValide } = require("../lib/validation")
 const assistant = require("../lib/assistant")
 const crypto = require("crypto")
 const { sendResetEmail } = require("../lib/email")
+const { track } = require("../lib/analytics") // ← AJOUT
 
 // =============================================
 // PAGE DEMANDE DE RÉINITIALISATION
@@ -38,15 +39,12 @@ router.post("/forgot-password", redirectIfAuth, async (req, res) => {
             return res.redirect("/forgot-password")
         }
 
-        // Générer un code à 6 chiffres
         const code = Math.floor(100000 + Math.random() * 900000).toString()
 
-        // Enregistrer dans la base
         user.resetCode = code
-        user.resetCodeExpires = Date.now() + 15 * 60 * 1000 // 15 minutes
+        user.resetCodeExpires = Date.now() + 15 * 60 * 1000
         await user.save()
 
-        // Envoyer l'email
         await sendResetEmail(email, code)
 
         req.flash("success", "Un code de réinitialisation a été envoyé à votre email.")
@@ -107,20 +105,17 @@ router.post("/reset-password", redirectIfAuth, async (req, res) => {
             return res.redirect("/forgot-password")
         }
 
-        // Vérifier le code
         if (user.resetCode !== code) {
             req.flash("error", "Code invalide.")
             return res.redirect("/reset-password")
         }
 
-        // Vérifier l'expiration
         if (Date.now() > user.resetCodeExpires) {
             req.flash("error", "Le code a expiré. Veuillez en demander un nouveau.")
             return res.redirect("/forgot-password")
         }
 
-        // Changer le mot de passe
-        user.motDePasse = motDePasse // Le middleware pre("save") va le hasher
+        user.motDePasse = motDePasse
         user.resetCode = null
         user.resetCodeExpires = null
         await user.save()
@@ -182,12 +177,16 @@ async function addUserToSystemGroups(userId) {
     }
 }
 
-// Page de connexion
+// =============================================
+// PAGE DE CONNEXION
+// =============================================
 router.get("/login", redirectIfAuth, (req, res) => {
     res.render("login", { title: "Connexion" })
 })
 
-// Traitement connexion
+// =============================================
+// TRAITEMENT CONNEXION
+// =============================================
 router.post("/login", async (req, res) => {
     try {
         const { email, motDePasse } = req.body
@@ -198,14 +197,12 @@ router.post("/login", async (req, res) => {
             return res.redirect("/login")
         }
 
-        // Vérifier le mot de passe d'abord
         const match = await bcrypt.compare(motDePasse, user.motDePasse)
         if (!match) {
             req.flash("error", "Email ou mot de passe incorrect.")
             return res.redirect("/login")
         }
 
-        // === COMPTE SUPPRIMÉ ===
         if (user.deletionReason && user.nom === "Compte supprimé") {
             return res.render("account-deleted", {
                 title: "Compte supprimé",
@@ -213,7 +210,6 @@ router.post("/login", async (req, res) => {
             })
         }
 
-        // === COMPTE DÉSACTIVÉ ===
         if (user.isDisabled) {
             return res.render("account-disabled", {
                 title: "Compte désactivé",
@@ -222,7 +218,6 @@ router.post("/login", async (req, res) => {
             })
         }
 
-        // === CONNEXION NORMALE ===
         req.session.user = {
             id: user._id,
             nom: user.nom,
@@ -235,6 +230,11 @@ router.post("/login", async (req, res) => {
 
         user.enLigne = true
         await user.save()
+
+        // =============================================
+        // === ORACLE / ANALYTICS : tracker LOGIN ===
+        // =============================================
+        await track(user._id, 'LOGIN')
 
         try {
             await ensureSystemGroups()
@@ -249,12 +249,16 @@ router.post("/login", async (req, res) => {
     }
 })
 
-// Page d'inscription
+// =============================================
+// PAGE D'INSCRIPTION
+// =============================================
 router.get("/register", redirectIfAuth, (req, res) => {
     res.render("register", { title: "Inscription" })
 })
 
-// Traitement inscription
+// =============================================
+// TRAITEMENT INSCRIPTION
+// =============================================
 router.post("/register", redirectIfAuth, async (req, res) => {
     try {
         const { nom, email, motDePasse, confirmMotDePasse } = req.body
@@ -304,6 +308,11 @@ router.post("/register", redirectIfAuth, async (req, res) => {
         newUser.xp = 10
         await newUser.save()
 
+        // =============================================
+        // === ORACLE / ANALYTICS : tracker REGISTER ===
+        // =============================================
+        await track(newUser._id, 'REGISTER')
+
         req.flash("success", "Compte créé avec succès ! Tu as reçu 100 crédits de bienvenue. Connecte-toi.")
         res.redirect("/login")
     } catch (err) {
@@ -313,7 +322,9 @@ router.post("/register", redirectIfAuth, async (req, res) => {
     }
 })
 
-// Déconnexion
+// =============================================
+// DÉCONNEXION
+// =============================================
 router.get("/logout", async (req, res) => {
     if (req.session.user) {
         try {
