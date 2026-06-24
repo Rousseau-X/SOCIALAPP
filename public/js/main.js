@@ -400,6 +400,7 @@ async function handleComment(e) {
         if (data.success) {
             const commentsSection = document.getElementById(`comments-${postId}`);
             if (commentsSection) {
+                const commentsList = commentsSection.querySelector('.comments-list');
                 const commentDiv = document.createElement('div');
                 commentDiv.className = 'comment';
                 commentDiv.innerHTML = `
@@ -409,8 +410,9 @@ async function handleComment(e) {
                         <div>${data.comment.texte}</div>
                     </div>
                 `;
-                commentsSection.appendChild(commentDiv);
-                const countSpan = document.querySelector(`.comments-count[data-id="${postId}"]`);
+                if (commentsList) commentsList.appendChild(commentDiv);
+                else commentsSection.insertBefore(commentDiv, commentsSection.querySelector('form'));
+                const countSpan = form.closest('.post')?.querySelector('.comments-count');
                 if (countSpan) countSpan.textContent = data.commentsCount;
             }
             input.value = '';
