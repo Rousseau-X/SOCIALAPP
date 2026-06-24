@@ -1,4 +1,5 @@
 const User = require("../models/User")
+const { track } = require("../lib/analytics")
 
 // ============================================================
 // Vérifier si une restriction est active
@@ -29,7 +30,7 @@ module.exports.requireAuth = async (req, res, next) => {
             return res.redirect("/login")
         }
 
-        // Compte supprimé — afficher la page de suppression avec le motif
+        // Compte supprimé
         if (user.deletionReason && user.nom === "Compte supprimé") {
             req.session.destroy(() => {})
             return res.render("account-deleted", {
@@ -38,7 +39,7 @@ module.exports.requireAuth = async (req, res, next) => {
             })
         }
 
-        // Compte désactivé — afficher la page de désactivation avec motif
+        // Compte désactivé
         if (user.isDisabled) {
             req.session.destroy(() => {})
             return res.render("account-disabled", {
@@ -47,6 +48,12 @@ module.exports.requireAuth = async (req, res, next) => {
                 contact: user.disableContact || null
             })
         }
+
+        // ============================================================
+        // === ORACLE / ANALYTICS : mise à jour lastSeen ===
+        // ============================================================
+        user.lastSeen = new Date()
+        await user.save()
 
         next()
     } catch (e) {
@@ -98,7 +105,6 @@ module.exports.requireNotRestricted = (type) => {
                 const until = new Date(user.restrictions[type].until)
                 const minutesLeft = Math.ceil((until - Date.now()) / 60000)
 
-                // Si c'est une requête AJAX
                 if (req.xhr || req.headers.accept?.includes("application/json")) {
                     return res.status(403).json({
                         error: `Tu es restreint(e) sur cette action pendant encore ${minutesLeft} minute(s).`,
@@ -107,7 +113,6 @@ module.exports.requireNotRestricted = (type) => {
                     })
                 }
 
-                // Si c'est une requête normale
                 req.flash("error", `Tu es restreint(e) sur cette action pendant encore ${minutesLeft} minute(s).`)
                 return res.redirect("back")
             }
