@@ -75,6 +75,14 @@ userSchema.pre("save", async function(next) {
     if (!this.isModified("motDePasse")) return next()
     this.motDePasse = await bcrypt.hash(this.motDePasse, 10)
     next()
-})
+}),
+resetCode: {
+    type: String,
+    default: null
+},
+resetCodeExpires: {
+    type: Date,
+    default: null
+        }
 
 module.exports = mongoose.models.User || mongoose.model("User", userSchema)
