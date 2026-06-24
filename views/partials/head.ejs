@@ -17,6 +17,9 @@
 </audio>
 <script src="/js/main.js?v=5" defer></script>
 <script src="/js/push.js" defer></script>
+<!-- vConsole DEBUG MOBILE — À RETIRER APRÈS -->
+<script src="https://unpkg.com/vconsole@latest/dist/vconsole.min.js"></script>
+<script>var vConsole = new VConsole()</script>
 <!-- Thème dynamique -->
 <script>
 (function() {
@@ -29,11 +32,11 @@
     }
 })();
 
-    if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-            navigator.serviceWorker.register('/sw.js')
-                .then((reg) => console.log('✅ Service Worker enregistré'))
-                .catch((err) => console.log('❌ Service Worker erreur:', err))
-        })
-    }
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js')
+            .then((reg) => console.log('✅ Service Worker enregistré'))
+            .catch((err) => console.log('❌ Service Worker erreur:', err))
+    })
+}
 </script>
