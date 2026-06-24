@@ -51,7 +51,7 @@ const userSchema = new mongoose.Schema({
         enum: [null, "sparkle", "flame", "star", "diamond", "butterfly"]
     },
 
-    // === RÉINITIALISATION DU MOT DE PASSE (NOUVEAU) ===
+    // === RÉINITIALISATION DU MOT DE PASSE ===
     resetCode: {
         type: String,
         default: null
@@ -81,7 +81,15 @@ const userSchema = new mongoose.Schema({
     warnings: [{
         motif: { type: String, required: true },
         createdAt: { type: Date, default: Date.now }
-    }]
+    }],
+
+    // ============================================================
+    // === ORACLE / ANALYTICS (PHASE 0) ===
+    // ============================================================
+    lastSeen: {
+        type: Date,
+        default: Date.now
+    }
 
 }, { timestamps: true })
 
