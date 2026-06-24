@@ -7,7 +7,8 @@ const Message = require("../models/Message");
 const Notification = require("../models/Notification");
 const { requireAdmin } = require("../middleware/auth");
 const assistant = require("../lib/assistant");
-const { getTodayStats, getWeekStats, getRankings } = require("../lib/analytics"); // ← AJOUT
+const { getTodayStats, getWeekStats, getRankings } = require("../lib/analytics");
+const DailyQuest = require("../models/DailyQuest");
 
 // Dashboard principal
 router.get("/admin", requireAdmin, async (req, res) => {
@@ -44,18 +45,46 @@ router.get("/admin", requireAdmin, async (req, res) => {
 // ============================================================
 router.get("/admin/analytics", requireAdmin, async (req, res) => {
     try {
-        const [today, week, rankings] = await Promise.all([
+        const todayStr = new Date().toISOString().slice(0, 10);
+
+        const [today, week, rankings, questsToday, questsCompleted, questsClaimed, topQuestTypes] = await Promise.all([
             getTodayStats(),
             getWeekStats(),
-            getRankings()
+            getRankings(),
+            DailyQuest.countDocuments({ day: todayStr }),
+            DailyQuest.countDocuments({ day: todayStr, completed: true }),
+            DailyQuest.countDocuments({ day: todayStr, claimed: true }),
+            DailyQuest.aggregate([
+                { $match: { day: todayStr } },
+                { $group: { _id: "$quest.type", count: { $sum: 1 }, completed: { $sum: { $cond: ["$completed", 1, 0] } } } },
+                { $sort: { count: -1 } },
+                { $limit: 5 }
+            ])
         ]);
+
+        const topClaimers = await DailyQuest.find({ day: todayStr, claimed: true })
+            .populate("userId", "nom photoProfil")
+            .sort({ updatedAt: -1 })
+            .limit(5)
+            .lean();
+
+        const oracleStats = {
+            total: questsToday,
+            completed: questsCompleted,
+            claimed: questsClaimed,
+            completionRate: questsToday > 0 ? Math.round((questsCompleted / questsToday) * 100) : 0,
+            claimRate: questsToday > 0 ? Math.round((questsClaimed / questsToday) * 100) : 0,
+            topTypes: topQuestTypes,
+            topClaimers
+        };
 
         res.render("admin-analytics", {
             title: "Oracle — Analytics",
             currentPage: "admin",
             today,
             week,
-            rankings
+            rankings,
+            oracleStats
         });
     } catch (err) {
         console.error("Erreur analytics:", err);
