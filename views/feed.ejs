@@ -268,6 +268,189 @@
             .story-add-btn { width: 54px; height: 54px; font-size: 18px; }
             .story-label { font-size: 10px; max-width: 54px; }
         }
+
+        /* ===== ORACLE V2 — QUÊTE DU JOUR ===== */
+        .oracle-quest-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 0;
+            overflow: hidden;
+            margin-bottom: 16px;
+            transition: var(--transition);
+        }
+        .oracle-quest-card.oracle-completed {
+            border-color: #7c3aed;
+            box-shadow: 0 0 0 2px rgba(124,58,237,0.15);
+        }
+        .oracle-quest-card.oracle-claimed-anim {
+            animation: oraclePulse 0.6s ease;
+        }
+        @keyframes oraclePulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.015); box-shadow: 0 0 0 6px rgba(124,58,237,0.12); }
+            100% { transform: scale(1); }
+        }
+        .oracle-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 18px;
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            gap: 12px;
+        }
+        .oracle-brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .oracle-icon-wrap {
+            width: 36px;
+            height: 36px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-size: 16px;
+            flex-shrink: 0;
+        }
+        .oracle-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: #fff;
+        }
+        .oracle-subtitle {
+            font-size: 11px;
+            color: rgba(255,255,255,0.7);
+            margin-top: 1px;
+        }
+        .oracle-rewards {
+            display: flex;
+            gap: 6px;
+            flex-shrink: 0;
+        }
+        .oracle-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 700;
+        }
+        .oracle-pill-xp {
+            background: rgba(255,255,255,0.2);
+            color: #fff;
+        }
+        .oracle-pill-coins {
+            background: rgba(245,158,11,0.25);
+            color: #fcd34d;
+        }
+        .oracle-body {
+            padding: 16px 18px;
+        }
+        .oracle-loading {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+        .oracle-spinner {
+            width: 18px;
+            height: 18px;
+            border: 2px solid var(--border);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            flex-shrink: 0;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .oracle-quest-text {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin: 0 0 14px;
+            line-height: 1.4;
+        }
+        .oracle-progress-wrap {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 14px;
+        }
+        .oracle-progress-bar {
+            flex: 1;
+            height: 8px;
+            background: var(--border);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        .oracle-progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4f46e5, #7c3aed);
+            border-radius: 10px;
+            transition: width 0.6s ease;
+            width: 0%;
+        }
+        .oracle-progress-label {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--text-secondary);
+            white-space: nowrap;
+        }
+        .oracle-footer {
+            display: flex;
+        }
+        .oracle-verify-btn {
+            font-size: 13px;
+        }
+        .oracle-claim-btn {
+            background: linear-gradient(135deg, #4f46e5, #7c3aed);
+            border: none;
+            font-size: 14px;
+            font-weight: 700;
+            animation: oracleGlow 2s ease-in-out infinite;
+        }
+        @keyframes oracleGlow {
+            0%, 100% { box-shadow: 0 2px 8px rgba(124,58,237,0.3); }
+            50% { box-shadow: 0 4px 20px rgba(124,58,237,0.55); }
+        }
+        .oracle-claimed-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--success, #16a34a);
+        }
+        .oracle-toast {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%) translateY(80px);
+            z-index: 99999;
+            transition: transform 0.35s cubic-bezier(0.34,1.56,0.64,1), opacity 0.35s;
+            opacity: 0;
+            pointer-events: none;
+        }
+        .oracle-toast.oracle-toast-show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+        .oracle-toast-inner {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 14px 20px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+            min-width: 240px;
+        }
     </style>
 </head>
 <body>
@@ -294,6 +477,9 @@
                     <div class="story-label">Ta story</div>
                 </div>
             </div>
+
+            <!-- ===== ORACLE V2 — QUÊTE DU JOUR ===== -->
+            <%- include('partials/oracle-banner') %>
 
             <% if (error && error.length > 0) { %>
                 <div class="alert alert-error">

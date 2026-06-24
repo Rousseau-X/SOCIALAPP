@@ -181,6 +181,7 @@ app.use("/", require("./routes/security"))
 app.use("/", require("./routes/voicerooms"))
 app.use("/", require("./routes/dailytasks"))
 app.use("/", require("./routes/stories"))
+app.use("/", require("./routes/oracle"))
 
 // Route pour les icônes PWA
 app.get("/icons/icon-:size.png", async (req, res) => {

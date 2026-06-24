@@ -89,6 +89,12 @@ const userSchema = new mongoose.Schema({
     lastSeen: {
         type: Date,
         default: Date.now
+    },
+
+    // === ORACLE V2 — QUÊTES PERSONNALISÉES ===
+    lastQuestGenerated: {
+        type: Date,
+        default: null
     }
 
 }, { timestamps: true })
