@@ -3,6 +3,7 @@ const router = express.Router()
 const User = require("../models/User")
 const Notification = require("../models/Notification")
 const { requireAuth } = require("../middleware/auth")
+const { sendPushToUser, buildPayload } = require("../lib/webpush")
 
 // Page Amis — demandes reçues + liste d'amis
 router.get("/friends", requireAuth, async (req, res) => {
@@ -101,10 +102,14 @@ router.post("/friends/request/:id", requireAuth, async (req, res) => {
             lien: "/friends"
         })
 
-        // Émettre la notification en temps réel
         if (global.io) {
             global.io.emit('notification', notification)
         }
+
+        sendPushToUser(targetUser._id.toString(), buildPayload("friend-request", {
+            senderName: currentUser.nom,
+            senderId: currentUser._id.toString()
+        })).catch(() => {})
 
         req.flash("success", "Demande d'ami envoyée !")
         res.redirect(req.headers.referer || "/")
@@ -175,10 +180,14 @@ router.post("/friends/accept/:id", requireAuth, async (req, res) => {
             lien: "/profile/" + currentUser._id
         })
 
-        // Émettre la notification en temps réel
         if (global.io) {
             global.io.emit('notification', notification)
         }
+
+        sendPushToUser(targetUser._id.toString(), buildPayload("friend-accepted", {
+            senderName: currentUser.nom,
+            senderId: currentUser._id.toString()
+        })).catch(() => {})
 
         req.flash("success", `Vous êtes maintenant ami avec ${targetUser.nom} !`)
         res.redirect(req.headers.referer || "/friends")

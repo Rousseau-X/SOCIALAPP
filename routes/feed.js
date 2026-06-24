@@ -5,7 +5,8 @@ const User = require("../models/User")
 const Notification = require("../models/Notification")
 const { requireAuth, requireNotRestricted } = require("../middleware/auth")
 const { uploadPost } = require("../lib/cloudinary")
-const { track } = require("../lib/analytics") // ← AJOUT
+const { track } = require("../lib/analytics")
+const { sendPushToUser, buildPayload } = require("../lib/webpush")
 
 // Page d'accueil — Feed
 router.get("/", requireAuth, async (req, res) => {
@@ -124,6 +125,12 @@ router.post("/post/:id/like", requireAuth, requireNotRestricted("likes"), async 
                         .populate("expediteur", "nom photoProfil")
                     global.io.to(post.auteur.toString()).emit("notification", notifComplete)
                 }
+                const liker = await User.findById(userId, "nom")
+                sendPushToUser(post.auteur.toString(), buildPayload("like", {
+                    senderName: liker?.nom || "Quelqu'un",
+                    senderId: userId,
+                    content: post.contenu
+                })).catch(() => {})
             }
         }
 
@@ -163,6 +170,8 @@ router.post("/post/:id/comment", requireAuth, requireNotRestricted("messages"), 
 
         await post.save()
 
+        const currentUser = await User.findById(req.session.user.id)
+
         if (post.auteur.toString() !== req.session.user.id) {
             const notification = await Notification.create({
                 destinataire: post.auteur,
@@ -175,9 +184,12 @@ router.post("/post/:id/comment", requireAuth, requireNotRestricted("messages"), 
                     .populate("expediteur", "nom photoProfil")
                 global.io.to(post.auteur.toString()).emit("notification", notifComplete)
             }
+            sendPushToUser(post.auteur.toString(), buildPayload("comment", {
+                senderName: currentUser?.nom || "Quelqu'un",
+                senderId: req.session.user.id,
+                content: texte.trim()
+            })).catch(() => {})
         }
-
-        const currentUser = await User.findById(req.session.user.id)
 
         // =============================================
         // === ORACLE / ANALYTICS : tracker COMMENT ===

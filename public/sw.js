@@ -1,4 +1,4 @@
-const CACHE_NAME = "socialapp-v1"
+const CACHE_NAME = "socialapp-v2"
 const STATIC_ASSETS = [
     "/",
     "/css/style.css",
@@ -88,20 +88,28 @@ self.addEventListener("fetch", (event) => {
 self.addEventListener("push", (event) => {
     if (!event.data) return
 
-    const data = event.data.json()
+    let data = {}
+    try { data = event.data.json() } catch (e) { data = { title: "SocialApp", body: event.data.text() } }
+
+    const options = {
+        body: data.body || "Tu as une nouvelle notification",
+        icon: data.icon || "/icons/icon-192.png",
+        badge: "/icons/icon-72.png",
+        vibrate: [200, 100, 200, 100, 200],
+        sound: "/sounds/Sale-notification-chime-sound-effect.mp3",
+        data: { url: data.url || "/" },
+        tag: data.tag || "socialapp-notif",
+        renotify: true,
+        requireInteraction: false,
+        silent: false,
+        actions: [
+            { action: "open", title: "Voir" },
+            { action: "close", title: "Ignorer" }
+        ]
+    }
 
     event.waitUntil(
-        self.registration.showNotification(data.title || "SocialApp", {
-            body: data.body || "Tu as une nouvelle notification",
-            icon: "/icons/icon-192.png",
-            badge: "/icons/icon-72.png",
-            vibrate: [200, 100, 200],
-            data: { url: data.url || "/" },
-            actions: [
-                { action: "open", title: "Voir" },
-                { action: "close", title: "Ignorer" }
-            ]
-        })
+        self.registration.showNotification(data.title || "SocialApp", options)
     )
 })
 
