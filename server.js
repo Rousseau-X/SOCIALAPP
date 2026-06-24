@@ -20,6 +20,7 @@ const { dispatchCommand, signCode, callCopilot } = require("./lib/aiCommands")
 const Post = require("./models/Post")
 const { isRestricted } = require("./middleware/auth")
 const { sendPushToUser, sendPushToUsers, buildPayload } = require("./lib/webpush")
+const { track, updateLastSeen } = require("./lib/analytics")
 
 const dailyGroupMsgMap = new Map()
 
@@ -109,6 +110,20 @@ app.use(session({
 app.use(flash())
 
 // =============================================
+// MIDDLEWARE ANALYTICS (update lastSeen)
+// =============================================
+app.use(async (req, res, next) => {
+    if (req.session && req.session.user) {
+        try {
+            await updateLastSeen(req.session.user.id)
+        } catch (e) {
+            // Silencieux, ne pas bloquer la requête
+        }
+    }
+    next()
+})
+
+// =============================================
 // VARIABLES GLOBALES POUR LES VUES
 // =============================================
 app.use(async (req, res, next) => {
@@ -144,13 +159,11 @@ app.use(async (req, res, next) => {
 
 // ===== SPLASH =====
 app.get("/", (req, res) => {
-    // Si l'utilisateur est connecté, on le renvoie vers le feed (géré par routes/feed)
     if (req.session && req.session.user) {
         return res.redirect("/feed");
     }
-    // Sinon, splash
-    res.render("splash", { title: "SocialApp" });
-});
+    res.render("splash", { title: "SocialApp" })
+})
 
 app.use("/", require("./routes/push"))
 app.use("/", require("./routes/auth"))
@@ -208,6 +221,9 @@ io.on("connection", async (socket) => {
         }
     } catch (e) {}
 
+    // =========================================
+    // MESSAGERIE PRIVÉE
+    // =========================================
     socket.on("send-message", async (data) => {
         try {
             const { from, to, contenu, type, audio, duration, replyTo } = data
@@ -231,6 +247,9 @@ io.on("connection", async (socket) => {
 
             const textContent = type === 'text' ? contenu.trim() : ''
 
+            // Tracker MESSAGE
+            await track(from, 'MESSAGE')
+
             if (type === 'text' && textContent.match(/^\/[a-z+]/i)) {
                 const cmdResult = await dispatchCommand(textContent, from, { destinataireId: to, replyToId: replyTo || null })
                 if (cmdResult && !cmdResult.error) {
@@ -253,6 +272,8 @@ io.on("connection", async (socket) => {
                     const _senderForBoost = await User.findById(from, "xpBoostExpiry")
                     const _xpBoost = _senderForBoost?.xpBoostExpiry && _senderForBoost.xpBoostExpiry > new Date()
                     await User.findByIdAndUpdate(from, { $inc: { xp: _xpBoost ? 4 : 2 } })
+                    // Tracker AI_USE
+                    await track(from, 'AI_USE')
                     const payload = { _id: saved._id, expediteur: from, destinataire: to, ...msgData, type: cmdResult.type, burnSeconds: cmdResult.burnSeconds || null, lu: false }
                     io.to(to).emit("new-message", payload)
                     io.to(from).emit("new-message", payload)
@@ -362,6 +383,9 @@ io.on("connection", async (socket) => {
         socket.to(to).emit("typing", { from, isTyping })
     })
 
+    // =========================================
+    // GROUPES
+    // =========================================
     socket.on("join-group", (groupId) => {
         socket.join("group_" + groupId)
         const wp = watchPartyState[groupId]
@@ -390,6 +414,9 @@ io.on("connection", async (socket) => {
                 })
                 return
             }
+
+            // Tracker MESSAGE
+            await track(from, 'MESSAGE')
 
             const group = await Group.findById(groupId).populate("membres.user", "nom")
             if (!group) return
@@ -420,6 +447,8 @@ io.on("connection", async (socket) => {
                     const saved = await Message.create(msgData)
                     await User.findByIdAndUpdate(from, { $inc: { xp: 2 } })
                     const expediteurUser = await User.findById(from)
+                    // Tracker AI_USE
+                    await track(from, 'AI_USE')
                     const payload = {
                         _id: saved._id,
                         expediteur: { _id: from, nom: expediteurUser.nom },
@@ -524,6 +553,8 @@ io.on("connection", async (socket) => {
             message.reactions = message.reactions.filter(r => r.user.toString() !== userId)
             message.reactions.push({ user: userId, emoji })
             await message.save()
+            // Tracker LIKE
+            await track(userId, 'LIKE')
             io.to("group_" + groupId).emit("message-reacted", { messageId, groupId, reactions: message.reactions })
         } catch (e) {}
     })
