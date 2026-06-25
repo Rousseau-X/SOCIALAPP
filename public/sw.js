@@ -1,4 +1,4 @@
-const CACHE_NAME = "socialapp-v3"
+const CACHE_NAME = "socialapp-v4"
 const STATIC_ASSETS = [
     "/",
     "/css/style.css",

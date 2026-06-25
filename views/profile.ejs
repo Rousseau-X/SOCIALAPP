@@ -31,7 +31,9 @@
                 <div class="profile-header-content">
                     <!-- ===== AVATAR AVEC EFFET ===== -->
                     <div class="<%= profileUser.profileEffect ? 'effect-' + profileUser.profileEffect : '' %>" style="display:inline-block; position:relative;">
-                        <img src="<%= profileUser.photoProfil %>" class="profile-avatar" alt="">
+                        <img src="<%= profileUser.photoProfil %>"
+                             class="profile-avatar<%= profileUser.profileFrame ? ' frame-' + profileUser.profileFrame : '' %>"
+                             alt="">
                     </div>
                     <div class="profile-name">
                         <%= profileUser.nom %>

@@ -1011,6 +1011,33 @@ a {
     position: relative;
 }
 
+/* ===== CADRES DE PROFIL ===== */
+.profile-avatar.frame-bronze {
+    border-color: #cd7f32 !important;
+    box-shadow: 0 0 0 3px #a0522d, 0 0 18px rgba(205,127,50,0.7) !important;
+}
+.profile-avatar.frame-argent {
+    border-color: #c0c0c0 !important;
+    box-shadow: 0 0 0 3px #a8a8a8, 0 0 18px rgba(192,192,192,0.8) !important;
+}
+.profile-avatar.frame-or {
+    border-color: #ffd700 !important;
+    box-shadow: 0 0 0 3px #f5a623, 0 0 24px rgba(255,215,0,0.9) !important;
+}
+.profile-avatar.frame-diamant {
+    border-color: #7dd3fc !important;
+    border-width: 5px !important;
+    animation: diamantGlow 2s ease-in-out infinite !important;
+}
+@keyframes diamantGlow {
+    0%, 100% {
+        box-shadow: 0 0 0 3px #38bdf8, 0 0 28px rgba(125,211,252,0.9), 0 0 55px rgba(125,211,252,0.4);
+    }
+    50% {
+        box-shadow: 0 0 0 4px #0ea5e9, 0 0 40px rgba(56,189,248,1), 0 0 80px rgba(56,189,248,0.6);
+    }
+}
+
 .profile-name {
     font-size: 22px;
     font-weight: 800;
