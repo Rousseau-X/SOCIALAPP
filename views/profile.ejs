@@ -44,8 +44,10 @@
                     <div class="profile-name">
                         <%= profileUser.nom %>
                         <% if (profileUser.profileTitle) { %>
-                        <span class="profile-title-inline title-<%= tKey %>">
-                            <i class="fa-solid <%= tIcon %>"></i> <%= profileUser.profileTitle %>
+                        <span class="badge-tooltip" data-label="<%= profileUser.profileTitle %>">
+                            <span class="user-badge badge-title-<%= tKey %>">
+                                <i class="fa-solid <%= tIcon %>"></i>
+                            </span>
                         </span>
                         <% } %>
                         <%- include('partials/badges', { badges: profileUser.badges }) %>

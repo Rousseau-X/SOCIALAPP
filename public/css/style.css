@@ -1016,26 +1016,11 @@ a {
 .profile-avatar.frame-or      { border-color: #ffd700; filter: drop-shadow(0 0 10px rgba(255,215,0,0.85)); }
 .profile-avatar.frame-diamant { border-color: #7dd3fc; border-width: 5px; filter: drop-shadow(0 0 14px rgba(125,211,252,1)) drop-shadow(0 0 28px rgba(125,211,252,0.5)); }
 
-.profile-title-inline {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    font-size: 11px;
-    font-weight: 700;
-    padding: 2px 9px;
-    border-radius: 20px;
-    vertical-align: middle;
-    margin-left: 8px;
-    position: relative;
-    top: -2px;
-    text-transform: uppercase;
-    letter-spacing: 0.4px;
-}
-.profile-title-inline.title-pro     { background: #eff6ff; color: #3b82f6; }
-.profile-title-inline.title-expert  { background: #f0fdf4; color: #16a34a; }
-.profile-title-inline.title-vip     { background: linear-gradient(135deg,#fef9c3,#fde68a); color: #b45309; }
-.profile-title-inline.title-elite   { background: #fff7ed; color: #ea580c; }
-.profile-title-inline.title-legende { background: linear-gradient(135deg,#f5f3ff,#ede9fe); color: #7c3aed; }
+.badge-title-pro     { background: linear-gradient(135deg, #3b82f6, #1d4ed8); }
+.badge-title-expert  { background: linear-gradient(135deg, #10b981, #059669); }
+.badge-title-vip     { background: linear-gradient(135deg, #f59e0b, #d97706); }
+.badge-title-elite   { background: linear-gradient(135deg, #f97316, #ea580c); }
+.badge-title-legende { background: linear-gradient(135deg, #a855f7, #7c3aed); }
 
 .profile-name {
     font-size: 22px;
