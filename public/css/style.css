@@ -1332,6 +1332,7 @@ a {
 
 .chat-input input {
     flex: 1;
+    min-width: 0;
     padding: 12px 18px;
     border: 1.5px solid var(--border);
     border-radius: 40px;

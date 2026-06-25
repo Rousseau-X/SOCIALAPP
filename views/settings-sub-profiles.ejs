@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head><%- include('partials/head') %></head>
+<body>
+<%- include('partials/navbar', { currentPage: 'profile' }) %>
+
+<div class="main-container">
+  <%- include('partials/sidebar', { currentPage: 'profile' }) %>
+
+  <main class="feed">
+    <div class="page-header">
+      <div>
+        <h1>Profils anonymes</h1>
+        <div class="subtitle">Jusqu'à 2 identités anonymes pour les chats de groupe</div>
+      </div>
+      <a href="/profile/edit/me" class="btn btn-secondary" style="width:auto;padding:10px 20px;">
+        <i class="fa-solid fa-arrow-left"></i> Retour
+      </a>
+    </div>
+
+    <!-- Info banner -->
+    <div style="background:var(--primary-light);border-radius:var(--radius-sm);padding:14px 16px;margin-bottom:20px;display:flex;gap:12px;align-items:flex-start;">
+      <i class="fa-solid fa-mask" style="color:var(--primary);margin-top:2px;flex-shrink:0;font-size:16px;"></i>
+      <div style="font-size:13px;color:var(--text-secondary);line-height:1.6;">
+        Tes profils anonymes te permettent de participer dans les groupes sans révéler ton identité.
+        Personne ne peut faire le lien entre toi et ton profil anonyme. <strong>Maximum 2 profils.</strong>
+      </div>
+    </div>
+
+    <!-- Liste des profils -->
+    <div id="subProfileCards" style="display:flex;flex-direction:column;gap:14px;margin-bottom:20px;"></div>
+
+    <!-- Bouton créer (masqué si 2 déjà) -->
+    <div id="createSection">
+      <button id="openCreateBtn" class="btn" style="width:100%;gap:10px;">
+        <i class="fa-solid fa-plus"></i> Créer un profil anonyme
+      </button>
+    </div>
+
+    <!-- Formulaire de création / édition -->
+    <div id="formCard" class="card" style="display:none;margin-top:16px;">
+      <div class="section-title" style="margin-bottom:18px;">
+        <i class="fa-solid fa-pen"></i>
+        <span id="formTitle">Nouveau profil anonyme</span>
+      </div>
+
+      <div class="form-group">
+        <label>Pseudo anonyme <span style="color:var(--text-muted);font-size:12px;">(max 20 car.)</span></label>
+        <div class="input-wrapper">
+          <i class="fa-solid fa-user-secret"></i>
+          <input type="text" id="spName" placeholder="ex: Fantôme4523" maxlength="20">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Avatar — choisis une couleur et un animal</label>
+
+        <!-- Couleurs -->
+        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;" id="colorPicker">
+          <button type="button" class="color-dot active" data-color="4f46e5" style="background:#4f46e5;"></button>
+          <button type="button" class="color-dot" data-color="7c3aed" style="background:#7c3aed;"></button>
+          <button type="button" class="color-dot" data-color="db2777" style="background:#db2777;"></button>
+          <button type="button" class="color-dot" data-color="dc2626" style="background:#dc2626;"></button>
+          <button type="button" class="color-dot" data-color="d97706" style="background:#d97706;"></button>
+          <button type="button" class="color-dot" data-color="059669" style="background:#059669;"></button>
+          <button type="button" class="color-dot" data-color="0284c7" style="background:#0284c7;"></button>
+          <button type="button" class="color-dot" data-color="0f766e" style="background:#0f766e;"></button>
+          <button type="button" class="color-dot" data-color="374151" style="background:#374151;"></button>
+        </div>
+
+        <!-- Emojis animaux -->
+        <div style="display:flex;flex-wrap:wrap;gap:6px;" id="emojiPicker">
+          <% ['🐺','🦊','🐻','🐼','🦁','🐯','🦝','🦨','🦡','🦦','🐨','🐮','🐷','🐸','🐙','🦋','🐬','🦈','🐧','🦜'].forEach(e => { %>
+          <button type="button" class="emoji-dot" data-emoji="<%= e %>"><%= e %></button>
+          <% }) %>
+        </div>
+
+        <!-- Prévisualisation -->
+        <div style="display:flex;align-items:center;gap:14px;margin-top:16px;padding:14px;background:var(--bg-secondary);border-radius:var(--radius-sm);">
+          <img id="avatarPreview" src="" alt="" style="width:52px;height:52px;border-radius:50%;object-fit:cover;border:2px solid var(--border);">
+          <div>
+            <div id="namePreview" style="font-weight:600;font-size:15px;color:var(--text-primary);">—</div>
+            <div style="font-size:12px;color:var(--text-muted);">Prévisualisation</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:10px;margin-top:4px;">
+        <button id="cancelFormBtn" class="btn btn-secondary" style="flex:1;">Annuler</button>
+        <button id="saveFormBtn" class="btn" style="flex:2;gap:8px;">
+          <i class="fa-solid fa-check"></i> Enregistrer
+        </button>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<style>
+.sp-card {
+  background: var(--card-bg);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  transition: border-color .2s;
+}
+.sp-card.active-card {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-light);
+}
+.sp-card img { width:52px;height:52px;border-radius:50%;object-fit:cover;flex-shrink:0; }
+.sp-card-info { flex:1;min-width:0; }
+.sp-card-name { font-weight:700;font-size:15px;margin-bottom:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }
+.sp-card-status { font-size:12px;color:var(--text-muted); }
+.sp-card-actions { display:flex;gap:8px;flex-shrink:0; }
+.sp-card-actions button {
+  border:none;border-radius:8px;padding:7px 13px;cursor:pointer;
+  font-size:12px;font-weight:600;display:flex;align-items:center;gap:5px;transition:opacity .15s;
+}
+.btn-activate { background:var(--primary);color:#fff; }
+.btn-activate.deactivate { background:var(--bg-secondary);color:var(--text-primary); }
+.btn-edit { background:var(--bg-secondary);color:var(--text-primary); }
+.btn-delete { background:rgba(239,68,68,.12);color:#ef4444; }
+
+.color-dot {
+  width:28px;height:28px;border-radius:50%;border:2.5px solid transparent;cursor:pointer;
+  padding:0;transition:transform .15s,border-color .15s;flex-shrink:0;
+}
+.color-dot.active { border-color:var(--text-primary);transform:scale(1.15); }
+.emoji-dot {
+  width:38px;height:38px;font-size:20px;border-radius:50%;border:2px solid transparent;
+  background:var(--bg-secondary);cursor:pointer;display:flex;align-items:center;justify-content:center;
+  transition:transform .15s,border-color .15s;padding:0;
+}
+.emoji-dot.active { border-color:var(--primary);transform:scale(1.15);background:var(--primary-light); }
+</style>
+
+<script>
+let selectedColor = '4f46e5';
+let selectedEmoji = '🐺';
+let editingId = null;
+let subProfiles = [];
+
+async function loadProfiles() {
+  const res = await fetch('/api/subprofiles');
+  const data = await res.json();
+  subProfiles = data.subProfiles || [];
+  renderCards();
+}
+
+function renderCards() {
+  const container = document.getElementById('subProfileCards');
+  const createSection = document.getElementById('createSection');
+
+  if (!subProfiles.length) {
+    container.innerHTML = `<div style="text-align:center;padding:30px;color:var(--text-muted);font-size:14px;">
+      <i class="fa-solid fa-mask" style="font-size:32px;margin-bottom:10px;display:block;opacity:.3;"></i>
+      Aucun profil anonyme créé.
+    </div>`;
+  } else {
+    container.innerHTML = subProfiles.map(sp => {
+      const isActive = sp.isActive;
+      return `<div class="sp-card ${isActive ? 'active-card' : ''}" data-id="${sp._id}">
+        <img src="${sp.anonymousAvatarUrl}" alt="">
+        <div class="sp-card-info">
+          <div class="sp-card-name">${sp.anonymousUsername}</div>
+          <div class="sp-card-status">${isActive ? '🟢 Actif dans les groupes' : '⚪ Inactif'}</div>
+        </div>
+        <div class="sp-card-actions">
+          <button class="btn-activate ${isActive ? 'deactivate' : ''}" onclick="toggleActivate('${sp._id}')">
+            ${isActive ? '<i class="fa-solid fa-toggle-on"></i> Actif' : '<i class="fa-solid fa-toggle-off"></i> Activer'}
+          </button>
+          <button class="btn-edit" onclick="openEdit('${sp._id}')"><i class="fa-solid fa-pen"></i></button>
+          <button class="btn-delete" onclick="deleteSp('${sp._id}')"><i class="fa-solid fa-trash"></i></button>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  createSection.style.display = subProfiles.length >= 2 ? 'none' : 'block';
+}
+
+async function toggleActivate(id) {
+  const res = await fetch(`/api/subprofiles/${id}/activate`, { method: 'POST' });
+  const data = await res.json();
+  if (data.success) {
+    subProfiles = subProfiles.map(sp => ({ ...sp, isActive: sp._id === id ? data.active : false }));
+    renderCards();
+  }
+}
+
+function openEdit(id) {
+  const sp = subProfiles.find(s => s._id === id);
+  if (!sp) return;
+  editingId = id;
+  document.getElementById('formTitle').textContent = 'Modifier le profil';
+  document.getElementById('spName').value = sp.anonymousUsername;
+  // Try to extract color and emoji from avatar URL
+  const urlMatch = sp.anonymousAvatarUrl.match(/background=([^&]+)/);
+  const nameMatch = sp.anonymousAvatarUrl.match(/name=([^&]+)/);
+  if (urlMatch) setColor(decodeURIComponent(urlMatch[1]));
+  if (nameMatch) setEmoji(decodeURIComponent(nameMatch[1]));
+  updatePreview();
+  document.getElementById('formCard').style.display = 'block';
+  document.getElementById('createSection').style.display = 'none';
+  document.getElementById('formCard').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function setColor(color) {
+  selectedColor = color;
+  document.querySelectorAll('.color-dot').forEach(d => {
+    d.classList.toggle('active', d.dataset.color === color);
+  });
+}
+
+function setEmoji(emoji) {
+  selectedEmoji = emoji;
+  document.querySelectorAll('.emoji-dot').forEach(d => {
+    d.classList.toggle('active', d.dataset.emoji === emoji);
+  });
+}
+
+function updatePreview() {
+  const name = document.getElementById('spName').value || 'Anonyme';
+  const avatarUrl = `https://ui-avatars.com/api/?background=${selectedColor}&color=fff&name=${encodeURIComponent(selectedEmoji)}&size=128&bold=true`;
+  document.getElementById('avatarPreview').src = avatarUrl;
+  document.getElementById('namePreview').textContent = name;
+}
+
+function openCreate() {
+  editingId = null;
+  document.getElementById('formTitle').textContent = 'Nouveau profil anonyme';
+  document.getElementById('spName').value = '';
+  setColor('4f46e5');
+  setEmoji('🐺');
+  updatePreview();
+  document.getElementById('formCard').style.display = 'block';
+  document.getElementById('formCard').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+async function saveForm() {
+  const name = document.getElementById('spName').value.trim();
+  if (!name) { alert('Entre un pseudo anonyme.'); return; }
+  const avatarUrl = `https://ui-avatars.com/api/?background=${selectedColor}&color=fff&name=${encodeURIComponent(selectedEmoji)}&size=128&bold=true`;
+  const btn = document.getElementById('saveFormBtn');
+  btn.disabled = true;
+
+  if (editingId) {
+    const res = await fetch(`/api/subprofiles/${editingId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ anonymousUsername: name, anonymousAvatarUrl: avatarUrl })
+    });
+    const data = await res.json();
+    if (data.success) {
+      subProfiles = subProfiles.map(sp => sp._id === editingId ? data.subProfile : sp);
+      closeForm();
+    } else { alert(data.error || 'Erreur.'); }
+  } else {
+    const res = await fetch('/api/subprofiles', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ anonymousUsername: name, anonymousAvatarUrl: avatarUrl })
+    });
+    const data = await res.json();
+    if (data.success) {
+      subProfiles.push(data.subProfile);
+      closeForm();
+    } else { alert(data.error || 'Erreur.'); }
+  }
+
+  renderCards();
+  btn.disabled = false;
+}
+
+async function deleteSp(id) {
+  if (!confirm('Supprimer ce profil anonyme ?')) return;
+  const res = await fetch(`/api/subprofiles/${id}`, { method: 'DELETE' });
+  const data = await res.json();
+  if (data.success) {
+    subProfiles = subProfiles.filter(sp => sp._id !== id);
+    renderCards();
+  }
+}
+
+function closeForm() {
+  document.getElementById('formCard').style.display = 'none';
+  document.getElementById('createSection').style.display = subProfiles.length >= 2 ? 'none' : 'block';
+  editingId = null;
+}
+
+// Pickers
+document.getElementById('colorPicker').addEventListener('click', e => {
+  const dot = e.target.closest('.color-dot');
+  if (!dot) return;
+  setColor(dot.dataset.color);
+  updatePreview();
+});
+document.getElementById('emojiPicker').addEventListener('click', e => {
+  const dot = e.target.closest('.emoji-dot');
+  if (!dot) return;
+  setEmoji(dot.dataset.emoji);
+  updatePreview();
+});
+document.getElementById('spName').addEventListener('input', updatePreview);
+document.getElementById('openCreateBtn').addEventListener('click', openCreate);
+document.getElementById('cancelFormBtn').addEventListener('click', closeForm);
+document.getElementById('saveFormBtn').addEventListener('click', saveForm);
+
+// Init
+document.querySelectorAll('.emoji-dot[data-emoji="🐺"]').forEach(d => d.classList.add('active'));
+updatePreview();
+loadProfiles();
+</script>
+</body>
+</html>

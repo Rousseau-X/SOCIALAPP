@@ -25,7 +25,6 @@ router.post("/api/settings/incognito-input", requireAuth, async (req, res) => {
 // COFFRE-FORT (PIN par conversation)
 // =============================================
 
-// Verrouiller / définir PIN pour une conv
 router.post("/api/vault/lock/:otherId", requireAuth, async (req, res) => {
     try {
         const { pin } = req.body
@@ -40,7 +39,6 @@ router.post("/api/vault/lock/:otherId", requireAuth, async (req, res) => {
     }
 })
 
-// Déverrouiller une conv (vérifier PIN)
 router.post("/api/vault/unlock/:otherId", requireAuth, async (req, res) => {
     try {
         const { pin } = req.body
@@ -55,7 +53,6 @@ router.post("/api/vault/unlock/:otherId", requireAuth, async (req, res) => {
     }
 })
 
-// Supprimer le verrou
 router.delete("/api/vault/lock/:otherId", requireAuth, async (req, res) => {
     try {
         const user = await User.findById(req.session.user.id)
@@ -67,7 +64,6 @@ router.delete("/api/vault/lock/:otherId", requireAuth, async (req, res) => {
     }
 })
 
-// Vérifier si une conv est verrouillée
 router.get("/api/vault/status/:otherId", requireAuth, async (req, res) => {
     try {
         const user = await User.findById(req.session.user.id)
@@ -79,17 +75,49 @@ router.get("/api/vault/status/:otherId", requireAuth, async (req, res) => {
 })
 
 // =============================================
-// SOUS-PROFILS ANONYMES
+// SOUS-PROFILS ANONYMES — PAGE SETTINGS
 // =============================================
 
-// Créer un sous-profil
+router.get("/settings/sub-profiles", requireAuth, async (req, res) => {
+    try {
+        res.render("settings-sub-profiles", {
+            title: "Profils anonymes",
+            user: req.session.user
+        })
+    } catch (err) {
+        res.status(500).send("Erreur serveur.")
+    }
+})
+
+// =============================================
+// SOUS-PROFILS ANONYMES — API
+// =============================================
+
+// Créer un sous-profil (max 2, avec nom + avatar personnalisés)
 router.post("/api/subprofiles", requireAuth, async (req, res) => {
     try {
-        const generated = SubProfile.generateAnonymous()
+        const existing = await SubProfile.countDocuments({ userId: req.session.user.id })
+        if (existing >= 2) {
+            return res.status(400).json({ error: "Maximum 2 profils anonymes par compte." })
+        }
+
+        let { anonymousUsername, anonymousAvatarUrl } = req.body
+
+        // Si pas de données custom, générer automatiquement
+        if (!anonymousUsername || !anonymousAvatarUrl) {
+            const generated = SubProfile.generateAnonymous()
+            anonymousUsername = anonymousUsername || generated.name
+            anonymousAvatarUrl = anonymousAvatarUrl || generated.avatar
+        }
+
+        // Sanitize
+        anonymousUsername = String(anonymousUsername).trim().slice(0, 20)
+        if (!anonymousUsername) return res.status(400).json({ error: "Pseudo requis." })
+
         const sub = await SubProfile.create({
             userId: req.session.user.id,
-            anonymousUsername: generated.name,
-            anonymousAvatarUrl: generated.avatar
+            anonymousUsername,
+            anonymousAvatarUrl
         })
         res.json({ success: true, subProfile: sub })
     } catch (err) {
@@ -100,8 +128,38 @@ router.post("/api/subprofiles", requireAuth, async (req, res) => {
 // Lister mes sous-profils
 router.get("/api/subprofiles", requireAuth, async (req, res) => {
     try {
-        const subs = await SubProfile.find({ userId: req.session.user.id })
-        res.json({ subProfiles: subs })
+        const user = await User.findById(req.session.user.id).select("activeSubProfile")
+        const subs = await SubProfile.find({ userId: req.session.user.id }).sort({ createdAt: 1 })
+        const activeId = user.activeSubProfile?.toString()
+        const result = subs.map(sp => ({
+            ...sp.toObject(),
+            isActive: sp._id.toString() === activeId
+        }))
+        res.json({ subProfiles: result })
+    } catch (err) {
+        res.status(500).json({ error: "Erreur serveur." })
+    }
+})
+
+// Modifier un sous-profil (nom + avatar)
+router.put("/api/subprofiles/:id", requireAuth, async (req, res) => {
+    try {
+        const sub = await SubProfile.findOne({ _id: req.params.id, userId: req.session.user.id })
+        if (!sub) return res.status(404).json({ error: "Sous-profil introuvable." })
+
+        const { anonymousUsername, anonymousAvatarUrl } = req.body
+        if (anonymousUsername) sub.anonymousUsername = String(anonymousUsername).trim().slice(0, 20)
+        if (anonymousAvatarUrl) sub.anonymousAvatarUrl = anonymousAvatarUrl
+        await sub.save()
+
+        const user = await User.findById(req.session.user.id).select("activeSubProfile")
+        res.json({
+            success: true,
+            subProfile: {
+                ...sub.toObject(),
+                isActive: user.activeSubProfile?.toString() === sub._id.toString()
+            }
+        })
     } catch (err) {
         res.status(500).json({ error: "Erreur serveur." })
     }
@@ -116,7 +174,7 @@ router.post("/api/subprofiles/:id/activate", requireAuth, async (req, res) => {
         if (user.activeSubProfile?.toString() === sub._id.toString()) {
             user.activeSubProfile = null
             await user.save()
-            return res.json({ success: true, active: false, message: "Mode anonyme désactivé." })
+            return res.json({ success: true, active: false })
         }
         user.activeSubProfile = sub._id
         await user.save()
