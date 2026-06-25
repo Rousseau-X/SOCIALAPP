@@ -51,6 +51,14 @@ function renderOracleQuest(quest, streak) {
 
     // ── Affichage streak ────────────────────────────────────
     const info = getStreakInfo(streak)
+
+    // Badge dans le header (toujours visible)
+    const headerStreak = document.getElementById("oracleHeaderStreak")
+    if (headerStreak) {
+        headerStreak.style.display = "inline-flex"
+        headerStreak.textContent   = info.emoji + " " + streak + (streak > 1 ? " jours" : " jour")
+    }
+
     if (streakRow) {
         streakRow.style.display = "block"
         if (streakEmoji) streakEmoji.textContent = info.emoji
