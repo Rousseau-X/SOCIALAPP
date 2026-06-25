@@ -37,6 +37,21 @@
                         <%= profileUser.nom %>
                         <%- include('partials/badges', { badges: profileUser.badges }) %>
                     </div>
+                    <% if (profileUser.profileTitle) {
+                        const titleMap = {
+                            'Pro':     { key: 'pro',     icon: 'fa-briefcase' },
+                            'Expert':  { key: 'expert',  icon: 'fa-graduation-cap' },
+                            'VIP':     { key: 'vip',     icon: 'fa-crown' },
+                            'Élite':   { key: 'elite',   icon: 'fa-shield-halved' },
+                            'Légende': { key: 'legende', icon: 'fa-trophy' }
+                        };
+                        const tInfo = titleMap[profileUser.profileTitle] || { key: 'pro', icon: 'fa-star' };
+                    %>
+                    <div class="profile-title-badge badge-title-<%= tInfo.key %>">
+                        <i class="fa-solid <%= tInfo.icon %>"></i>
+                        <%= profileUser.profileTitle %>
+                    </div>
+                    <% } %>
                     <% if (profileUser.bio) { %>
                         <div class="profile-bio"><%= profileUser.bio %></div>
                     <% } else { %>

@@ -1017,6 +1017,25 @@ a {
     color: var(--text-primary);
 }
 
+.profile-title-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 22px;
+    border-radius: 50px;
+    font-size: 14px;
+    font-weight: 700;
+    color: #fff;
+    margin-top: 8px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+.badge-title-pro     { background: linear-gradient(135deg, #3b82f6, #1d4ed8); }
+.badge-title-expert  { background: linear-gradient(135deg, #10b981, #059669); }
+.badge-title-vip     { background: linear-gradient(135deg, #f59e0b, #d97706); }
+.badge-title-elite   { background: linear-gradient(135deg, #f97316, #ea580c); }
+.badge-title-legende { background: linear-gradient(135deg, #a855f7, #7c3aed); }
+
 .profile-bio {
     color: var(--text-secondary);
     font-size: 14px;
