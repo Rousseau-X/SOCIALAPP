@@ -244,8 +244,10 @@
         <button type="button" id="chaosModeBtn" class="chat-icon-btn" title="Chaos Mode" style="color:var(--text-secondary);"><i class="fa-solid fa-wand-magic-sparkles"></i></button>
       <% } %>
       <input type="text" id="messageInput" placeholder="Écrire… (@ mention, /+ IA)" autocomplete="off">
-      <button type="button" id="microBtn" class="chat-icon-btn"><i class="fa-solid fa-microphone"></i></button>
-      <button type="button" id="sendBtn" class="chat-send-btn" style="display:none;"><i class="fa-solid fa-paper-plane"></i></button>
+      <div class="chat-action-slot">
+        <button type="button" id="microBtn" class="chat-icon-btn"><i class="fa-solid fa-microphone"></i></button>
+        <button type="button" id="sendBtn" class="chat-send-btn" style="display:none;"><i class="fa-solid fa-paper-plane"></i></button>
+      </div>
     </form>
     <!-- BARRE ENREGISTREMENT WHATSAPP -->
     <div id="recordingBar" class="wa-recording-bar" style="display:none;">

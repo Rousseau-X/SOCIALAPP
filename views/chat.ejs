@@ -143,8 +143,10 @@
       <button type="button" id="photoBtn" class="chat-icon-btn" title="Photo"><i class="fa-solid fa-image"></i></button>
       <input type="file" id="photoInput" accept="image/*" style="display:none;">
       <input type="text" id="messageInput" placeholder="Écrire un message… (/+ pour l'IA)" autocomplete="off">
-      <button type="button" id="microBtn" class="chat-icon-btn" title="Vocal"><i class="fa-solid fa-microphone"></i></button>
-      <button type="submit" id="sendBtn" class="chat-send-btn" style="display:none;"><i class="fa-solid fa-paper-plane"></i></button>
+      <div class="chat-action-slot">
+        <button type="button" id="microBtn" class="chat-icon-btn" title="Vocal"><i class="fa-solid fa-microphone"></i></button>
+        <button type="submit" id="sendBtn" class="chat-send-btn" style="display:none;"><i class="fa-solid fa-paper-plane"></i></button>
+      </div>
     </form>
     <!-- BARRE ENREGISTREMENT WHATSAPP -->
     <div id="recordingBar" class="wa-recording-bar" style="display:none;">
