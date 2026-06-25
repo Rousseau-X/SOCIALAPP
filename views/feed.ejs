@@ -328,8 +328,11 @@
         }
         .oracle-rewards {
             display: flex;
+            flex-direction: row;
+            align-items: center;
             gap: 6px;
             flex-shrink: 0;
+            flex-wrap: nowrap;
         }
         .oracle-pill {
             display: inline-flex;
@@ -339,6 +342,17 @@
             border-radius: 20px;
             font-size: 12px;
             font-weight: 700;
+            white-space: nowrap;
+        }
+        .oracle-streak-badge {
+            background: linear-gradient(135deg, #ff6b35, #f59e0b);
+            color: #fff;
+            border-radius: 20px;
+            padding: 3px 10px;
+            font-size: 12px;
+            font-weight: 700;
+            white-space: nowrap;
+            box-shadow: 0 2px 8px rgba(245,158,11,.35);
         }
         .oracle-pill-xp {
             background: rgba(255,255,255,0.2);
@@ -1097,6 +1111,7 @@
     </script>
 
     <script src="/js/feed.js?v=2"></script>
+    <script src="/js/oracle.js?v=2"></script>
 
     <script>
     // =============================================
