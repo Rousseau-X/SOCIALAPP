@@ -29,28 +29,27 @@
             <div class="card profile-header">
                 <div class="profile-cover"></div>
                 <div class="profile-header-content">
+                    <%
+                        const titleCssKey = { 'Pro': 'pro', 'Expert': 'expert', 'VIP': 'vip', 'Élite': 'elite', 'Légende': 'legende' }
+                        const titleIcons  = { pro: 'fa-briefcase', expert: 'fa-graduation-cap', vip: 'fa-star', elite: 'fa-shield-halved', legende: 'fa-trophy' }
+                        const tKey  = profileUser.profileTitle ? (titleCssKey[profileUser.profileTitle] || 'pro') : null
+                        const tIcon = tKey ? (titleIcons[tKey] || 'fa-star') : null
+                    %>
                     <!-- ===== AVATAR AVEC EFFET + CADRE ===== -->
                     <div class="<%= profileUser.profileEffect ? 'effect-' + profileUser.profileEffect : '' %>" style="display:inline-block; position:relative;">
-                        <div class="profile-avatar-frame<%= profileUser.profileFrame ? ' frame-' + profileUser.profileFrame : '' %>">
-                            <img src="<%= profileUser.photoProfil %>" class="profile-avatar" alt="">
-                        </div>
+                        <img src="<%= profileUser.photoProfil %>"
+                             class="profile-avatar<%= profileUser.profileFrame ? ' frame-' + profileUser.profileFrame : '' %>"
+                             alt="">
                     </div>
                     <div class="profile-name">
                         <%= profileUser.nom %>
+                        <% if (profileUser.profileTitle) { %>
+                        <span class="profile-title-inline title-<%= tKey %>">
+                            <i class="fa-solid <%= tIcon %>"></i> <%= profileUser.profileTitle %>
+                        </span>
+                        <% } %>
                         <%- include('partials/badges', { badges: profileUser.badges }) %>
                     </div>
-                    <% if (profileUser.profileTitle) { %>
-                    <%
-                        const titleKey = profileUser.profileTitle.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")
-                        const titleIcons = { pro: 'fa-briefcase', expert: 'fa-graduation-cap', vip: 'fa-star', elite: 'fa-shield-halved', legende: 'fa-trophy' }
-                        const titleCssKey = { 'Pro': 'pro', 'Expert': 'expert', 'VIP': 'vip', 'Élite': 'elite', 'Légende': 'legende' }
-                        const cssKey = titleCssKey[profileUser.profileTitle] || 'pro'
-                        const icon = titleIcons[cssKey] || 'fa-star'
-                    %>
-                    <div class="profile-title-label title-<%= cssKey %>">
-                        <i class="fa-solid <%= icon %>"></i> <%= profileUser.profileTitle %>
-                    </div>
-                    <% } %>
                     <% if (profileUser.bio) { %>
                         <div class="profile-bio"><%= profileUser.bio %></div>
                     <% } else { %>
