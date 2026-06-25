@@ -38,12 +38,19 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
+    // Enregistrer la page initiale dans l'historique pour que le bouton retour fonctionne
+    if (!history.state?.url) {
+        history.replaceState({ url: window.location.href, scroll: 0 }, '', window.location.href);
+    }
+
     initNotifications();
     setTimeout(function() { initProfileEffects(); }, 100);
     updateNotificationBadge();
 
     initSocketNotifications();
-    initInteractions();
+
+    // Délégation d'événements — une seule fois, survit aux navigations AJAX
+    initDelegation();
 });
 
 // =====================================================
@@ -318,77 +325,70 @@ function initSocketNotifications() {
 }
 
 // =====================================================
-// 10. INTERACTIONS (LIKES, COMMENTAIRES, SHARE, DELETE)
+// 10. INTERACTIONS — EVENT DELEGATION (survit au AJAX)
 // =====================================================
-function initInteractions() {
-    console.log('🔄 Initialisation des interactions...');
 
-    // === LIKES ===
-    document.querySelectorAll('.like-btn, [data-like-btn]').forEach(btn => {
-        btn.removeEventListener('click', handleLike);
-        btn.addEventListener('click', handleLike);
+// Appelée une seule fois au chargement initial — les délégations
+// sur document fonctionnent même après remplacement AJAX du DOM.
+function initDelegation() {
+    // --- CLICKS ---
+    document.addEventListener('click', function(e) {
+        const likeBtn = e.target.closest('.like-btn, [data-like-btn]');
+        if (likeBtn) { e.stopPropagation(); handleLike(likeBtn); return; }
+
+        const deleteBtn = e.target.closest('.delete-post, [data-delete-post]');
+        if (deleteBtn) { handleDelete(deleteBtn); return; }
+
+        const shareBtn = e.target.closest('.share-btn, [data-share-btn]');
+        if (shareBtn) { handleShare(shareBtn); return; }
+
+        const toggleBtn = e.target.closest('.toggle-comments, [data-toggle-comments]');
+        if (toggleBtn) { toggleComments(toggleBtn); return; }
     });
 
-    // === COMMENTAIRES ===
-    document.querySelectorAll('.comment-form, [data-comment-form]').forEach(form => {
-        form.removeEventListener('submit', handleComment);
-        form.addEventListener('submit', handleComment);
-    });
-
-    // === TOGGLE COMMENTAIRES ===
-    document.querySelectorAll('.toggle-comments, [data-toggle-comments]').forEach(btn => {
-        btn.removeEventListener('click', toggleComments);
-        btn.addEventListener('click', toggleComments);
-    });
-
-    // === SUPPRESSION DE POST ===
-    document.querySelectorAll('.delete-post, [data-delete-post]').forEach(btn => {
-        btn.removeEventListener('click', handleDelete);
-        btn.addEventListener('click', handleDelete);
-    });
-
-    // === PARTAGE ===
-    document.querySelectorAll('.share-btn, [data-share-btn]').forEach(btn => {
-        btn.removeEventListener('click', handleShare);
-        btn.addEventListener('click', handleShare);
+    // --- SOUMISSIONS DE FORMULAIRES ---
+    document.addEventListener('submit', function(e) {
+        const commentForm = e.target.closest('.comment-form, [data-comment-form]');
+        if (commentForm) { e.preventDefault(); handleComment(commentForm); return; }
     });
 }
 
-// === GESTIONNAIRES D'ÉVÉNEMENTS ===
-async function handleLike(e) {
-    const btn = e.currentTarget;
-    const postId = btn.dataset.id || btn.getAttribute('data-post-id');
-    if (!postId) {
-        console.warn('❌ Like : postId manquant');
-        return;
-    }
+// Garde la compatibilité : initInteractions() ne fait plus rien (délégation active)
+function initInteractions() {}
 
+// === GESTIONNAIRES — reçoivent l'élément directement ===
+
+async function handleLike(btn) {
+    const postId = btn.dataset.id || btn.getAttribute('data-post-id');
+    if (!postId) return;
+    // Feedback immédiat
+    btn.classList.toggle('liked');
     try {
         const res = await fetch(`/post/${postId}/like`, { method: 'POST' });
         const data = await res.json();
         if (data.success) {
             const countSpan = btn.querySelector('.likes-count, [data-likes-count]');
             if (countSpan) countSpan.textContent = data.likesCount;
-            btn.classList.toggle('liked');
+        } else {
+            btn.classList.toggle('liked'); // Annuler si erreur
         }
     } catch (err) {
+        btn.classList.toggle('liked');
         console.error('❌ Erreur like:', err);
     }
 }
 
-async function handleComment(e) {
-    e.preventDefault();
-    const form = e.currentTarget;
+async function handleComment(form) {
     const postId = form.dataset.id || form.getAttribute('data-post-id');
-    if (!postId) {
-        console.warn('❌ Commentaire : postId manquant');
-        return;
-    }
+    if (!postId) return;
 
     const input = form.querySelector('input[name="texte"]');
     if (!input) return;
     const texte = input.value.trim();
     if (!texte) return;
+
+    const submitBtn = form.querySelector('button[type="submit"], button');
+    if (submitBtn) submitBtn.disabled = true;
 
     try {
         const res = await fetch(`/post/${postId}/comment`, {
@@ -419,16 +419,17 @@ async function handleComment(e) {
         }
     } catch (err) {
         console.error('❌ Erreur commentaire:', err);
+    } finally {
+        if (submitBtn) submitBtn.disabled = false;
     }
 }
 
-function toggleComments(eOrPostId) {
+function toggleComments(btnOrPostId) {
     let postId;
-    if (typeof eOrPostId === 'string') {
-        postId = eOrPostId;
+    if (typeof btnOrPostId === 'string') {
+        postId = btnOrPostId;
     } else {
-        const btn = eOrPostId.currentTarget;
-        postId = btn.dataset.id || btn.getAttribute('data-post-id');
+        postId = btnOrPostId.dataset.id || btnOrPostId.getAttribute('data-post-id');
     }
     if (!postId) return;
     const section = document.getElementById(`comments-${postId}`);
@@ -438,8 +439,7 @@ function toggleComments(eOrPostId) {
 }
 window.toggleComments = toggleComments;
 
-async function handleDelete(e) {
-    const btn = e.currentTarget;
+async function handleDelete(btn) {
     const postId = btn.dataset.id || btn.getAttribute('data-post-id');
     if (!postId) return;
     if (!confirm('Supprimer cette publication ?')) return;
@@ -456,8 +456,7 @@ async function handleDelete(e) {
     }
 }
 
-async function handleShare(e) {
-    const btn = e.currentTarget;
+async function handleShare(btn) {
     const postId = btn.dataset.id || btn.getAttribute('data-post-id');
     if (!postId) return;
 
@@ -478,8 +477,6 @@ async function handleShare(e) {
                 feed.insertAdjacentHTML('afterbegin', postHTML);
                 const countSpan = btn.querySelector('.shares-count, [data-shares-count]');
                 if (countSpan) countSpan.textContent = data.sharesCount;
-                initInteractions();
-                alert('✅ Publication partagée !');
             }
         } else {
             alert(data.error || 'Erreur lors du partage.');
@@ -648,6 +645,7 @@ async function handleShare(e) {
 // =====================================================
 let _spaScripts = [];
 let _spaStyles = [];
+let _isPopState = false; // flag pour distinguer navigation vs retour
 
 const _progressBar = document.createElement('div');
 _progressBar.id = 'spa-progress-bar';
@@ -674,7 +672,10 @@ function _progressDone() {
 }
 
 async function navigateTo(url, pushState = true) {
-    if (!url || url === window.location.href) return;
+    if (!url) return;
+    // Autoriser le rechargement lors du retour arrière (popstate)
+    // mais éviter la navigation inutile vers la même URL lors de clics normaux
+    if (!_isPopState && url === window.location.href) return;
     if (url.includes('/logout')) { window.location.href = url; return; }
 
     _progressStart();
@@ -746,9 +747,6 @@ async function navigateTo(url, pushState = true) {
             _spaScripts.push(s);
         });
 
-        // === RÉATTACHER LES INTERACTIONS APRÈS CHARGEMENT ===
-        initInteractions();
-
         requestAnimationFrame(() => { initProfileEffects(); });
         document.dispatchEvent(new CustomEvent('page-loaded', { detail: { url } }));
 
@@ -762,9 +760,11 @@ async function navigateTo(url, pushState = true) {
         window.location.href = url;
     } finally {
         _progressDone();
+        _isPopState = false;
     }
 }
 
+// Intercepte les clics sur les liens internes
 document.addEventListener('click', function(e) {
     const a = e.target.closest('a[href]');
     if (!a) return;
@@ -777,8 +777,11 @@ document.addEventListener('click', function(e) {
     navigateTo(new URL(href, location.origin).href);
 });
 
+// Bouton retour/avant — fonctionne sur mobile et desktop
 window.addEventListener('popstate', function(e) {
-    navigateTo(e.state?.url || window.location.href, false);
+    const url = e.state?.url || window.location.href;
+    _isPopState = true;
+    navigateTo(url, false);
 });
 
 // =====================================================
@@ -786,6 +789,5 @@ window.addEventListener('popstate', function(e) {
 // =====================================================
 window.addEventListener('load', function() { 
     initProfileEffects();
-    initInteractions();
 });
 console.log('📦 main.js chargé');
