@@ -143,6 +143,32 @@
             </div>
             <% } %>
 
+            <!-- HISTORIQUE QUÊTES ORACLE -->
+            <% if (isOwnProfile) { %>
+            <div class="card" style="padding:16px 20px;">
+                <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+                    <i class="fa-solid fa-brain" style="font-size:20px;color:#7c3aed;"></i>
+                    <div>
+                        <div style="font-size:14px;font-weight:700;">Quêtes Oracle — 7 derniers jours</div>
+                        <div style="font-size:12px;color:var(--text-secondary);">Ton historique de missions et streak</div>
+                    </div>
+                </div>
+                <div id="oracleHistoryList" style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;">
+                    <span style="font-size:12px;color:var(--text-secondary);">Chargement…</span>
+                </div>
+                <style>
+                    .oh-day { display:flex;flex-direction:column;align-items:center;gap:3px;min-width:44px;padding:8px 6px;border-radius:10px;border:1px solid var(--border);font-size:11px;cursor:default;transition:.2s; }
+                    .oh-dot { font-size:20px;line-height:1; }
+                    .oh-lbl { font-weight:600;color:var(--text-secondary); }
+                    .oh-coins { font-size:10px;font-weight:700;color:#f59e0b; }
+                    .oh-day-done { background:linear-gradient(135deg,rgba(124,58,237,.08),rgba(79,70,229,.08));border-color:#7c3aed44; }
+                    .oh-day-todo { background:rgba(34,197,94,.07);border-color:#22c55e55; }
+                    .oh-day-active { background:rgba(245,158,11,.07);border-color:#f59e0b55; }
+                    .oh-day-miss { opacity:.45; }
+                </style>
+            </div>
+            <% } %>
+
             <!-- MA COLLECTION -->
             <% if (isOwnProfile) {
                 const now = new Date();
@@ -379,6 +405,7 @@
     </div>
 
     <script src="/js/feed.js?v=2"></script>
+    <script src="/js/oracle.js?v=3"></script>
     <script>
         function toggleComments(postId) {
             const el = document.getElementById('comments-' + postId)
