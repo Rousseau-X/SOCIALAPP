@@ -9,12 +9,14 @@ const dailyQuestSchema = new mongoose.Schema({
         targetCount: { type: Number, default: 1 },
         reward: {
             xp: { type: Number, default: 20 },
-            coins: { type: Number, default: 5 }
+            coins: { type: Number, default: 50 }
         }
     },
     completed: { type: Boolean, default: false },
     claimed: { type: Boolean, default: false },
     progress: { type: Number, default: 0 },
+    streak: { type: Number, default: 1 },
+    bonusCoins: { type: Number, default: 0 },
     expiresAt: { type: Date, required: true }
 }, { timestamps: true })
 

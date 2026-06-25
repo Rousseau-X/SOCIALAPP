@@ -9,11 +9,20 @@
                 <div class="oracle-subtitle">Mission personnalisée · Expire à minuit</div>
             </div>
         </div>
-        <div class="oracle-rewards" id="oracleRewards">
-            <span class="oracle-pill oracle-pill-xp"><i class="fa-solid fa-star"></i> <span id="oracleXp">—</span> XP</span>
-            <span class="oracle-pill oracle-pill-coins"><i class="fa-solid fa-coins"></i> <span id="oracleCoins">—</span></span>
+        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; justify-content:flex-end;">
+            <div id="oracleStreakBadge" style="display:none;">
+                <span class="oracle-streak-badge">
+                    🔥 <span id="oracleStreakCount">1</span> jours
+                </span>
+            </div>
+            <div class="oracle-rewards" id="oracleRewards">
+                <span class="oracle-pill oracle-pill-xp"><i class="fa-solid fa-star"></i> <span id="oracleXp">—</span> XP</span>
+                <span class="oracle-pill oracle-pill-coins"><i class="fa-solid fa-coins"></i> <span id="oracleCoins">—</span></span>
+            </div>
         </div>
     </div>
+
+    <div id="oracleStreakBar" style="display:none; padding: 6px 16px 0; font-size:12px; color:var(--text-secondary);"></div>
 
     <div class="oracle-body" id="oracleBody">
         <div class="oracle-loading" id="oracleLoading">
@@ -32,3 +41,16 @@
         </div>
     </div>
 </div>
+
+<style>
+.oracle-streak-badge {
+    background: linear-gradient(135deg, #ff6b35, #f59e0b);
+    color: #fff;
+    border-radius: 20px;
+    padding: 3px 10px;
+    font-size: 12px;
+    font-weight: 700;
+    white-space: nowrap;
+    box-shadow: 0 2px 8px rgba(245,158,11,.35);
+}
+</style>
