@@ -222,6 +222,25 @@ router.post("/api/shop/buy", requireAuth, async (req, res) => {
 })
 
 // Page primes
+router.post("/api/shop/unequip", requireAuth, async (req, res) => {
+    try {
+        const { field } = req.body
+        const allowed = ["profileTitle", "profileFrame", "profileEffect"]
+        if (!allowed.includes(field)) return res.status(400).json({ error: "Champ invalide." })
+        const user = await User.findById(req.session.user.id)
+        if (!user) return res.status(404).json({ error: "Utilisateur introuvable." })
+        user[field] = null
+        if (field === "profileEffect") req.session.user.profileEffect = null
+        if (field === "profileTitle") req.session.user.profileTitle = null
+        if (field === "profileFrame") req.session.user.profileFrame = null
+        await user.save()
+        res.json({ success: true })
+    } catch (e) {
+        console.error(e)
+        res.status(500).json({ error: "Erreur serveur." })
+    }
+})
+
 router.get("/bounties", requireAuth, async (req, res) => {
     try {
         const bounties = await Bounty.find()

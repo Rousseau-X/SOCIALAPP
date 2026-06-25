@@ -214,15 +214,18 @@
                         <i class="fa-solid fa-sparkles" style="font-size:20px;color:var(--primary);"></i>
                         <div style="flex:1;">
                             <div style="font-size:13px;font-weight:600;">Effet : <span style="text-transform:capitalize;color:var(--primary);">
-                                <% if (profileUser.profileEffect === 'sparkle') { %>✨ Étincelles<% } %>
-                                <% if (profileUser.profileEffect === 'flame') { %>🔥 Flammes<% } %>
-                                <% if (profileUser.profileEffect === 'star') { %>⭐ Étoiles<% } %>
-                                <% if (profileUser.profileEffect === 'diamond') { %>💎 Diamant<% } %>
-                                <% if (profileUser.profileEffect === 'butterfly') { %>🦋 Papillons<% } %>
+                                <% if (profileUser.profileEffect === 'sparkle') { %><i class="fa-solid fa-star-shooting"></i> Étincelles<% } %>
+                                <% if (profileUser.profileEffect === 'flame') { %><i class="fa-solid fa-fire"></i> Flammes<% } %>
+                                <% if (profileUser.profileEffect === 'star') { %><i class="fa-solid fa-star"></i> Étoiles<% } %>
+                                <% if (profileUser.profileEffect === 'diamond') { %><i class="fa-solid fa-gem"></i> Diamant<% } %>
+                                <% if (profileUser.profileEffect === 'butterfly') { %><i class="fa-solid fa-leaf"></i> Papillons<% } %>
                             </span></div>
                             <div style="font-size:11px;color:var(--text-secondary);">Animation autour de ton avatar</div>
                         </div>
-                        <span style="font-size:11px;background:rgba(16,185,129,0.15);color:#10b981;padding:3px 8px;border-radius:20px;font-weight:600;">✓ Actif</span>
+                        <div style="display:flex;align-items:center;gap:6px;">
+                            <span style="font-size:11px;background:rgba(16,185,129,0.15);color:#10b981;padding:3px 8px;border-radius:20px;font-weight:600;"><i class="fa-solid fa-check"></i> Actif</span>
+                            <button onclick="unequipItem('profileEffect', this)" style="border:none;background:rgba(239,68,68,0.12);color:#ef4444;border-radius:8px;padding:5px 10px;font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:4px;"><i class="fa-solid fa-xmark"></i> Retirer</button>
+                        </div>
                     </div>
                     <% } %>
 
@@ -233,29 +236,35 @@
                             <div style="font-size:13px;font-weight:600;">Thème : <span style="text-transform:capitalize;color:var(--primary);"><%= profileUser.theme %></span></div>
                             <div style="font-size:11px;color:var(--text-secondary);">Thème actif sur ton profil</div>
                         </div>
-                        <span style="font-size:11px;background:rgba(16,185,129,0.15);color:#10b981;padding:3px 8px;border-radius:20px;font-weight:600;">✓ Actif</span>
+                        <span style="font-size:11px;background:rgba(16,185,129,0.15);color:#10b981;padding:3px 8px;border-radius:20px;font-weight:600;"><i class="fa-solid fa-check"></i> Actif</span>
                     </div>
                     <% } %>
 
                     <% if (profileUser.profileTitle) { %>
                     <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--bg-secondary);border-radius:10px;border:1px solid var(--border);">
-                        <i class="fa-solid fa-crown" style="font-size:20px;"></i>
+                        <i class="fa-solid fa-crown" style="font-size:20px;color:#f59e0b;"></i>
                         <div style="flex:1;">
                             <div style="font-size:13px;font-weight:600;">Titre : <span style="color:var(--primary);"><%= profileUser.profileTitle %></span></div>
                             <div style="font-size:11px;color:var(--text-secondary);">Affiché sous ton nom de profil</div>
                         </div>
-                        <span style="font-size:11px;background:rgba(16,185,129,0.15);color:#10b981;padding:3px 8px;border-radius:20px;font-weight:600;">✓ Actif</span>
+                        <div style="display:flex;align-items:center;gap:6px;">
+                            <span style="font-size:11px;background:rgba(16,185,129,0.15);color:#10b981;padding:3px 8px;border-radius:20px;font-weight:600;"><i class="fa-solid fa-check"></i> Actif</span>
+                            <button onclick="unequipItem('profileTitle', this)" style="border:none;background:rgba(239,68,68,0.12);color:#ef4444;border-radius:8px;padding:5px 10px;font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:4px;"><i class="fa-solid fa-xmark"></i> Retirer</button>
+                        </div>
                     </div>
                     <% } %>
 
                     <% if (profileUser.profileFrame) { %>
                     <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--bg-secondary);border-radius:10px;border:1px solid var(--border);">
-                        <i class="fa-solid fa-image" style="font-size:20px;"></i>
+                        <i class="fa-solid fa-image" style="font-size:20px;color:#6366f1;"></i>
                         <div style="flex:1;">
                             <div style="font-size:13px;font-weight:600;">Cadre : <span style="text-transform:capitalize;color:var(--primary);"><%= profileUser.profileFrame %></span></div>
                             <div style="font-size:11px;color:var(--text-secondary);">Cadre autour de ta photo de profil</div>
                         </div>
-                        <span style="font-size:11px;background:rgba(16,185,129,0.15);color:#10b981;padding:3px 8px;border-radius:20px;font-weight:600;">✓ Actif</span>
+                        <div style="display:flex;align-items:center;gap:6px;">
+                            <span style="font-size:11px;background:rgba(16,185,129,0.15);color:#10b981;padding:3px 8px;border-radius:20px;font-weight:600;"><i class="fa-solid fa-check"></i> Actif</span>
+                            <button onclick="unequipItem('profileFrame', this)" style="border:none;background:rgba(239,68,68,0.12);color:#ef4444;border-radius:8px;padding:5px 10px;font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:4px;"><i class="fa-solid fa-xmark"></i> Retirer</button>
+                        </div>
                     </div>
                     <% } %>
 
@@ -427,6 +436,34 @@
         function toggleComments(postId) {
             const el = document.getElementById('comments-' + postId)
             el.style.display = el.style.display === 'none' ? 'block' : 'none'
+        }
+
+        async function unequipItem(field, btn) {
+            btn.disabled = true
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>'
+            try {
+                const res = await fetch('/api/shop/unequip', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ field })
+                })
+                const data = await res.json()
+                if (data.success) {
+                    const row = btn.closest('div[style*="border-radius:10px"]')
+                    if (row) {
+                        row.style.transition = 'opacity 0.3s'
+                        row.style.opacity = '0'
+                        setTimeout(() => row.remove(), 300)
+                    }
+                    location.reload()
+                } else {
+                    btn.disabled = false
+                    btn.innerHTML = '<i class="fa-solid fa-xmark"></i> Retirer'
+                }
+            } catch(e) {
+                btn.disabled = false
+                btn.innerHTML = '<i class="fa-solid fa-xmark"></i> Retirer'
+            }
         }
 
         const cloneBtn = document.getElementById("cloneToggleBtn")
