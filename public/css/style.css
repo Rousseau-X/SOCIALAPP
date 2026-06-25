@@ -1001,11 +1001,13 @@ a {
     display: inline-block;
     position: relative;
     border-radius: 50%;
+    margin-top: -50px;
+    margin-bottom: 12px;
 }
-.profile-avatar-frame.frame-bronze { box-shadow: 0 0 0 4px #cd7f32, 0 0 12px rgba(205,127,50,0.5); border-radius: 50%; }
-.profile-avatar-frame.frame-argent { box-shadow: 0 0 0 4px #c0c0c0, 0 0 14px rgba(192,192,192,0.6); border-radius: 50%; }
-.profile-avatar-frame.frame-or     { box-shadow: 0 0 0 4px #ffd700, 0 0 18px rgba(255,215,0,0.6); border-radius: 50%; }
-.profile-avatar-frame.frame-diamant{ box-shadow: 0 0 0 4px #b9f2ff, 0 0 24px rgba(100,200,255,0.7), 0 0 48px rgba(100,200,255,0.3); border-radius: 50%; }
+.profile-avatar-frame.frame-bronze { box-shadow: 0 0 0 4px #cd7f32, 0 0 14px rgba(205,127,50,0.55); }
+.profile-avatar-frame.frame-argent { box-shadow: 0 0 0 4px #c0c0c0, 0 0 16px rgba(192,192,192,0.65); }
+.profile-avatar-frame.frame-or     { box-shadow: 0 0 0 4px #ffd700, 0 0 20px rgba(255,215,0,0.65); }
+.profile-avatar-frame.frame-diamant{ box-shadow: 0 0 0 4px #7dd3fc, 0 0 26px rgba(125,211,252,0.75), 0 0 52px rgba(125,211,252,0.35); }
 
 .profile-avatar {
     width: 100px;
@@ -1021,20 +1023,27 @@ a {
     position: relative;
     display: block;
 }
-
-.profile-title-badge {
-    display: inline-block;
-    font-size: 12px;
-    font-weight: 700;
-    color: #7c3aed;
-    background: rgba(124,58,237,0.12);
-    border: 1px solid rgba(124,58,237,0.25);
-    padding: 3px 12px;
-    border-radius: 20px;
-    margin-bottom: 8px;
-    letter-spacing: 0.5px;
-    text-transform: uppercase;
+.profile-avatar-frame .profile-avatar {
+    margin-top: 0;
+    margin-bottom: 0;
+    box-shadow: none;
 }
+
+.profile-title-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+}
+.profile-title-label.title-pro     { color: #3b82f6; }
+.profile-title-label.title-expert  { color: #10b981; }
+.profile-title-label.title-vip     { color: #f59e0b; }
+.profile-title-label.title-elite   { color: #f97316; }
+.profile-title-label.title-legende { color: #a855f7; }
 
 .profile-name {
     font-size: 22px;

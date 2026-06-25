@@ -40,8 +40,15 @@
                         <%- include('partials/badges', { badges: profileUser.badges }) %>
                     </div>
                     <% if (profileUser.profileTitle) { %>
-                    <div class="profile-title-badge">
-                        <%= profileUser.profileTitle %>
+                    <%
+                        const titleKey = profileUser.profileTitle.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+                        const titleIcons = { pro: 'fa-briefcase', expert: 'fa-graduation-cap', vip: 'fa-star', elite: 'fa-shield-halved', legende: 'fa-trophy' }
+                        const titleCssKey = { 'Pro': 'pro', 'Expert': 'expert', 'VIP': 'vip', 'Élite': 'elite', 'Légende': 'legende' }
+                        const cssKey = titleCssKey[profileUser.profileTitle] || 'pro'
+                        const icon = titleIcons[cssKey] || 'fa-star'
+                    %>
+                    <div class="profile-title-label title-<%= cssKey %>">
+                        <i class="fa-solid <%= icon %>"></i> <%= profileUser.profileTitle %>
                     </div>
                     <% } %>
                     <% if (profileUser.bio) { %>
