@@ -29,14 +29,21 @@
             <div class="card profile-header">
                 <div class="profile-cover"></div>
                 <div class="profile-header-content">
-                    <!-- ===== AVATAR AVEC EFFET ===== -->
+                    <!-- ===== AVATAR AVEC EFFET + CADRE ===== -->
                     <div class="<%= profileUser.profileEffect ? 'effect-' + profileUser.profileEffect : '' %>" style="display:inline-block; position:relative;">
-                        <img src="<%= profileUser.photoProfil %>" class="profile-avatar" alt="">
+                        <div class="profile-avatar-frame<%= profileUser.profileFrame ? ' frame-' + profileUser.profileFrame : '' %>">
+                            <img src="<%= profileUser.photoProfil %>" class="profile-avatar" alt="">
+                        </div>
                     </div>
                     <div class="profile-name">
                         <%= profileUser.nom %>
                         <%- include('partials/badges', { badges: profileUser.badges }) %>
                     </div>
+                    <% if (profileUser.profileTitle) { %>
+                    <div class="profile-title-badge">
+                        <%= profileUser.profileTitle %>
+                    </div>
+                    <% } %>
                     <% if (profileUser.bio) { %>
                         <div class="profile-bio"><%= profileUser.bio %></div>
                     <% } else { %>

@@ -997,6 +997,16 @@ a {
     padding: 0 24px 24px;
 }
 
+.profile-avatar-frame {
+    display: inline-block;
+    position: relative;
+    border-radius: 50%;
+}
+.profile-avatar-frame.frame-bronze { box-shadow: 0 0 0 4px #cd7f32, 0 0 12px rgba(205,127,50,0.5); border-radius: 50%; }
+.profile-avatar-frame.frame-argent { box-shadow: 0 0 0 4px #c0c0c0, 0 0 14px rgba(192,192,192,0.6); border-radius: 50%; }
+.profile-avatar-frame.frame-or     { box-shadow: 0 0 0 4px #ffd700, 0 0 18px rgba(255,215,0,0.6); border-radius: 50%; }
+.profile-avatar-frame.frame-diamant{ box-shadow: 0 0 0 4px #b9f2ff, 0 0 24px rgba(100,200,255,0.7), 0 0 48px rgba(100,200,255,0.3); border-radius: 50%; }
+
 .profile-avatar {
     width: 100px;
     height: 100px;
@@ -1009,6 +1019,21 @@ a {
     background: var(--card-bg);
     z-index: 1;
     position: relative;
+    display: block;
+}
+
+.profile-title-badge {
+    display: inline-block;
+    font-size: 12px;
+    font-weight: 700;
+    color: #7c3aed;
+    background: rgba(124,58,237,0.12);
+    border: 1px solid rgba(124,58,237,0.25);
+    padding: 3px 12px;
+    border-radius: 20px;
+    margin-bottom: 8px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
 }
 
 .profile-name {
