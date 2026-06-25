@@ -62,6 +62,22 @@ const userSchema = new mongoose.Schema({
         default: null
     },
 
+    // === QUESTION DE SÉCURITÉ ===
+    securityQuestion: {
+        type: String,
+        default: null
+    },
+    securityAnswer: {
+        type: String,
+        default: null
+    },
+
+    // === CODES DE RÉCUPÉRATION ===
+    recoveryCodes: {
+        type: [String],
+        default: []
+    },
+
     // === SÉCURITÉ & INCOGNITO ===
     isIncognitoInput: { type: Boolean, default: false },
     activeSubProfile: { type: mongoose.Schema.Types.ObjectId, ref: "SubProfile", default: null },

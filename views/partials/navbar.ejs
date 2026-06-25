@@ -61,6 +61,12 @@
                 <a href="/profile/edit/me" class="navbar-dropdown-item ajax-link">
                     <i class="fa-solid fa-pen"></i> Modifier le profil
                 </a>
+                <a href="/settings/password" class="navbar-dropdown-item ajax-link">
+                    <i class="fa-solid fa-lock"></i> Modifier le mot de passe
+                </a>
+                <a href="/settings/security-question" class="navbar-dropdown-item ajax-link">
+                    <i class="fa-solid fa-shield-halved"></i> Question de sécurité
+                </a>
                 <% if (user.role === 'admin') { %>
                     <div class="navbar-dropdown-divider"></div>
                     <a href="/admin" class="navbar-dropdown-item ajax-link">

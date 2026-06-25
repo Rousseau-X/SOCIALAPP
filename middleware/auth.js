@@ -62,6 +62,17 @@ module.exports.requireAuth = async (req, res, next) => {
 }
 
 // ============================================================
+// isAuth — alias léger de requireAuth pour les paramètres
+// ============================================================
+module.exports.isAuth = (req, res, next) => {
+    if (!req.session.user) {
+        req.flash("error", "Tu dois être connecté pour accéder à cette page !")
+        return res.redirect("/login")
+    }
+    next()
+}
+
+// ============================================================
 // redirectIfAuth
 // ============================================================
 module.exports.redirectIfAuth = (req, res, next) => {
