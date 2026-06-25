@@ -1009,18 +1009,7 @@ a {
     background: var(--card-bg);
     z-index: 1;
     position: relative;
-    display: block;
 }
-.profile-avatar.frame-bronze  { border-color: #cd7f32; filter: drop-shadow(0 0 6px rgba(205,127,50,0.7)); }
-.profile-avatar.frame-argent  { border-color: #c0c0c0; filter: drop-shadow(0 0 8px rgba(192,192,192,0.8)); }
-.profile-avatar.frame-or      { border-color: #ffd700; filter: drop-shadow(0 0 10px rgba(255,215,0,0.85)); }
-.profile-avatar.frame-diamant { border-color: #7dd3fc; border-width: 5px; filter: drop-shadow(0 0 14px rgba(125,211,252,1)) drop-shadow(0 0 28px rgba(125,211,252,0.5)); }
-
-.badge-title-pro     { background: linear-gradient(135deg, #3b82f6, #1d4ed8); }
-.badge-title-expert  { background: linear-gradient(135deg, #10b981, #059669); }
-.badge-title-vip     { background: linear-gradient(135deg, #f59e0b, #d97706); }
-.badge-title-elite   { background: linear-gradient(135deg, #f97316, #ea580c); }
-.badge-title-legende { background: linear-gradient(135deg, #a855f7, #7c3aed); }
 
 .profile-name {
     font-size: 22px;
