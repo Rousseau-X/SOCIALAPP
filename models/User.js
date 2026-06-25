@@ -42,6 +42,7 @@ const userSchema = new mongoose.Schema({
     xpBoostExpiry: { type: Date, default: null },
     profileTitle: { type: String, default: null },
     profileFrame: { type: String, default: null, enum: [null, "bronze", "argent", "or", "diamant"] },
+    profileCover: { type: String, default: null },
     lastFreeCredits: { type: Date, default: null },
 
     // === ANIMATIONS DE PROFIL ===

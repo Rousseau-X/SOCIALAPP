@@ -27,7 +27,13 @@
 
             <!-- En-tête du profil -->
             <div class="card profile-header">
-                <div class="profile-cover"></div>
+                <div class="profile-cover" id="profileCoverBg" style="<%= profileUser.profileCover ? 'background-image:url(' + profileUser.profileCover + ');background-size:cover;background-position:center;background-color:transparent;' : '' %>">
+                    <% if (isOwnProfile) { %>
+                    <button onclick="openCoverPicker()" id="coverCameraBtn" title="Changer le fond">
+                        <i class="fa-solid fa-camera"></i>
+                    </button>
+                    <% } %>
+                </div>
                 <div class="profile-header-content">
                     <!-- ===== AVATAR AVEC EFFET ===== -->
                     <div class="<%= profileUser.profileEffect ? 'effect-' + profileUser.profileEffect : '' %>" style="display:inline-block; position:relative;">
@@ -510,6 +516,97 @@
                 }
             })
         }
+        // ===== COVER PICKER =====
+        const COVER_IMAGES = [
+            { url: 'https://picsum.photos/id/237/800/300', label: 'Chien', cat: '🐾 Animaux' },
+            { url: 'https://picsum.photos/id/582/800/300', label: 'Chat', cat: '🐾 Animaux' },
+            { url: 'https://picsum.photos/id/593/800/300', label: 'Chien 2', cat: '🐾 Animaux' },
+            { url: 'https://picsum.photos/id/169/800/300', label: 'Cheval', cat: '🐾 Animaux' },
+            { url: 'https://picsum.photos/id/582/800/300', label: 'Animal', cat: '🐾 Animaux' },
+            { url: 'https://picsum.photos/id/783/800/300', label: 'Personnes', cat: '👤 Personnes' },
+            { url: 'https://picsum.photos/id/1074/800/300', label: 'Portrait', cat: '👤 Personnes' },
+            { url: 'https://picsum.photos/id/1056/800/300', label: 'Voyage', cat: '👤 Personnes' },
+            { url: 'https://picsum.photos/id/15/800/300', label: 'Montagne', cat: '🌿 Nature' },
+            { url: 'https://picsum.photos/id/29/800/300', label: 'Forêt', cat: '🌿 Nature' },
+            { url: 'https://picsum.photos/id/10/800/300', label: 'Fleurs', cat: '🌿 Nature' },
+            { url: 'https://picsum.photos/id/547/800/300', label: 'Plage', cat: '🌿 Nature' },
+            { url: 'https://picsum.photos/id/164/800/300', label: 'Ville', cat: '🏙️ Villes' },
+            { url: 'https://picsum.photos/id/325/800/300', label: 'Nuit', cat: '🏙️ Villes' },
+            { url: 'https://picsum.photos/id/358/800/300', label: 'Architecture', cat: '🏙️ Villes' },
+            { url: 'https://picsum.photos/id/1016/800/300', label: 'Espace', cat: '✨ Abstrait' },
+            { url: 'https://picsum.photos/id/1022/800/300', label: 'Cosmos', cat: '✨ Abstrait' },
+            { url: 'https://picsum.photos/id/1076/800/300', label: 'Lumières', cat: '✨ Abstrait' },
+        ]
+
+        function buildCoverPicker() {
+            const modal = document.getElementById('coverPickerModal')
+            if (!modal || modal.dataset.built) return
+            modal.dataset.built = '1'
+            const sheet = modal.querySelector('.cover-picker-sheet')
+            const cats = [...new Set(COVER_IMAGES.map(i => i.cat))]
+            let html = ''
+            cats.forEach(cat => {
+                html += `<div class="cover-cat-label">${cat}</div><div class="cover-grid">`
+                COVER_IMAGES.filter(i => i.cat === cat).forEach(img => {
+                    html += `<img src="${img.url}" class="cover-thumb" loading="lazy" alt="${img.label}" onclick="selectCover('${img.url}', this)">`
+                })
+                html += '</div>'
+            })
+            sheet.insertAdjacentHTML('beforeend', html)
+        }
+
+        async function selectCover(url, el) {
+            document.querySelectorAll('.cover-thumb').forEach(t => t.classList.remove('selected'))
+            el.classList.add('selected')
+            try {
+                const res = await fetch('/api/profile/cover', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ coverUrl: url })
+                })
+                const data = await res.json()
+                if (data.success) {
+                    const bg = document.getElementById('profileCoverBg')
+                    if (bg) {
+                        bg.style.backgroundImage = `url(${url})`
+                        bg.style.backgroundSize = 'cover'
+                        bg.style.backgroundPosition = 'center'
+                        bg.style.backgroundColor = 'transparent'
+                    }
+                    setTimeout(() => { document.getElementById('coverPickerModal').style.display = 'none' }, 400)
+                }
+            } catch(e) {
+                el.classList.remove('selected')
+            }
+        }
+
+        function openCoverPicker() {
+            buildCoverPicker()
+            const modal = document.getElementById('coverPickerModal')
+            if (modal) modal.style.display = 'flex'
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const modal = document.getElementById('coverPickerModal')
+            if (modal) modal.addEventListener('click', e => { if (e.target === modal) modal.style.display = 'none' })
+        })
     </script>
+
+    <!-- Modal sélection fond de profil -->
+    <% if (isOwnProfile) { %>
+    <div id="coverPickerModal">
+        <div class="cover-picker-sheet">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+                <div>
+                    <h3><i class="fa-solid fa-image" style="color:var(--primary);margin-right:6px;"></i>Choisir un fond</h3>
+                    <p>Clique sur une photo pour l'appliquer immédiatement</p>
+                </div>
+                <button onclick="document.getElementById('coverPickerModal').style.display='none'" style="background:var(--bg-secondary);border:none;border-radius:50%;width:32px;height:32px;cursor:pointer;font-size:16px;color:var(--text-secondary);display:flex;align-items:center;justify-content:center;">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+    <% } %>
 </body>
 </html>

@@ -997,6 +997,83 @@ a {
     padding: 0 24px 24px;
 }
 
+/* === BOUTON CAMÉRA COVER === */
+#coverCameraBtn {
+    position: absolute;
+    bottom: 10px;
+    right: 12px;
+    background: rgba(0,0,0,0.45);
+    color: #fff;
+    border: none;
+    border-radius: 50%;
+    width: 38px;
+    height: 38px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    cursor: pointer;
+    backdrop-filter: blur(4px);
+    transition: background 0.2s, transform 0.15s;
+    z-index: 10;
+}
+#coverCameraBtn:hover { background: rgba(0,0,0,0.65); transform: scale(1.08); }
+
+/* === MODAL SÉLECTION FOND === */
+#coverPickerModal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    z-index: 9999;
+    align-items: flex-end;
+    justify-content: center;
+}
+.cover-picker-sheet {
+    background: var(--card-bg);
+    border-radius: 20px 20px 0 0;
+    width: 100%;
+    max-width: 600px;
+    padding: 20px 16px 32px;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+.cover-picker-sheet h3 {
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 4px;
+    color: var(--text-primary);
+}
+.cover-picker-sheet p {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-bottom: 14px;
+}
+.cover-cat-label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-secondary);
+    margin: 12px 0 6px;
+}
+.cover-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+}
+.cover-thumb {
+    width: 100%;
+    aspect-ratio: 16/6;
+    object-fit: cover;
+    border-radius: 10px;
+    cursor: pointer;
+    border: 3px solid transparent;
+    transition: border-color 0.2s, transform 0.15s, opacity 0.2s;
+}
+.cover-thumb:hover { transform: scale(1.03); border-color: var(--primary); }
+.cover-thumb.selected { border-color: #10b981; opacity: 0.85; }
+
 .profile-avatar {
     width: 100px;
     height: 100px;
