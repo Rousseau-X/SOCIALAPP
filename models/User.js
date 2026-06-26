@@ -112,7 +112,11 @@ const userSchema = new mongoose.Schema({
     lastQuestGenerated: {
         type: Date,
         default: null
-    }
+    },
+
+    // === ABONNEMENTS ===
+    followers: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+    following: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }]
 
 }, { timestamps: true })
 

@@ -65,6 +65,12 @@
                             iconBg = "#fef3c7"
                             texte = "vous a envoyé un message"
                             break
+                        case "abonnement":
+                            icon = "fa-user-plus"
+                            iconColor = "#7c3aed"
+                            iconBg = "#ede9fe"
+                            texte = "a commencé à vous suivre"
+                            break
                     }
                 %>
                     <a href="<%= lien %>" class="notif-item <%= !notif.lu ? 'unread' : '' %>">

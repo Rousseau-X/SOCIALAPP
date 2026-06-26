@@ -75,46 +75,66 @@
                             <strong><%= profileUser.amis.length %></strong>
                             <span>Amis</span>
                         </div>
+                        <div class="profile-stat">
+                            <strong id="followersCount"><%= profileUser.followers ? profileUser.followers.length : 0 %></strong>
+                            <span>Abonnés</span>
+                        </div>
                         <% if (!isOwnProfile) { %>
                             <div class="profile-stat">
-                                <strong><%= amisCommuns %></strong>
-                                <span>En commun</span>
+                                <strong><%= profileUser.following ? profileUser.following.length : 0 %></strong>
+                                <span>Abonnements</span>
                             </div>
                         <% } %>
                     </div>
 
-                    <div style="margin-top:18px; display:flex; gap:10px; justify-content:center;">
+                    <div style="margin-top:18px; display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
                         <% if (isOwnProfile) { %>
                             <a href="/profile/edit/me" class="btn btn-secondary" style="width:auto; padding:10px 24px;">
                                 <i class="fa-solid fa-pen"></i> Modifier le profil
                             </a>
-                        <% } else if (isFriend) { %>
-                            <form action="/friends/remove/<%= profileUser._id %>" method="POST" style="margin:0;">
-                                <button type="submit" class="btn btn-secondary" style="width:auto; padding:10px 24px;">
-                                    <i class="fa-solid fa-user-check"></i> Amis
-                                </button>
-                            </form>
-                            <a href="/messages/<%= profileUser._id %>" class="btn" style="width:auto; padding:10px 24px;">
-                                <i class="fa-solid fa-comment"></i> Message
-                            </a>
-                        <% } else if (requestSent) { %>
-                            <form action="/friends/cancel/<%= profileUser._id %>" method="POST" style="margin:0;">
-                                <button type="submit" class="btn btn-secondary" style="width:auto; padding:10px 24px;">
-                                    <i class="fa-solid fa-clock"></i> Annuler la demande
-                                </button>
-                            </form>
-                        <% } else if (requestReceived) { %>
-                            <form action="/friends/accept/<%= profileUser._id %>" method="POST" style="margin:0;">
-                                <button type="submit" class="btn" style="width:auto; padding:10px 24px;">
-                                    <i class="fa-solid fa-check"></i> Accepter la demande
-                                </button>
-                            </form>
                         <% } else { %>
-                            <form action="/friends/request/<%= profileUser._id %>" method="POST" style="margin:0;">
-                                <button type="submit" class="btn" style="width:auto; padding:10px 24px;">
-                                    <i class="fa-solid fa-user-plus"></i> Ajouter
-                                </button>
-                            </form>
+                            <%# Bouton ami %>
+                            <% if (isFriend) { %>
+                                <form action="/friends/remove/<%= profileUser._id %>" method="POST" style="margin:0;">
+                                    <button type="submit" class="btn btn-secondary" style="width:auto; padding:10px 20px;">
+                                        <i class="fa-solid fa-user-check"></i> Amis
+                                    </button>
+                                </form>
+                                <a href="/messages/<%= profileUser._id %>" class="btn" style="width:auto; padding:10px 20px;">
+                                    <i class="fa-solid fa-comment"></i> Message
+                                </a>
+                            <% } else if (requestSent) { %>
+                                <form action="/friends/cancel/<%= profileUser._id %>" method="POST" style="margin:0;">
+                                    <button type="submit" class="btn btn-secondary" style="width:auto; padding:10px 20px;">
+                                        <i class="fa-solid fa-clock"></i> Annuler
+                                    </button>
+                                </form>
+                            <% } else if (requestReceived) { %>
+                                <form action="/friends/accept/<%= profileUser._id %>" method="POST" style="margin:0;">
+                                    <button type="submit" class="btn" style="width:auto; padding:10px 20px;">
+                                        <i class="fa-solid fa-check"></i> Accepter
+                                    </button>
+                                </form>
+                            <% } else { %>
+                                <form action="/friends/request/<%= profileUser._id %>" method="POST" style="margin:0;">
+                                    <button type="submit" class="btn btn-secondary" style="width:auto; padding:10px 20px;">
+                                        <i class="fa-solid fa-user-plus"></i> Ajouter
+                                    </button>
+                                </form>
+                            <% } %>
+
+                            <%# Bouton Suivre — indépendant du système d'amis %>
+                            <button id="followBtn"
+                                data-id="<%= profileUser._id %>"
+                                data-following="<%= isFollowing ? 'true' : 'false' %>"
+                                class="btn <%= isFollowing ? 'btn-secondary' : 'btn-primary' %>"
+                                style="width:auto; padding:10px 20px;">
+                                <% if (isFollowing) { %>
+                                    <i class="fa-solid fa-bell-slash"></i> Abonné
+                                <% } else { %>
+                                    <i class="fa-solid fa-bell"></i> Suivre
+                                <% } %>
+                            </button>
                         <% } %>
                     </div>
                 </div>
@@ -439,6 +459,35 @@
     <script src="/js/feed.js?v=2"></script>
     <script src="/js/oracle.js?v=4"></script>
     <script>
+        // =============================================
+        // BOUTON SUIVRE
+        // =============================================
+        const followBtn = document.getElementById('followBtn')
+        if (followBtn) {
+            followBtn.addEventListener('click', async () => {
+                const id = followBtn.dataset.id
+                const isFollowing = followBtn.dataset.following === 'true'
+                followBtn.disabled = true
+                followBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>'
+
+                const res = await fetch(`/profile/${id}/${isFollowing ? 'unfollow' : 'follow'}`, { method: 'POST' })
+                const data = await res.json()
+                followBtn.disabled = false
+
+                if (data.success) {
+                    const nowFollowing = data.following
+                    followBtn.dataset.following = nowFollowing ? 'true' : 'false'
+                    followBtn.className = `btn ${nowFollowing ? 'btn-secondary' : 'btn-primary'}`
+                    followBtn.style.cssText = 'width:auto; padding:10px 20px;'
+                    followBtn.innerHTML = nowFollowing
+                        ? '<i class="fa-solid fa-bell-slash"></i> Abonné'
+                        : '<i class="fa-solid fa-bell"></i> Suivre'
+                    const counter = document.getElementById('followersCount')
+                    if (counter && data.count !== undefined) counter.textContent = data.count
+                }
+            })
+        }
+
         function toggleComments(postId) {
             const el = document.getElementById('comments-' + postId)
             el.style.display = el.style.display === 'none' ? 'block' : 'none'

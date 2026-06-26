@@ -251,4 +251,78 @@ router.post("/friends/remove/:id", requireAuth, async (req, res) => {
     }
 })
 
+// =============================================
+// FOLLOW / UNFOLLOW
+// =============================================
+router.post("/profile/:id/follow", requireAuth, async (req, res) => {
+    try {
+        const targetId = req.params.id
+        const myId = req.session.user.id
+        if (targetId === myId) return res.status(400).json({ error: "Action impossible." })
+
+        const [me, target] = await Promise.all([
+            User.findById(myId),
+            User.findById(targetId)
+        ])
+        if (!target) return res.status(404).json({ error: "Utilisateur introuvable." })
+
+        const alreadyFollowing = me.following.some(id => id.toString() === targetId)
+        if (alreadyFollowing) return res.json({ success: true, following: true, count: target.followers.length })
+
+        me.following.push(targetId)
+        target.followers.push(myId)
+        await Promise.all([me.save(), target.save()])
+
+        // Notification
+        const notif = await Notification.create({
+            destinataire: targetId,
+            expediteur: myId,
+            type: "abonnement",
+            lien: `/profile/${myId}`
+        })
+        const populated = await notif.populate("expediteur", "nom photoProfil")
+        global.io?.to(targetId).emit("new-notification", {
+            ...populated.toObject(),
+            texte: `${me.nom} a commencé à vous suivre`
+        })
+
+        // Push
+        try {
+            const { sendPushToUser, buildPayload } = require("../lib/webpush")
+            await sendPushToUser(targetId, buildPayload(
+                "Nouvel abonné",
+                `${me.nom} a commencé à vous suivre`,
+                `/profile/${myId}`
+            ))
+        } catch (_) {}
+
+        res.json({ success: true, following: true, count: target.followers.length + 1 })
+    } catch (err) {
+        console.error(err)
+        res.status(500).json({ error: "Erreur serveur." })
+    }
+})
+
+router.post("/profile/:id/unfollow", requireAuth, async (req, res) => {
+    try {
+        const targetId = req.params.id
+        const myId = req.session.user.id
+
+        const [me, target] = await Promise.all([
+            User.findById(myId),
+            User.findById(targetId)
+        ])
+        if (!target) return res.status(404).json({ error: "Utilisateur introuvable." })
+
+        me.following = me.following.filter(id => id.toString() !== targetId)
+        target.followers = target.followers.filter(id => id.toString() !== myId)
+        await Promise.all([me.save(), target.save()])
+
+        res.json({ success: true, following: false, count: target.followers.length })
+    } catch (err) {
+        console.error(err)
+        res.status(500).json({ error: "Erreur serveur." })
+    }
+})
+
 module.exports = router

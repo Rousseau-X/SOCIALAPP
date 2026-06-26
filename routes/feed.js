@@ -13,7 +13,14 @@ router.get("/", requireAuth, async (req, res) => {
     try {
         const currentUser = await User.findById(req.session.user.id)
 
-        const rawPosts = await Post.find()
+        // Feed = mes posts + amis + abonnements. Fallback global si < 5 posts.
+        const feedUserIds = [
+            currentUser._id,
+            ...(currentUser.amis || []),
+            ...(currentUser.following || [])
+        ]
+
+        let rawPosts = await Post.find({ auteur: { $in: feedUserIds } })
             .populate("auteur", "nom photoProfil badges profileEffect")
             .populate("commentaires.auteur", "nom photoProfil badges profileEffect")
             .populate({
@@ -22,6 +29,18 @@ router.get("/", requireAuth, async (req, res) => {
             })
             .sort({ createdAt: -1 })
             .limit(50)
+
+        if (rawPosts.filter(p => p.auteur != null).length < 5) {
+            rawPosts = await Post.find()
+                .populate("auteur", "nom photoProfil badges profileEffect")
+                .populate("commentaires.auteur", "nom photoProfil badges profileEffect")
+                .populate({
+                    path: "sharedFrom",
+                    populate: { path: "auteur", select: "nom photoProfil badges" }
+                })
+                .sort({ createdAt: -1 })
+                .limit(50)
+        }
 
         const posts = rawPosts.filter(p => p.auteur != null)
         const demandesCount = currentUser.demandesRecues.length

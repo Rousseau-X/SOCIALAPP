@@ -35,6 +35,7 @@ router.get("/profile/:id", requireAuth, async (req, res) => {
         const amisCommuns = profileUser.amis.filter(id =>
             currentUser.amis.some(myId => myId.toString() === id.toString())
         ).length
+        const isFollowing = currentUser.following.some(id => id.toString() === profileUser._id.toString())
 
         res.render("profile", {
             title: profileUser.nom,
@@ -47,6 +48,7 @@ router.get("/profile/:id", requireAuth, async (req, res) => {
             requestSent,
             requestReceived,
             amisCommuns,
+            isFollowing,
             demandesCount: currentUser.demandesRecues.length
         })
     } catch (err) {
