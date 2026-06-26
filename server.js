@@ -38,6 +38,7 @@ mongoose.connect(process.env.MONGO_URI)
         await assistant.ensureAssistantExists()
         console.log("🤖 Assistant prêt")
         assistant.sendWelcomeToAll()
+        assistant.startAutonomousBehavior()
         const { ensureSystemGroups } = require("./routes/auth")
         try { await ensureSystemGroups() } catch(e) { console.log("Groupes système:", e.message) }
         try {

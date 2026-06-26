@@ -92,7 +92,11 @@
                 <pre class="code-content"><code><%= msg.contenu %></code></pre>
                 <% if (msg.codeSignature) { %><div class="code-signature"><i class="fa-solid fa-signature"></i> <%= msg.codeSignature %></div><% } %>
               <% } else { %>
-                <span class="message-text"><%= msg.contenu %></span>
+                <span class="message-text"><%- (msg.contenu || '')
+                  .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+                  .replace(/\*\*([\s\S]+?)\*\*/g,'<strong>$1</strong>')
+                  .replace(/\*([\s\S]+?)\*/g,'<em>$1</em>')
+                  .replace(/\n/g,'<br>') %></span>
               <% } %>
               <% if (isBurn) { %><div class="burn-timer" data-expires="<%= msg.expiresAt %>"><i class="fa-regular fa-clock"></i> …</div><% } %>
               <% if (isSent) { %><span class="message-status"><i class="fa-solid <%= msg.lu ? 'fa-check-double read' : 'fa-check' %>"></i></span><% } %>
@@ -567,7 +571,7 @@ function appendIbMessage(data, isSent) {
     }
     html = `<div class="message-bubble ${isSent?"sent":"received"} ${isBurn?"burn-msg":""}">
       ${replyHtml}
-      <span class="message-text">${esc(data.contenu||"")}</span>
+      <span class="message-text">${renderMarkdown(data.contenu||"")}</span>
       ${isBurn?`<div class="burn-timer" data-expires="${data.expiresAt}"><i class="fa-regular fa-clock"></i> …</div>`:""}
       ${isSent?'<span class="message-status"><i class="fa-solid fa-check"></i></span>':""}
     </div>`;
@@ -629,6 +633,12 @@ document.querySelectorAll(".message-bubble.audio .audio-player").forEach(a => {
 });
 
 function esc(str) { const d=document.createElement("div"); d.innerText=str||""; return d.innerHTML; }
+function renderMarkdown(str) {
+  return esc(str)
+    .replace(/\*\*([\s\S]+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*([\s\S]+?)\*/g, '<em>$1</em>')
+    .replace(/\n/g, '<br>');
+}
 
 socket.emit("mark-read", { from: otherUserId, to: currentUserId });
 chatMessages.scrollTop = chatMessages.scrollHeight;
