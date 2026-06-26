@@ -75,6 +75,109 @@ router.get("/api/vault/status/:otherId", requireAuth, async (req, res) => {
 })
 
 // =============================================
+// PAGE PARAMÈTRES PRINCIPALE
+// =============================================
+
+router.get("/settings", requireAuth, async (req, res) => {
+    try {
+        const user = await User.findById(req.session.user.id)
+            .select("nom email photoProfil hideOnlineStatus isIncognitoInput showInSearch allowMessagesFrom aiCloneActive aiCloneInstructions")
+        res.render("settings", {
+            title: "Paramètres",
+            user: { ...req.session.user, ...user.toObject() },
+            success: req.query.success || null
+        })
+    } catch (err) {
+        res.status(500).send("Erreur serveur.")
+    }
+})
+
+// Masquer le statut en ligne
+router.post("/api/settings/hide-online", requireAuth, async (req, res) => {
+    try {
+        const user = await User.findById(req.session.user.id)
+        user.hideOnlineStatus = !!req.body.enabled
+        await user.save()
+        res.json({ success: true })
+    } catch (err) {
+        res.status(500).json({ error: "Erreur serveur." })
+    }
+})
+
+// Apparaître dans la recherche
+router.post("/api/settings/show-in-search", requireAuth, async (req, res) => {
+    try {
+        const user = await User.findById(req.session.user.id)
+        user.showInSearch = !!req.body.enabled
+        await user.save()
+        res.json({ success: true })
+    } catch (err) {
+        res.status(500).json({ error: "Erreur serveur." })
+    }
+})
+
+// Qui peut envoyer des messages
+router.post("/api/settings/allow-messages", requireAuth, async (req, res) => {
+    try {
+        const { value } = req.body
+        if (!["all", "friends", "none"].includes(value)) return res.status(400).json({ error: "Valeur invalide." })
+        const user = await User.findById(req.session.user.id)
+        user.allowMessagesFrom = value
+        await user.save()
+        res.json({ success: true })
+    } catch (err) {
+        res.status(500).json({ error: "Erreur serveur." })
+    }
+})
+
+// Clone IA — activer/désactiver
+router.post("/api/settings/ai-clone", requireAuth, async (req, res) => {
+    try {
+        const user = await User.findById(req.session.user.id)
+        user.aiCloneActive = !!req.body.enabled
+        await user.save()
+        res.json({ success: true })
+    } catch (err) {
+        res.status(500).json({ error: "Erreur serveur." })
+    }
+})
+
+// Clone IA — instructions
+router.post("/api/settings/ai-clone-instructions", requireAuth, async (req, res) => {
+    try {
+        const { instructions } = req.body
+        const user = await User.findById(req.session.user.id)
+        user.aiCloneInstructions = String(instructions || "").slice(0, 500)
+        await user.save()
+        res.json({ success: true })
+    } catch (err) {
+        res.status(500).json({ error: "Erreur serveur." })
+    }
+})
+
+// Supprimer le compte
+router.delete("/api/settings/delete-account", requireAuth, async (req, res) => {
+    try {
+        const userId = req.session.user.id
+        const Post = require("../models/Post")
+        const Message = require("../models/Message")
+        const Notification = require("../models/Notification")
+        await Post.deleteMany({ auteur: userId })
+        await Message.deleteMany({ $or: [{ expediteur: userId }, { destinataire: userId }] })
+        await Notification.deleteMany({ $or: [{ destinataire: userId }, { emetteur: userId }] })
+        await User.updateMany(
+            { $or: [{ amis: userId }, { demandesRecues: userId }, { demandesEnvoyees: userId }, { followers: userId }, { following: userId }] },
+            { $pull: { amis: userId, demandesRecues: userId, demandesEnvoyees: userId, followers: userId, following: userId } }
+        )
+        await User.findByIdAndDelete(userId)
+        req.session.destroy()
+        res.json({ success: true })
+    } catch (err) {
+        res.status(500).json({ error: "Erreur serveur." })
+    }
+})
+
+// =============================================
 // SOUS-PROFILS ANONYMES — PAGE SETTINGS
 // =============================================
 

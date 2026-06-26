@@ -26,7 +26,12 @@
             <% } %>
 
             <!-- En-tête du profil -->
-            <div class="card profile-header">
+            <div class="card profile-header" style="position:relative;">
+                <% if (isOwnProfile) { %>
+                <a href="/settings" class="ajax-link" title="Paramètres" style="position:absolute;top:14px;right:14px;z-index:10;width:36px;height:36px;border-radius:50%;background:rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;color:#fff;font-size:15px;text-decoration:none;backdrop-filter:blur(4px);transition:background .2s;" onmouseover="this.style.background='rgba(0,0,0,.55)'" onmouseout="this.style.background='rgba(0,0,0,.35)'">
+                    <i class="fa-solid fa-gear"></i>
+                </a>
+                <% } %>
                 <div class="profile-cover" id="profileCoverBg" style="<%= profileUser.profileCover ? 'background-image:url(' + profileUser.profileCover + ');background-size:cover;background-position:center;background-color:transparent;' : '' %>">
                     <% if (isOwnProfile) { %>
                     <button onclick="openCoverPicker()" id="coverCameraBtn" title="Changer le fond">

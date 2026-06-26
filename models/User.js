@@ -116,7 +116,12 @@ const userSchema = new mongoose.Schema({
 
     // === ABONNEMENTS ===
     followers: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
-    following: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }]
+    following: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+
+    // === PARAMÈTRES DE CONFIDENTIALITÉ ===
+    hideOnlineStatus: { type: Boolean, default: false },
+    allowMessagesFrom: { type: String, enum: ["all", "friends", "none"], default: "all" },
+    showInSearch: { type: Boolean, default: true }
 
 }, { timestamps: true })
 
