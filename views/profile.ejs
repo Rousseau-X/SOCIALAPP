@@ -411,7 +411,7 @@
                             <% } else { %>
                                 <i class="fa-solid fa-heart"></i>
                             <% } %>
-                            <span class="likes-count" data-reactions='<%= JSON.stringify(reactionCounts) %>'><% if(_topEmojis){ %><span class="reaction-bubbles"><%= _topEmojis %></span><% } %><span class="reaction-total"><%= totalReactions || '' %></span></span>
+                            <span class="likes-count" data-reactions='<%= JSON.stringify(reactionCounts) %>'><% if(_topEmojis && totalReactions > 1){ %><span class="reaction-bubbles"><%= _topEmojis %></span><% } %><span class="reaction-total"><%= totalReactions || '' %></span></span>
                         </button>
 
                         <button onclick="toggleComments('<%= post._id %>')" title="Commentaires">

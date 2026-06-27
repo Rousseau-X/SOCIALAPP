@@ -366,14 +366,15 @@ document.addEventListener('mouseout', function(e) {
 const REACTION_EMOJIS = { heart: '❤️', haha: '😂', wow: '😮', sad: '😢', clap: '👏', grr: '😠' };
 
 function _buildLikesHTML(total, counts) {
+    const n = total > 0 ? total : 0;
+    const countPart = `<span class="reaction-total">${n || ''}</span>`;
+    if (n <= 1) return countPart;
     const bubbles = Object.entries(counts || {})
         .filter(([, v]) => v > 0)
         .sort((a, b) => b[1] - a[1])
         .slice(0, 3)
         .map(([type]) => REACTION_EMOJIS[type] || '')
         .join('');
-    const n = total > 0 ? total : 0;
-    const countPart = `<span class="reaction-total">${n || ''}</span>`;
     return bubbles ? `<span class="reaction-bubbles">${bubbles}</span>${countPart}` : countPart;
 }
 

@@ -607,7 +607,7 @@
                                 <i class="fa-solid fa-heart"></i>
                             <% } %>
                             <% const _topEmojis = Object.entries(reactionCounts).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([t])=>REACTION_EMOJIS[t]||'').join(''); %>
-                            <span class="likes-count" data-reactions='<%= JSON.stringify(reactionCounts) %>'><% if(_topEmojis){ %><span class="reaction-bubbles"><%= _topEmojis %></span><% } %><span class="reaction-total"><%= totalReactions || '' %></span></span>
+                            <span class="likes-count" data-reactions='<%= JSON.stringify(reactionCounts) %>'><% if(_topEmojis && totalReactions > 1){ %><span class="reaction-bubbles"><%= _topEmojis %></span><% } %><span class="reaction-total"><%= totalReactions || '' %></span></span>
                         </button>
 
                         <button onclick="toggleComments('<%= post._id %>')" title="Commentaires">
