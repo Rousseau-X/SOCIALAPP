@@ -468,8 +468,8 @@ async function handleReaction(type, postId) {
 // Appelée une seule fois au chargement initial — les délégations
 // sur document fonctionnent même après remplacement AJAX du DOM.
 function initDelegation() {
-    // --- LONG PRESS sur le bouton like ---
-    document.addEventListener('mousedown', function(e) {
+    // --- LONG PRESS — Pointer Events API (unifié souris + tactile + stylet) ---
+    document.addEventListener('pointerdown', function(e) {
         const likeBtn = e.target.closest('.like-btn');
         if (!likeBtn) return;
         _isLongPress = false;
@@ -477,22 +477,17 @@ function initDelegation() {
         _pressTimer = setTimeout(() => {
             _isLongPress = true;
             _showPicker(likeBtn.dataset.id, likeBtn);
-        }, 480);
+        }, 500);
     });
 
-    document.addEventListener('touchstart', function(e) {
-        const likeBtn = e.target.closest('.like-btn');
-        if (!likeBtn) return;
-        _isLongPress = false;
-        clearTimeout(_pressTimer);
-        _pressTimer = setTimeout(() => {
-            _isLongPress = true;
-            _showPicker(likeBtn.dataset.id, likeBtn);
-        }, 480);
-    }, { passive: true });
+    // Annuler le timer si le doigt/souris est relâché ou annulé
+    document.addEventListener('pointerup', () => clearTimeout(_pressTimer));
+    document.addEventListener('pointercancel', () => { clearTimeout(_pressTimer); _isLongPress = false; });
 
-    document.addEventListener('mouseup', () => clearTimeout(_pressTimer));
-    document.addEventListener('touchend', () => clearTimeout(_pressTimer));
+    // Bloquer le menu contextuel natif sur le bouton like (iOS Safari / clic droit desktop)
+    document.addEventListener('contextmenu', function(e) {
+        if (e.target.closest('.like-btn')) e.preventDefault();
+    });
 
     // --- CLICKS ---
     document.addEventListener('click', function(e) {

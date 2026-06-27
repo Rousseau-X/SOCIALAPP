@@ -903,6 +903,11 @@ a {
     transition: var(--transition);
     flex: 1;
     justify-content: center;
+    /* Bloque le menu long-press natif iOS/Android */
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+    touch-action: manipulation;
 }
 
 .post-actions button i {
