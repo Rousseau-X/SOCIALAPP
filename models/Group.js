@@ -32,4 +32,12 @@ const groupSchema = new mongoose.Schema({
     expiresAt: { type: Date, default: null },
 }, { timestamps: true })
 
+// ============================================================
+// INDEXES — membres, créateur, groupes éphémères
+// ============================================================
+groupSchema.index({ "membres.user": 1 })          // groupes d'un utilisateur
+groupSchema.index({ createur: 1 })                // groupes créés
+groupSchema.index({ isSystemGroup: 1 })           // groupes système
+groupSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0, sparse: true }) // salons éphémères TTL
+
 module.exports = mongoose.models.Group || mongoose.model("Group", groupSchema)

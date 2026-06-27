@@ -63,4 +63,12 @@ const postSchema = new mongoose.Schema({
 
 }, { timestamps: true })
 
+// ============================================================
+// INDEXES — feed, profil, likes
+// ============================================================
+postSchema.index({ auteur: 1, createdAt: -1 })   // posts d'un utilisateur
+postSchema.index({ createdAt: -1 })               // feed global
+postSchema.index({ likes: 1 })                    // requêtes "liké par"
+postSchema.index({ isPinned: 1, auteur: 1 })      // post épinglé
+
 module.exports = mongoose.models.Post || mongoose.model("Post", postSchema)

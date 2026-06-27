@@ -29,4 +29,13 @@ const messageSchema = new mongoose.Schema({
     anonymousAvatar: { type: String, default: null },
 }, { timestamps: true })
 
+// ============================================================
+// INDEXES — conversation, non-lus, groupes, éphémères
+// ============================================================
+messageSchema.index({ expediteur: 1, destinataire: 1, createdAt: -1 }) // conversation privée
+messageSchema.index({ destinataire: 1, lu: 1 })                         // ⚡ comptage non-lus (middleware global)
+messageSchema.index({ groupe: 1, createdAt: -1 })                       // messages de groupe
+messageSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 })        // suppression TTL messages éphémères
+messageSchema.index({ expediteur: 1, createdAt: -1 })                   // messages envoyés
+
 module.exports = mongoose.models.Message || mongoose.model("Message", messageSchema)

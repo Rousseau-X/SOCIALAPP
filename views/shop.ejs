@@ -79,15 +79,31 @@
                               const expDate = new Date(user.aiCloneExpiry)
                               const daysLeft = Math.ceil((expDate - new Date()) / (1000*60*60*24))
                             %>
-                            <div style="font-size:11px;color:#22c55e;font-weight:600;margin-top:4px;margin-bottom:4px;">
+                            <div style="font-size:11px;color:#22c55e;font-weight:600;margin-top:4px;margin-bottom:6px;">
                                 <i class="fa-solid fa-circle-check"></i> Actif — <%= daysLeft %> j restants
                             </div>
+                            <!-- Toggle activer/désactiver -->
+                            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+                                <span style="font-size:12px;color:var(--text-secondary);">Répondre en mon nom</span>
+                                <label class="toggle-switch" style="margin:0;">
+                                    <input type="checkbox" class="clone-toggle-check" <%= user.aiCloneActive ? 'checked' : '' %>>
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                            <!-- Instructions -->
+                            <textarea class="clone-instructions-input" rows="3" maxlength="500"
+                                placeholder="Ex : Réponds avec humour, ne donne jamais mes infos perso…"
+                                style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-size:11px;background:var(--bg-secondary);color:var(--text-primary);resize:vertical;box-sizing:border-box;font-family:inherit;margin-bottom:6px;"><%= user.aiCloneInstructions || '' %></textarea>
+                            <button class="clone-save-btn btn-shop-buy" style="margin-bottom:6px;">
+                                <i class="fa-solid fa-floppy-disk"></i> Sauvegarder
+                            </button>
                             <button class="btn-shop-buy"
                                 data-item-id="<%= item.id %>"
                                 data-price="<%= item.price %>"
                                 data-type="<%= item.type %>"
-                                data-name="<%= item.name %>">
-                                <i class="fa-solid fa-rotate-right"></i> Prolonger
+                                data-name="<%= item.name %>"
+                                style="background:rgba(99,102,241,.15);color:#8b5cf6;font-size:11px;">
+                                <i class="fa-solid fa-rotate-right"></i> Prolonger (+1 mois)
                             </button>
                         <% } else if (isOwned) { %>
                             <button class="btn-shop-active" disabled>✓ Actif</button>
@@ -138,6 +154,44 @@ function showToast(msg, ok=true) {
     t.style.display = "block"
     setTimeout(() => { t.style.display = "none" }, 3000)
 }
+
+// === CLONE IA — toggle activer/désactiver ===
+document.querySelectorAll(".clone-toggle-check").forEach(chk => {
+    chk.addEventListener("change", async function() {
+        const r = await fetch("/api/clone/toggle", { method: "POST" })
+        const d = await r.json()
+        if (!d.success) {
+            this.checked = !this.checked
+            showToast(d.error || "Erreur", false)
+        }
+    })
+})
+
+// === CLONE IA — sauvegarder les instructions ===
+document.querySelectorAll(".clone-save-btn").forEach(btn => {
+    btn.addEventListener("click", async function() {
+        const card = this.closest(".shop-item")
+        const textarea = card.querySelector(".clone-instructions-input")
+        if (!textarea) return
+        const orig = this.innerHTML
+        this.disabled = true
+        this.textContent = "Sauvegarde…"
+        const r = await fetch("/api/clone/instructions", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ instructions: textarea.value })
+        })
+        const d = await r.json()
+        this.disabled = false
+        if (d.success) {
+            this.innerHTML = "✓ Sauvegardé"
+            setTimeout(() => { this.innerHTML = orig }, 2000)
+        } else {
+            this.innerHTML = "Erreur"
+            setTimeout(() => { this.innerHTML = orig }, 2000)
+        }
+    })
+})
 
 document.querySelectorAll(".btn-shop-buy").forEach(btn => {
     btn.addEventListener("click", async function() {

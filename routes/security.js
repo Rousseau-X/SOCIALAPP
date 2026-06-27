@@ -151,17 +151,68 @@ router.delete("/api/settings/delete-account", requireAuth, async (req, res) => {
         const Post = require("../models/Post")
         const Message = require("../models/Message")
         const Notification = require("../models/Notification")
-        await Post.deleteMany({ auteur: userId })
-        await Message.deleteMany({ $or: [{ expediteur: userId }, { destinataire: userId }] })
-        await Notification.deleteMany({ $or: [{ destinataire: userId }, { emetteur: userId }] })
-        await User.updateMany(
-            { $or: [{ amis: userId }, { demandesRecues: userId }, { demandesEnvoyees: userId }, { followers: userId }, { following: userId }] },
-            { $pull: { amis: userId, demandesRecues: userId, demandesEnvoyees: userId, followers: userId, following: userId } }
-        )
+        const Story = require("../models/Story")
+        const Bounty = require("../models/Bounty")
+        const DailyQuest = require("../models/DailyQuest")
+        const DailyTask = require("../models/DailyTask")
+        const SubProfile = require("../models/SubProfile")
+        const Analytics = require("../models/Analytics")
+        const Group = require("../models/Group")
+
+        // Tout supprimer en parallèle — aucun gâchis en base
+        await Promise.all([
+            // Contenu créé par l'utilisateur
+            Post.deleteMany({ auteur: userId }),
+            Message.deleteMany({ $or: [{ expediteur: userId }, { destinataire: userId }] }),
+            Notification.deleteMany({ $or: [{ destinataire: userId }, { expediteur: userId }] }),
+            Story.deleteMany({ auteur: userId }),
+            Bounty.deleteMany({ createdBy: userId }),
+            DailyQuest.deleteMany({ userId }),
+            Analytics.deleteMany({ userId }),
+            SubProfile.deleteMany({ userId }),
+
+            // Nettoyer les tâches quotidiennes (retirer les completions de cet user)
+            DailyTask.updateMany(
+                { "completions.userId": userId },
+                { $pull: { completions: { userId } } }
+            ),
+
+            // Retirer l'user de tous les groupes où il est membre
+            Group.updateMany(
+                { "membres.user": userId },
+                { $pull: { membres: { user: userId } } }
+            ),
+
+            // Retirer l'user des listes sociales des autres utilisateurs
+            User.updateMany(
+                { $or: [
+                    { amis: userId },
+                    { demandesRecues: userId },
+                    { demandesEnvoyees: userId },
+                    { followers: userId },
+                    { following: userId },
+                    { blockedUsers: userId }
+                ]},
+                { $pull: {
+                    amis: userId,
+                    demandesRecues: userId,
+                    demandesEnvoyees: userId,
+                    followers: userId,
+                    following: userId,
+                    blockedUsers: userId
+                }}
+            ),
+        ])
+
+        // Supprimer les groupes dont il était le seul créateur et qui sont vides
+        await Group.deleteMany({ createur: userId, isPermanent: false, membres: { $size: 0 } })
+
+        // Supprimer le compte
         await User.findByIdAndDelete(userId)
         req.session.destroy()
         res.json({ success: true })
     } catch (err) {
+        console.error("Delete account error:", err)
         res.status(500).json({ error: "Erreur serveur." })
     }
 })

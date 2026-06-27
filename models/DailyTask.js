@@ -15,4 +15,11 @@ const dailyTaskSchema = new mongoose.Schema({
     }]
 }, { timestamps: true })
 
+// ============================================================
+// INDEXES — jour, TTL
+// ============================================================
+dailyTaskSchema.index({ day: 1 })                                              // tâches du jour
+dailyTaskSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 })            // auto-purge après expiration
+dailyTaskSchema.index({ "completions.userId": 1 })                             // vérification complétion
+
 module.exports = mongoose.models.DailyTask || mongoose.model("DailyTask", dailyTaskSchema)

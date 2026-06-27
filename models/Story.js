@@ -38,7 +38,10 @@ const storySchema = new mongoose.Schema({
     }
 }, { timestamps: true })
 
-// Index pour nettoyage automatique
-storySchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 })
+// ============================================================
+// INDEXES — auteur, TTL, feed
+// ============================================================
+storySchema.index({ auteur: 1, expiresAt: 1 })    // stories d'un utilisateur
+storySchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 }) // suppression TTL
 
 module.exports = mongoose.models.Story || mongoose.model("Story", storySchema)

@@ -77,7 +77,7 @@ function startEphemeralCleanup() {
 // =============================================
 // RATE LIMITING
 // =============================================
-app.use(compression({ level: 6, threshold: 1024, filter: (req, res) => {
+app.use(compression({ level: 7, threshold: 512, filter: (req, res) => {
     if (req.headers['content-type']?.includes('image')) return false
     return compression.filter(req, res)
 }}))
@@ -100,7 +100,16 @@ app.set("views", path.join(__dirname, "views"))
 
 app.use(express.urlencoded({ extended: true }))
 app.use(express.json())
-app.use(express.static(path.join(__dirname, "public")))
+app.use(express.static(path.join(__dirname, "public"), {
+    maxAge: "30d",           // JS, CSS, images → cache 30 jours côté navigateur
+    etag: true,
+    lastModified: true,
+    setHeaders(res, filePath) {
+        if (filePath.endsWith(".html")) {
+            res.setHeader("Cache-Control", "no-cache")
+        }
+    }
+}))
 
 app.use(session({
     secret: process.env.SESSION_SECRET,
@@ -134,10 +143,14 @@ app.use(async (req, res, next) => {
 
     if (req.session.user) {
         try {
-            const currentUser = await User.findById(req.session.user.id)
+            const [currentUser, messagesCount, notifCount] = await Promise.all([
+                User.findById(req.session.user.id).lean(),
+                Message.countDocuments({ destinataire: req.session.user.id, lu: false }),
+                Notification.countDocuments({ destinataire: req.session.user.id, lu: false })
+            ])
             res.locals.demandesCount = currentUser ? currentUser.demandesRecues.length : 0
-            res.locals.messagesCount = await Message.countDocuments({ destinataire: req.session.user.id, lu: false })
-            res.locals.notifCount = await Notification.countDocuments({ destinataire: req.session.user.id, lu: false })
+            res.locals.messagesCount = messagesCount
+            res.locals.notifCount = notifCount
             if (currentUser) {
                 req.session.user.role = currentUser.role
                 req.session.user.theme = currentUser.theme || "default"

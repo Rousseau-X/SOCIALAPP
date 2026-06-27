@@ -130,6 +130,18 @@ const userSchema = new mongoose.Schema({
 
 }, { timestamps: true })
 
+// ============================================================
+// INDEXES — optimisation des requêtes les plus fréquentes
+// ============================================================
+userSchema.index({ nom: 1 })                          // recherche par nom
+userSchema.index({ enLigne: 1 })                      // utilisateurs en ligne
+userSchema.index({ lastSeen: -1 })                    // dernière activité
+userSchema.index({ walletBalance: -1 })               // classement pièces
+userSchema.index({ xp: -1 })                          // classement XP
+userSchema.index({ role: 1 })                         // filtrage admins
+userSchema.index({ showInSearch: 1, nom: 1 })         // recherche publique
+userSchema.index({ createdAt: -1 })                   // nouveaux membres
+
 userSchema.pre("save", async function(next) {
     if (!this.isModified("motDePasse")) return next()
     this.motDePasse = await bcrypt.hash(this.motDePasse, 10)

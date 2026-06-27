@@ -26,4 +26,11 @@ const notificationSchema = new mongoose.Schema({
     }
 }, { timestamps: true })
 
+// ============================================================
+// INDEXES — non-lus, historique
+// ============================================================
+notificationSchema.index({ destinataire: 1, lu: 1 })            // ⚡ comptage non-lus (middleware global)
+notificationSchema.index({ destinataire: 1, createdAt: -1 })    // liste des notifs
+notificationSchema.index({ createdAt: 1 }, { expireAfterSeconds: 30 * 24 * 3600 }) // auto-purge 30 jours
+
 module.exports = mongoose.models.Notification || mongoose.model("Notification", notificationSchema)

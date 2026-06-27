@@ -17,4 +17,10 @@ const bountySchema = new mongoose.Schema({
     groupId: { type: mongoose.Schema.Types.ObjectId, ref: "Group", default: null }
 }, { timestamps: true })
 
+// ============================================================
+// INDEXES — statut, créateur
+// ============================================================
+bountySchema.index({ status: 1, createdAt: -1 }) // primes ouvertes
+bountySchema.index({ createdBy: 1 })              // primes d'un user
+
 module.exports = mongoose.models.Bounty || mongoose.model("Bounty", bountySchema)

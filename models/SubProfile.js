@@ -9,6 +9,11 @@ const subProfileSchema = new mongoose.Schema({
     isActive: { type: Boolean, default: false }
 }, { timestamps: true })
 
+// ============================================================
+// INDEXES
+// ============================================================
+subProfileSchema.index({ userId: 1 })  // sous-profils d'un utilisateur
+
 subProfileSchema.statics.generateAnonymous = function() {
     const adjectives = ["Fantôme", "Ombre", "Ninja", "Spectre", "Mystère", "Inconnu", "Masqué", "Anonyme", "Secret", "Invisible"]
     const adj = adjectives[Math.floor(Math.random() * adjectives.length)]
