@@ -33,7 +33,8 @@
                 'Titres': '<i class="fa-solid fa-medal"></i>',
                 'Cadres': '<i class="fa-solid fa-image"></i>',
                 'Badges': '<i class="fa-solid fa-certificate"></i>',
-                'Effets': '<i class="fa-solid fa-sparkles"></i>'
+                'Effets': '<i class="fa-solid fa-sparkles"></i>',
+                'IA': '<i class="fa-solid fa-robot"></i>'
             }
             %>
 
@@ -50,6 +51,7 @@
                         else if (item.type === 'frame') isOwned = user.profileFrame === item.value
                         else if (item.type === 'badge') isOwned = (user.badges || []).some(b => b.type === item.value)
                         else if (item.type === 'effect') isOwned = user.profileEffect === item.value
+                        else if (item.type === 'clone') isOwned = user.aiCloneExpiry && new Date(user.aiCloneExpiry) > new Date()
                     %>
                     <div class="shop-item <%= item.type === 'theme' ? 'theme-preview-' + item.theme : '' %> <%= isOwned ? 'active-theme' : '' %>">
                         <% if (item.type === 'effect') { %>
@@ -72,7 +74,22 @@
                                 <span class="price-credits"><i class="fa-solid fa-coins"></i> <%= item.price %> crédits</span>
                             <% } %>
                         </div>
-                        <% if (isOwned) { %>
+                        <% if (isOwned && item.type === 'clone') { %>
+                            <%
+                              const expDate = new Date(user.aiCloneExpiry)
+                              const daysLeft = Math.ceil((expDate - new Date()) / (1000*60*60*24))
+                            %>
+                            <div style="font-size:11px;color:#22c55e;font-weight:600;margin-top:4px;margin-bottom:4px;">
+                                <i class="fa-solid fa-circle-check"></i> Actif — <%= daysLeft %> j restants
+                            </div>
+                            <button class="btn-shop-buy"
+                                data-item-id="<%= item.id %>"
+                                data-price="<%= item.price %>"
+                                data-type="<%= item.type %>"
+                                data-name="<%= item.name %>">
+                                <i class="fa-solid fa-rotate-right"></i> Prolonger
+                            </button>
+                        <% } else if (isOwned) { %>
                             <button class="btn-shop-active" disabled>✓ Actif</button>
                         <% } else { %>
                             <button class="btn-shop-buy"
@@ -80,7 +97,7 @@
                                 data-price="<%= item.price %>"
                                 data-type="<%= item.type %>"
                                 data-name="<%= item.name %>">
-                                <%- item.price === 0 ? 'Réclamer' : item.type === 'xpboost' ? '<i class="fa-solid fa-bolt"></i> Activer' : item.type === 'credits' ? '<i class="fa-solid fa-coins"></i> Obtenir' : 'Acheter' %>
+                                <%- item.price === 0 ? 'Réclamer' : item.type === 'xpboost' ? '<i class="fa-solid fa-bolt"></i> Activer' : item.type === 'credits' ? '<i class="fa-solid fa-coins"></i> Obtenir' : item.type === 'clone' ? '<i class="fa-solid fa-robot"></i> Activer' : 'Acheter' %>
                             </button>
                         <% } %>
                     </div>
@@ -152,6 +169,7 @@ document.querySelectorAll(".btn-shop-buy").forEach(btn => {
                 else if (type === 'badge') showToast(`<i class="fa-solid fa-certificate"></i> Badge obtenu et visible sur ton profil !`)
                 else if (type === 'credits') showToast(`<i class="fa-solid fa-coins"></i> +${data.creditsGained} crédits ajoutés à ton solde !`)
                 else if (type === 'effect') showToast(`<i class="fa-solid fa-sparkles"></i> ${name} activé sur ton profil !`)
+                else if (type === 'clone') showToast(`🤖 Clone IA activé pour 1 mois ! Va dans Paramètres pour le configurer.`)
                 setTimeout(() => location.reload(), 1500)
             } else {
                 showToast(data.error || "Erreur lors de l'achat.", false)

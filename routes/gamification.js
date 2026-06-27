@@ -52,6 +52,9 @@ const SHOP_ITEMS = [
     { id: "effect_star",     name: "Étoiles",       price: 1200, type: "effect", value: "star",     emoji: "🌟", desc: "Des étoiles filantes sur ton profil",         category: "Effets" },
     { id: "effect_diamond",  name: "Diamant",       price: 2000, type: "effect", value: "diamond",  emoji: "💎", desc: "Effet diamant ultra-brillant",              category: "Effets" },
     { id: "effect_butterfly",name: "Papillons",     price: 2500, type: "effect", value: "butterfly",emoji: "🦋", desc: "Des papillons animés autour de toi",          category: "Effets" },
+
+    // === CLONE IA ===
+    { id: "clone_ia", name: "Clone IA", price: 1500, type: "clone", emoji: "🤖", desc: "Une IA répond en ton nom pendant 1 mois. Personnalise son style dans tes paramètres.", category: "IA" },
 ]
 
 const BOUNTY_ACTION_TYPES = [
@@ -205,7 +208,7 @@ router.post("/api/shop/buy", requireAuth, async (req, res) => {
             result = { creditsGained: item.amount }
 
         // ============================================================
-        // === EFFET DE PROFIL (AJOUT) ===
+        // === EFFET DE PROFIL ===
         // ============================================================
         } else if (item.type === "effect") {
             if (user.profileEffect === item.value) {
@@ -214,6 +217,17 @@ router.post("/api/shop/buy", requireAuth, async (req, res) => {
             user.profileEffect = item.value
             req.session.user.profileEffect = item.value
             result = { profileEffect: item.value }
+
+        // ============================================================
+        // === CLONE IA ===
+        // ============================================================
+        } else if (item.type === "clone") {
+            // Si déjà actif, prolonger d'un mois
+            const now = new Date()
+            const current = user.aiCloneExpiry && user.aiCloneExpiry > now ? user.aiCloneExpiry : now
+            user.aiCloneExpiry = new Date(current.getTime() + 30 * 24 * 3600 * 1000)
+            user.aiCloneActive = true
+            result = { aiCloneExpiry: user.aiCloneExpiry }
         }
 
         await user.save()
@@ -389,10 +403,14 @@ router.post("/api/bounties/:id/award/:userId", requireAuth, async (req, res) => 
     } catch (err) { console.error(err); res.status(500).json({ error: "Erreur serveur." }) }
 })
 
-// Activer/désactiver le clone IA
+// Activer/désactiver le clone IA (nécessite un abonnement valide via la boutique)
 router.post("/api/clone/toggle", requireAuth, async (req, res) => {
     try {
         const user = await User.findById(req.session.user.id)
+        const hasAccess = user.aiCloneExpiry && user.aiCloneExpiry > new Date()
+        if (!hasAccess) {
+            return res.status(403).json({ success: false, error: "Abonnement Clone IA requis. Achète-le en boutique." })
+        }
         user.aiCloneActive = !user.aiCloneActive
         await user.save()
         res.json({ success: true, active: user.aiCloneActive })
