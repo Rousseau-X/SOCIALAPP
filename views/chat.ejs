@@ -22,14 +22,14 @@
         <div id="typingIndicator" class="chat-header-status" style="color:var(--primary); display:none;">en train d'écrire…</div>
       </div>
       <!-- Actions header -->
-      <div style="display:flex; gap:8px; align-items:center; flex-shrink:0;">
-        <button id="vaultBtn" title="Coffre-fort" style="background:none;border:none;cursor:pointer;font-size:20px;color:var(--text-secondary);padding:6px;">
+      <div class="chat-header-actions">
+        <button id="vaultBtn" title="Coffre-fort" class="chat-header-btn">
           <i class="fa-solid fa-lock<%- isLocked ? '' : '-open' %>"></i>
         </button>
-        <button id="incognitoBtn" title="Ghost Typing" style="background:none;border:none;cursor:pointer;font-size:20px;color:<%= isIncognito ? 'var(--primary)' : 'var(--text-secondary)' %>;padding:6px;">
+        <button id="incognitoBtn" title="Ghost Typing" class="chat-header-btn" style="color:<%= isIncognito ? 'var(--primary)' : 'var(--text-secondary)' %>">
           <i class="fa-solid fa-ghost"></i>
         </button>
-        <button id="moreOptionsBtn" title="Plus d'options" style="background:none;border:none;cursor:pointer;font-size:20px;color:var(--text-secondary);padding:6px;">
+        <button id="moreOptionsBtn" title="Plus d'options" class="chat-header-btn">
           <i class="fa-solid fa-ellipsis-vertical"></i>
         </button>
       </div>

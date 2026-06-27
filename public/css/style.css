@@ -1250,18 +1250,21 @@ a {
 
 .chat-header {
     flex-shrink: 0;
-    padding: 8px 14px;
+    height: 52px;
+    padding: 0 12px;
     border-bottom: 1px solid var(--border);
     display: flex;
     align-items: center;
     gap: 10px;
-    min-height: 0;
+    overflow: hidden;
 }
 
 .chat-back {
     color: var(--text-primary);
     font-size: 17px;
     flex-shrink: 0;
+    display: flex;
+    align-items: center;
 }
 
 .chat-header img {
@@ -1279,6 +1282,7 @@ a {
     justify-content: center;
     min-width: 0;
     flex: 1;
+    gap: 1px;
 }
 
 .chat-header-name {
@@ -1287,18 +1291,62 @@ a {
     gap: 4px;
     font-size: 14px;
     font-weight: 600;
-    line-height: 1.2;
+    line-height: 1;
+    overflow: hidden;
+}
+
+.chat-header-name span:first-child {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+}
+
+/* Badges dans le header — plus petits, alignement forcé */
+.chat-header-name .user-badge {
+    width: 14px !important;
+    height: 14px !important;
+    margin-left: 0 !important;
+    top: 0 !important;
+    flex-shrink: 0;
+}
+
+.chat-header-name .user-badge i {
+    font-size: 8px !important;
 }
 
 .chat-header-status {
     font-size: 11px;
     font-weight: 400;
     color: var(--text-secondary);
-    line-height: 1.2;
+    line-height: 1;
     white-space: nowrap;
+}
+
+/* Boutons actions header */
+.chat-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    flex-shrink: 0;
+    margin-left: auto;
+}
+
+.chat-header-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 16px;
+    color: var(--text-secondary);
+    padding: 6px 7px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    transition: background 0.15s;
+}
+
+.chat-header-btn:hover {
+    background: var(--bg-secondary);
 }
 
 .chat-messages {
@@ -2710,7 +2758,8 @@ body {
         height: 26px !important;
     }
     .chat-header {
-        padding: 7px 10px !important;
+        height: 48px !important;
+        padding: 0 10px !important;
         gap: 8px !important;
     }
     .chat-header img {
@@ -2719,6 +2768,10 @@ body {
     }
     .chat-header-name {
         font-size: 13px !important;
+    }
+    .chat-header-btn {
+        font-size: 15px !important;
+        padding: 5px 6px !important;
     }
     .chat-messages {
         padding: 8px !important;
