@@ -391,23 +391,43 @@
                         </div>
                     <% } %>
 
+                    <%
+                        const REACTION_EMOJIS = {heart:'❤️',haha:'😂',wow:'😮',sad:'😢',clap:'👏',grr:'😠'};
+                        const userReaction = (post.reactions || []).find(r => r.user && r.user.toString() === currentUserId);
+                        const userReactionType = userReaction ? userReaction.type : null;
+                        const hasReacted = userReactionType || post.likes.some(id => id.toString() === currentUserId);
+                        const totalReactions = (post.reactions && post.reactions.length > 0) ? post.reactions.length : post.likes.length;
+                        const reactionCounts = {};
+                        (post.reactions || []).forEach(r => { reactionCounts[r.type] = (reactionCounts[r.type] || 0) + 1; });
+                        const _topEmojis = Object.entries(reactionCounts).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([t])=>REACTION_EMOJIS[t]||'').join('');
+                    %>
                     <div class="post-actions">
-                        <button class="like-btn <%= post.likes.some(id => id.toString() === currentUserId) ? 'liked' : '' %>"
-                                data-id="<%= post._id %>">
-                            <i class="fa-solid fa-thumbs-up"></i>
-                            <span class="likes-count"><%= post.likes.length %></span> J'aime
+                        <button class="like-btn <%= hasReacted ? 'liked' : '' %>"
+                                data-id="<%= post._id %>"
+                                data-reaction="<%= userReactionType || '' %>"
+                                title="J'aime">
+                            <% if (userReactionType) { %>
+                                <span class="reaction-emoji-display"><%= REACTION_EMOJIS[userReactionType] %></span>
+                            <% } else { %>
+                                <i class="fa-solid fa-heart"></i>
+                            <% } %>
+                            <span class="likes-count" data-reactions='<%= JSON.stringify(reactionCounts) %>'><% if(_topEmojis){ %><span class="reaction-bubbles"><%= _topEmojis %></span><% } %><span class="reaction-total"><%= totalReactions || '' %></span></span>
                         </button>
 
-                        <button onclick="toggleComments('<%= post._id %>')">
+                        <button onclick="toggleComments('<%= post._id %>')" title="Commentaires">
                             <i class="fa-solid fa-comment"></i>
-                            <span class="comments-count"><%= post.commentaires.length %></span> Commentaires
+                            <span class="comments-count"><%= post.commentaires.length %></span>
+                        </button>
+
+                        <button onclick="openShareModal('<%= post._id %>')" title="Partager">
+                            <i class="fa-solid fa-share-nodes"></i>
+                            <span class="shares-count"><%= post.sharesCount || 0 %></span>
                         </button>
 
                         <% if (post.auteur._id.toString() === currentUserId) { %>
                             <form action="/post/<%= post._id %>/delete" method="POST" onsubmit="return confirm('Supprimer ce post ?')">
-                                <button type="submit">
+                                <button type="submit" title="Supprimer">
                                     <i class="fa-solid fa-trash"></i>
-                                    Supprimer
                                 </button>
                             </form>
                         <% } %>
