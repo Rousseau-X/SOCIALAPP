@@ -89,7 +89,14 @@ router.post("/profile/edit", requireAuth, uploadProfile.single("photoProfil"), a
         }
 
         currentUser.bio = bio ? bio.trim() : ""
-        if (req.file) currentUser.photoProfil = req.file.path
+        if (req.file) {
+            currentUser.photoProfil = req.file.path
+        } else if (req.body.avatarUrl) {
+            const url = req.body.avatarUrl
+            if (url.startsWith("https://api.dicebear.com/")) {
+                currentUser.photoProfil = url
+            }
+        }
 
         await currentUser.save()
 
