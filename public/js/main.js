@@ -365,6 +365,18 @@ document.addEventListener('mouseout', function(e) {
 // ===== REACTIONS — picker global attaché au body =====
 const REACTION_EMOJIS = { heart: '❤️', haha: '😂', wow: '😮', sad: '😢', clap: '👏', grr: '😠' };
 
+function _buildLikesHTML(total, counts) {
+    const bubbles = Object.entries(counts || {})
+        .filter(([, v]) => v > 0)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 3)
+        .map(([type]) => REACTION_EMOJIS[type] || '')
+        .join('');
+    const n = total > 0 ? total : 0;
+    const countPart = `<span class="reaction-total">${n || ''}</span>`;
+    return bubbles ? `<span class="reaction-bubbles">${bubbles}</span>${countPart}` : countPart;
+}
+
 const _picker = document.createElement('div');
 _picker.id = 'reaction-picker-global';
 _picker.innerHTML = `
@@ -446,7 +458,6 @@ async function handleReaction(type, postId) {
             if (likeBtn) {
                 const countSpan = likeBtn.querySelector('.likes-count');
                 if (countSpan) {
-                    countSpan.textContent = data.reactionsCount;
                     let counts = {};
                     try { counts = JSON.parse(countSpan.dataset.reactions || '{}'); } catch(e) {}
                     if (prevReaction && prevReaction !== type) counts[prevReaction] = Math.max(0, (counts[prevReaction] || 1) - 1);
@@ -454,6 +465,7 @@ async function handleReaction(type, postId) {
                     else if (prevReaction === type) counts[type] = Math.max(0, (counts[type] || 1) - 1);
                     Object.keys(counts).forEach(k => { if (counts[k] <= 0) delete counts[k]; });
                     countSpan.dataset.reactions = JSON.stringify(counts);
+                    countSpan.innerHTML = _buildLikesHTML(data.reactionsCount, counts);
                 }
             }
         } else {

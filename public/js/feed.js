@@ -122,7 +122,7 @@ function buildSharedPostElement(post) {
         <div class="post-actions">
             <button class="like-btn" data-id="${post._id}" data-reaction="" title="J'aime">
                 <i class="fa-solid fa-heart"></i>
-                <span class="likes-count" data-reactions="{}">0</span>
+                <span class="likes-count" data-reactions="{}"><span class="reaction-total"></span></span>
             </button>
             <button onclick="toggleComments('${post._id}')" title="Commentaires">
                 <i class="fa-solid fa-comment"></i>

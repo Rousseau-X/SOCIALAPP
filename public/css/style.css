@@ -938,6 +938,21 @@ a {
     line-height: 1;
 }
 
+/* Bulles d'emojis style WhatsApp */
+.reaction-bubbles {
+    font-size: 13px;
+    letter-spacing: -2px;
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+}
+
+.reaction-total {
+    font-size: 13px;
+    font-weight: 600;
+    margin-left: 3px;
+}
+
 /* ===== PICKER GLOBAL (attaché au body) ===== */
 #reaction-picker-global {
     position: fixed;
