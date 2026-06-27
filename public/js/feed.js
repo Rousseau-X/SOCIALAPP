@@ -120,20 +120,10 @@ function buildSharedPostElement(post) {
         </div>
 
         <div class="post-actions">
-            <div class="reaction-wrapper">
-                <button class="like-btn" data-id="${post._id}" data-reaction="" title="J'aime">
-                    <i class="fa-solid fa-heart"></i>
-                    <span class="likes-count" data-reactions="{}">0</span>
-                </button>
-                <div class="reaction-picker" id="picker-${post._id}">
-                    <button class="reaction-opt" data-type="heart" data-post="${post._id}" title="J'aime">❤️</button>
-                    <button class="reaction-opt" data-type="haha"  data-post="${post._id}" title="Haha">😂</button>
-                    <button class="reaction-opt" data-type="wow"   data-post="${post._id}" title="Waouh">😮</button>
-                    <button class="reaction-opt" data-type="sad"   data-post="${post._id}" title="Triste">😢</button>
-                    <button class="reaction-opt" data-type="clap"  data-post="${post._id}" title="Bravo">👏</button>
-                    <button class="reaction-opt" data-type="grr"   data-post="${post._id}" title="Grrr">😠</button>
-                </div>
-            </div>
+            <button class="like-btn" data-id="${post._id}" data-reaction="" title="J'aime">
+                <i class="fa-solid fa-heart"></i>
+                <span class="likes-count" data-reactions="{}">0</span>
+            </button>
             <button onclick="toggleComments('${post._id}')" title="Commentaires">
                 <i class="fa-solid fa-comment"></i>
                 <span class="comments-count">0</span>

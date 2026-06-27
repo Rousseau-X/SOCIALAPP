@@ -362,24 +362,49 @@ document.addEventListener('mouseout', function(e) {
     if (e.target.closest('.likes-count[data-reactions]')) _hideReactionSummary();
 });
 
-// ===== REACTIONS =====
+// ===== REACTIONS — picker global attaché au body =====
 const REACTION_EMOJIS = { heart: '❤️', haha: '😂', wow: '😮', sad: '😢', clap: '👏', grr: '😠' };
+
+const _picker = document.createElement('div');
+_picker.id = 'reaction-picker-global';
+_picker.innerHTML = `
+    <button class="reaction-opt" data-type="heart" title="J'aime">❤️</button>
+    <button class="reaction-opt" data-type="haha"  title="Haha">😂</button>
+    <button class="reaction-opt" data-type="wow"   title="Waouh">😮</button>
+    <button class="reaction-opt" data-type="sad"   title="Triste">😢</button>
+    <button class="reaction-opt" data-type="clap"  title="Bravo">👏</button>
+    <button class="reaction-opt" data-type="grr"   title="Grrr">😠</button>
+`;
+document.body.appendChild(_picker);
 
 let _pressTimer = null;
 let _isLongPress = false;
-let _openPicker = null;
+let _currentPickerPostId = null;
 
-function _showPicker(postId) {
-    if (_openPicker && _openPicker !== postId) _hidePicker(_openPicker);
-    const picker = document.getElementById('picker-' + postId);
-    if (picker) picker.classList.add('visible');
-    _openPicker = postId;
+function _showPicker(postId, anchorBtn) {
+    _currentPickerPostId = postId;
+    // Marque la réaction active de l'utilisateur
+    const userReaction = anchorBtn.dataset.reaction || '';
+    _picker.querySelectorAll('.reaction-opt').forEach(o => {
+        o.dataset.post = postId;
+        o.classList.toggle('active-reaction', o.dataset.type === userReaction);
+    });
+    // Positionnement au-dessus du bouton
+    _picker.style.display = 'flex';
+    const rect = anchorBtn.getBoundingClientRect();
+    const pickerW = _picker.offsetWidth || 280;
+    let left = rect.left + rect.width / 2 - pickerW / 2;
+    left = Math.max(8, Math.min(left, window.innerWidth - pickerW - 8));
+    const top = rect.top - _picker.offsetHeight - 12;
+    _picker.style.left = left + 'px';
+    _picker.style.top = (top < 8 ? rect.bottom + 12 : top) + 'px';
+    // Animation
+    requestAnimationFrame(() => _picker.classList.add('visible'));
 }
 
-function _hidePicker(postId) {
-    const picker = document.getElementById('picker-' + postId);
-    if (picker) picker.classList.remove('visible');
-    if (_openPicker === postId) _openPicker = null;
+function _hidePicker() {
+    _picker.classList.remove('visible');
+    _currentPickerPostId = null;
 }
 
 function _updateLikeBtn(btn, reactionType) {
@@ -398,12 +423,9 @@ function _updateLikeBtn(btn, reactionType) {
     }
 }
 
-async function handleReaction(optBtn) {
-    const type = optBtn.dataset.type;
-    const postId = optBtn.dataset.post;
+async function handleReaction(type, postId) {
     if (!type || !postId) return;
-
-    _hidePicker(postId);
+    _hidePicker();
 
     const likeBtn = document.querySelector(`.like-btn[data-id="${postId}"]`);
     const prevReaction = likeBtn ? likeBtn.dataset.reaction : '';
@@ -423,7 +445,6 @@ async function handleReaction(optBtn) {
                 const countSpan = likeBtn.querySelector('.likes-count');
                 if (countSpan) {
                     countSpan.textContent = data.reactionsCount;
-                    // Mise à jour du résumé des réactions
                     let counts = {};
                     try { counts = JSON.parse(countSpan.dataset.reactions || '{}'); } catch(e) {}
                     if (prevReaction && prevReaction !== type) counts[prevReaction] = Math.max(0, (counts[prevReaction] || 1) - 1);
@@ -431,13 +452,6 @@ async function handleReaction(optBtn) {
                     else if (prevReaction === type) counts[type] = Math.max(0, (counts[type] || 1) - 1);
                     Object.keys(counts).forEach(k => { if (counts[k] <= 0) delete counts[k]; });
                     countSpan.dataset.reactions = JSON.stringify(counts);
-                }
-                // Sync active state on picker options
-                const picker = document.getElementById('picker-' + postId);
-                if (picker) {
-                    picker.querySelectorAll('.reaction-opt').forEach(o => {
-                        o.classList.toggle('active-reaction', o.dataset.type === data.userReaction);
-                    });
                 }
             }
         } else {
@@ -452,15 +466,15 @@ async function handleReaction(optBtn) {
 // Appelée une seule fois au chargement initial — les délégations
 // sur document fonctionnent même après remplacement AJAX du DOM.
 function initDelegation() {
-    // --- LONG PRESS sur le bouton like (mousedown / touchstart) ---
+    // --- LONG PRESS sur le bouton like ---
     document.addEventListener('mousedown', function(e) {
         const likeBtn = e.target.closest('.like-btn');
         if (!likeBtn) return;
         _isLongPress = false;
-        const postId = likeBtn.dataset.id;
+        clearTimeout(_pressTimer);
         _pressTimer = setTimeout(() => {
             _isLongPress = true;
-            _showPicker(postId);
+            _showPicker(likeBtn.dataset.id, likeBtn);
         }, 480);
     });
 
@@ -468,43 +482,38 @@ function initDelegation() {
         const likeBtn = e.target.closest('.like-btn');
         if (!likeBtn) return;
         _isLongPress = false;
-        const postId = likeBtn.dataset.id;
+        clearTimeout(_pressTimer);
         _pressTimer = setTimeout(() => {
             _isLongPress = true;
-            _showPicker(postId);
+            _showPicker(likeBtn.dataset.id, likeBtn);
         }, 480);
     }, { passive: true });
 
-    document.addEventListener('mouseup', function(e) {
-        clearTimeout(_pressTimer);
-    });
-
-    document.addEventListener('touchend', function(e) {
-        clearTimeout(_pressTimer);
-    });
+    document.addEventListener('mouseup', () => clearTimeout(_pressTimer));
+    document.addEventListener('touchend', () => clearTimeout(_pressTimer));
 
     // --- CLICKS ---
     document.addEventListener('click', function(e) {
-        // Reaction option picked from picker
-        const reactionOpt = e.target.closest('.reaction-opt');
-        if (reactionOpt) { e.stopPropagation(); handleReaction(reactionOpt); return; }
+        // Emoji du picker global
+        const reactionOpt = e.target.closest('#reaction-picker-global .reaction-opt');
+        if (reactionOpt) {
+            e.stopPropagation();
+            handleReaction(reactionOpt.dataset.type, reactionOpt.dataset.post);
+            return;
+        }
 
-        // Like button short-click → toggle heart
+        // Clic court sur le bouton like → bascule ❤️
         const likeBtn = e.target.closest('.like-btn');
         if (likeBtn) {
             e.stopPropagation();
             if (_isLongPress) { _isLongPress = false; return; }
-            // Short click = toggle heart reaction
-            const postId = likeBtn.dataset.id;
-            const fakeOpt = { dataset: { type: 'heart', post: postId } };
-            handleReaction(fakeOpt);
+            handleReaction('heart', likeBtn.dataset.id);
             return;
         }
 
-        // Close open picker on outside click
-        if (_openPicker) {
-            const wrapper = e.target.closest('.reaction-wrapper');
-            if (!wrapper) _hidePicker(_openPicker);
+        // Fermer le picker si clic en dehors
+        if (_currentPickerPostId && !e.target.closest('#reaction-picker-global')) {
+            _hidePicker();
         }
 
         const deleteBtn = e.target.closest('.delete-post, [data-delete-post]');

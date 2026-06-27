@@ -927,85 +927,74 @@ a {
     color: #ef4444;
 }
 
-/* ===== REACTION WRAPPER & PICKER ===== */
-.reaction-wrapper {
-    position: relative;
-    flex: 1;
-    display: flex;
-}
-
-.reaction-wrapper .like-btn {
-    flex: 1;
-}
-
+/* ===== REACTION EMOJI IN BUTTON ===== */
 .reaction-emoji-display {
     font-size: 18px;
     line-height: 1;
 }
 
-.reaction-picker {
-    position: absolute;
-    bottom: calc(100% + 8px);
-    left: 50%;
-    transform: translateX(-50%) scale(0.7);
+/* ===== PICKER GLOBAL (attaché au body) ===== */
+#reaction-picker-global {
+    position: fixed;
+    z-index: 99999;
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: 40px;
-    padding: 6px 10px;
-    display: flex;
-    gap: 4px;
-    box-shadow: 0 8px 24px rgba(0,0,0,0.18);
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.18s ease, transform 0.18s ease;
-    z-index: 200;
+    padding: 7px 12px;
+    display: none;
+    gap: 2px;
+    align-items: center;
+    box-shadow: 0 8px 28px rgba(0,0,0,0.2);
     white-space: nowrap;
+    transform: translateY(4px);
+    opacity: 0;
+    transition: opacity 0.15s ease, transform 0.15s ease;
 }
 
-.reaction-picker.visible {
+#reaction-picker-global.visible {
+    display: flex;
     opacity: 1;
-    pointer-events: all;
-    transform: translateX(-50%) scale(1);
+    transform: translateY(0);
 }
 
-.reaction-opt {
-    background: none !important;
-    border: none !important;
-    font-size: 24px !important;
-    cursor: pointer !important;
-    padding: 4px 5px !important;
-    border-radius: 50% !important;
-    transition: transform 0.15s ease, background 0.15s ease !important;
-    flex: none !important;
-    line-height: 1 !important;
+#reaction-picker-global .reaction-opt {
+    background: none;
+    border: none;
+    font-size: 26px;
+    cursor: pointer;
+    padding: 4px 6px;
+    border-radius: 50%;
+    transition: transform 0.15s ease;
+    line-height: 1;
+    position: relative;
 }
 
-.reaction-opt:hover {
-    transform: scale(1.4) translateY(-4px) !important;
-    background: var(--background) !important;
+#reaction-picker-global .reaction-opt:hover {
+    transform: scale(1.45) translateY(-5px);
 }
 
-.reaction-opt.active-reaction {
-    transform: scale(1.15);
-    filter: drop-shadow(0 0 4px rgba(0,0,0,0.25));
+#reaction-picker-global .reaction-opt.active-reaction {
+    filter: drop-shadow(0 0 5px rgba(0,0,0,0.3));
+    transform: scale(1.2);
 }
 
-/* Tooltip label sous chaque emoji */
-.reaction-opt::after {
+/* Label au survol */
+#reaction-picker-global .reaction-opt::after {
     content: attr(title);
     position: absolute;
-    bottom: -20px;
+    bottom: -18px;
     left: 50%;
     transform: translateX(-50%);
     font-size: 10px;
+    font-weight: 600;
     color: var(--text-secondary);
     white-space: nowrap;
     opacity: 0;
-    transition: opacity 0.15s;
+    transition: opacity 0.12s;
     pointer-events: none;
 }
 
-.reaction-opt:hover::after {
+#reaction-picker-global .reaction-opt:hover::after {
     opacity: 1;
 }
 
