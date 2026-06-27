@@ -154,10 +154,12 @@
 
         <!-- Grid -->
         <div id="avatarGrid" style="
-            flex:1; overflow-y:auto; padding:16px 24px;
+            flex:1; min-height:0; overflow-y:auto; padding:16px 24px;
             display:grid;
-            grid-template-columns:repeat(auto-fill, minmax(72px, 1fr));
-            gap:10px;
+            grid-template-columns:repeat(auto-fill, minmax(80px, 1fr));
+            grid-auto-rows:80px;
+            gap:12px;
+            align-content:start;
             scrollbar-width:thin;
         ">
             <div style="grid-column:1/-1; text-align:center; padding:40px; color:var(--text-muted);">
