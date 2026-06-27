@@ -22,14 +22,14 @@
         <div id="typingIndicator" style="font-size:11px; color:var(--primary); display:none;">en train d'écrire…</div>
       </div>
       <!-- Actions header -->
-      <div style="margin-left:auto; display:flex; gap:8px; align-items:center;">
-        <button id="vaultBtn" title="Coffre-fort" style="background:none;border:none;cursor:pointer;font-size:18px;color:var(--text-secondary);">
+      <div style="margin-left:auto; display:flex; gap:16px; align-items:center; padding-right:4px;">
+        <button id="vaultBtn" title="Coffre-fort" style="background:none;border:none;cursor:pointer;font-size:20px;color:var(--text-secondary);padding:6px;">
           <i class="fa-solid fa-lock<%- isLocked ? '' : '-open' %>"></i>
         </button>
-        <button id="incognitoBtn" title="Ghost Typing" style="background:none;border:none;cursor:pointer;font-size:18px;color:<%= isIncognito ? 'var(--primary)' : 'var(--text-secondary)' %>;">
+        <button id="incognitoBtn" title="Ghost Typing" style="background:none;border:none;cursor:pointer;font-size:20px;color:<%= isIncognito ? 'var(--primary)' : 'var(--text-secondary)' %>;padding:6px;">
           <i class="fa-solid fa-ghost"></i>
         </button>
-        <button id="moreOptionsBtn" title="Plus d'options" style="background:none;border:none;cursor:pointer;font-size:20px;color:var(--text-secondary);padding:0 2px;">
+        <button id="moreOptionsBtn" title="Plus d'options" style="background:none;border:none;cursor:pointer;font-size:20px;color:var(--text-secondary);padding:6px;">
           <i class="fa-solid fa-ellipsis-vertical"></i>
         </button>
       </div>

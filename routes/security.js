@@ -81,7 +81,7 @@ router.get("/api/vault/status/:otherId", requireAuth, async (req, res) => {
 router.get("/settings", requireAuth, async (req, res) => {
     try {
         const user = await User.findById(req.session.user.id)
-            .select("nom email photoProfil hideOnlineStatus isIncognitoInput showInSearch allowMessagesFrom aiCloneActive aiCloneInstructions")
+            .select("nom email photoProfil hideOnlineStatus isIncognitoInput showInSearch allowMessagesFrom aiCloneActive aiCloneInstructions aiCloneExpiry walletBalance")
         res.render("settings", {
             title: "Paramètres",
             user: { ...req.session.user, ...user.toObject() },
@@ -130,10 +130,36 @@ router.post("/api/settings/allow-messages", requireAuth, async (req, res) => {
     }
 })
 
-// Clone IA — activer/désactiver
+// Clone IA — acheter l'accès (1500 pièces, 1 mois)
+router.post("/api/settings/ai-clone/buy", requireAuth, async (req, res) => {
+    try {
+        const CLONE_PRICE = 1500
+        const user = await User.findById(req.session.user.id)
+        // Déjà un abonnement actif ?
+        if (user.aiCloneExpiry && user.aiCloneExpiry > new Date()) {
+            return res.json({ success: false, error: "Tu as déjà un abonnement Clone IA actif." })
+        }
+        if (user.walletBalance < CLONE_PRICE) {
+            return res.status(402).json({ success: false, error: `Solde insuffisant — il te faut ${CLONE_PRICE} pièces (tu en as ${user.walletBalance}).` })
+        }
+        user.walletBalance -= CLONE_PRICE
+        user.aiCloneExpiry = new Date(Date.now() + 30 * 24 * 3600 * 1000) // 1 mois
+        user.aiCloneActive = true
+        await user.save()
+        res.json({ success: true, expiry: user.aiCloneExpiry, balance: user.walletBalance })
+    } catch (err) {
+        res.status(500).json({ error: "Erreur serveur." })
+    }
+})
+
+// Clone IA — activer/désactiver (nécessite un abonnement valide)
 router.post("/api/settings/ai-clone", requireAuth, async (req, res) => {
     try {
         const user = await User.findById(req.session.user.id)
+        const hasAccess = user.aiCloneExpiry && user.aiCloneExpiry > new Date()
+        if (!hasAccess) {
+            return res.status(403).json({ success: false, error: "Abonnement Clone IA requis." })
+        }
         user.aiCloneActive = !!req.body.enabled
         await user.save()
         res.json({ success: true })

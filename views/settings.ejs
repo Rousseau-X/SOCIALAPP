@@ -156,20 +156,30 @@
         </div>
 
         <!-- ══ CLONE IA ══ -->
+        <%
+          const cloneExpiry = user.aiCloneExpiry ? new Date(user.aiCloneExpiry) : null;
+          const cloneActive = cloneExpiry && cloneExpiry > new Date();
+          const cloneDaysLeft = cloneActive ? Math.ceil((cloneExpiry - new Date()) / (1000*60*60*24)) : 0;
+          const cloneExpiryStr = cloneActive ? cloneExpiry.toLocaleDateString('fr-FR', { day:'numeric', month:'long', year:'numeric' }) : null;
+        %>
         <div class="card" style="margin-bottom:16px;">
             <div style="padding:18px 20px 6px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:var(--text-muted);">
                 <i class="fa-solid fa-robot" style="margin-right:6px;"></i>Clone IA
             </div>
             <div style="display:flex;flex-direction:column;">
 
-                <!-- Activer clone -->
+                <% if (cloneActive) { %>
+                <!-- ✅ Abonnement actif — afficher toggle -->
                 <div class="settings-row" style="cursor:default;">
                     <div class="settings-row-icon" style="background:rgba(99,102,241,.12);color:#6366f1;">
                         <i class="fa-solid fa-brain"></i>
                     </div>
                     <div class="settings-row-body">
-                        <div class="settings-row-title">Activer le clone IA</div>
-                        <div class="settings-row-sub">Une IA répond en ton nom quand tu n'es pas là</div>
+                        <div class="settings-row-title">Clone IA actif</div>
+                        <div class="settings-row-sub" style="color:#22c55e;">
+                            <i class="fa-solid fa-circle-check" style="margin-right:3px;"></i>
+                            Expire le <%= cloneExpiryStr %> (<%= cloneDaysLeft %> j restants)
+                        </div>
                     </div>
                     <label class="toggle-switch">
                         <input type="checkbox" id="toggleAiClone" <%= user.aiCloneActive ? 'checked' : '' %>>
@@ -185,6 +195,49 @@
                         <i class="fa-solid fa-floppy-disk"></i> Sauvegarder les instructions
                     </button>
                 </div>
+
+                <% } else { %>
+                <!-- 🔒 Pas d'abonnement — afficher le paywall -->
+                <div style="padding:16px 20px 20px;">
+                    <div style="
+                        background: linear-gradient(135deg,rgba(99,102,241,.08),rgba(139,92,246,.12));
+                        border:1.5px solid rgba(99,102,241,.2);
+                        border-radius:16px;
+                        padding:20px;
+                        text-align:center;
+                    ">
+                        <div style="font-size:36px;margin-bottom:10px;">🤖</div>
+                        <div style="font-size:16px;font-weight:700;color:var(--text-primary);margin-bottom:6px;">Clone IA</div>
+                        <div style="font-size:13px;color:var(--text-secondary);margin-bottom:16px;line-height:1.5;">
+                            Une IA répond en ton nom quand tu n'es pas disponible.<br>
+                            Personnalise son style et ses réponses.
+                        </div>
+                        <div style="display:flex;align-items:center;justify-content:center;gap:6px;margin-bottom:16px;">
+                            <span style="font-size:24px;font-weight:800;color:#6366f1;">1 500</span>
+                            <span style="font-size:14px;color:var(--text-secondary);font-weight:600;">pièces / mois</span>
+                        </div>
+                        <div style="font-size:12px;color:var(--text-muted);margin-bottom:16px;">
+                            Ton solde actuel : <strong style="color:var(--text-primary);"><%= user.walletBalance || 0 %> pièces</strong>
+                        </div>
+                        <button id="buyCloneBtn" onclick="buyCloneIA()" style="
+                            width:100%;padding:13px;
+                            background:linear-gradient(135deg,#6366f1,#8b5cf6);
+                            color:#fff;border:none;border-radius:12px;
+                            font-size:15px;font-weight:700;cursor:pointer;
+                            transition:opacity .2s;
+                            <%= (user.walletBalance || 0) < 1500 ? 'opacity:.5;cursor:not-allowed;' : '' %>
+                        ">
+                            <i class="fa-solid fa-bolt" style="margin-right:6px;"></i>
+                            <%= (user.walletBalance || 0) >= 1500 ? 'Activer pour 1 500 pièces' : 'Solde insuffisant' %>
+                        </button>
+                        <% if ((user.walletBalance || 0) < 1500) { %>
+                        <div style="font-size:12px;color:var(--text-muted);margin-top:10px;">
+                            Il te manque <strong><%= 1500 - (user.walletBalance || 0) %> pièces</strong> — gagne-en en étant actif ou dans la boutique.
+                        </div>
+                        <% } %>
+                    </div>
+                </div>
+                <% } %>
 
             </div>
         </div>
@@ -351,17 +404,39 @@ document.getElementById('allowMessagesSelect').addEventListener('change', async 
     showToast(d.success ? 'Préférence mise à jour' : 'Erreur', !!d.success);
 });
 
-// Clone IA toggle
-document.getElementById('toggleAiClone').addEventListener('change', async function() {
-    const r = await fetch('/api/settings/ai-clone', {
-        method: 'POST', headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({ enabled: this.checked })
+// Clone IA toggle (only if element exists — user has active sub)
+const toggleAiCloneEl = document.getElementById('toggleAiClone');
+if (toggleAiCloneEl) {
+    toggleAiCloneEl.addEventListener('change', async function() {
+        const r = await fetch('/api/settings/ai-clone', {
+            method: 'POST', headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({ enabled: this.checked })
+        });
+        const d = await r.json();
+        showToast(d.success ? (this.checked ? 'Clone IA activé' : 'Clone IA désactivé') : (d.error || 'Erreur'), !!d.success);
+        if (!d.success) this.checked = !this.checked;
+        const section = document.getElementById('aiCloneSection');
+        if (section) section.style.display = this.checked ? 'block' : 'none';
     });
+}
+
+// Acheter le Clone IA
+async function buyCloneIA() {
+    const btn = document.getElementById('buyCloneBtn');
+    if (!btn || btn.disabled) return;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Traitement…';
+    const r = await fetch('/api/settings/ai-clone/buy', { method: 'POST' });
     const d = await r.json();
-    showToast(d.success ? (this.checked ? 'Clone IA activé' : 'Clone IA désactivé') : 'Erreur', !!d.success);
-    if (!d.success) this.checked = !this.checked;
-    document.getElementById('aiCloneSection').style.display = this.checked ? 'block' : 'none';
-});
+    if (d.success) {
+        showToast('Clone IA activé pour 1 mois ! 🎉', true);
+        setTimeout(() => location.reload(), 1200);
+    } else {
+        showToast(d.error || 'Erreur lors de l\'achat.', false);
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-bolt"></i> Activer pour 1 500 pièces';
+    }
+}
 
 // Sauvegarder instructions IA
 async function saveAiInstructions() {

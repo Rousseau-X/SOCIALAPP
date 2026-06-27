@@ -37,6 +37,7 @@ const userSchema = new mongoose.Schema({
     // === CLONE IA ===
     aiCloneActive: { type: Boolean, default: false },
     aiCloneInstructions: { type: String, default: "" },
+    aiCloneExpiry: { type: Date, default: null },
 
     // === BOUTIQUE ===
     xpBoostExpiry: { type: Date, default: null },
