@@ -171,6 +171,66 @@ router.post("/post/:id/like", requireAuth, requireNotRestricted("likes"), async 
     }
 })
 
+// Réagir à un post (long-press reactions)
+router.post("/post/:id/react", requireAuth, requireNotRestricted("likes"), async (req, res) => {
+    try {
+        const { type } = req.body
+        const validTypes = ["heart", "haha", "wow", "sad", "clap", "grr"]
+        if (!validTypes.includes(type)) return res.status(400).json({ error: "Type invalide" })
+
+        const post = await Post.findById(req.params.id)
+        if (!post) return res.status(404).json({ error: "Post introuvable" })
+
+        const userId = req.session.user.id
+        const existingIdx = post.reactions.findIndex(r => r.user.toString() === userId)
+        const existingType = existingIdx !== -1 ? post.reactions[existingIdx].type : null
+
+        if (existingType === type) {
+            // Même réaction → retirer
+            post.reactions.splice(existingIdx, 1)
+            post.likes = post.likes.filter(id => id.toString() !== userId)
+        } else {
+            // Nouvelle réaction ou changement
+            if (existingIdx !== -1) post.reactions.splice(existingIdx, 1)
+            post.reactions.push({ user: userId, type })
+            if (!post.likes.some(id => id.toString() === userId)) post.likes.push(userId)
+
+            if (post.auteur.toString() !== userId) {
+                const notification = await Notification.create({
+                    destinataire: post.auteur,
+                    expediteur: userId,
+                    type: "like",
+                    lien: "/"
+                })
+                if (global.io) {
+                    const notifComplete = await Notification.findById(notification._id)
+                        .populate("expediteur", "nom photoProfil")
+                    global.io.to(post.auteur.toString()).emit("notification", notifComplete)
+                }
+                const reactor = await User.findById(userId, "nom")
+                const labels = { heart: "❤️", haha: "😂", wow: "😮", sad: "😢", clap: "👏", grr: "😠" }
+                sendPushToUser(post.auteur.toString(), buildPayload("like", {
+                    senderName: reactor?.nom || "Quelqu'un",
+                    senderId: userId,
+                    content: `${labels[type]} ${post.contenu}`
+                })).catch(() => {})
+            }
+        }
+
+        await post.save()
+        await track(userId, "LIKE")
+
+        res.json({
+            success: true,
+            reactionsCount: post.reactions.length,
+            userReaction: existingType === type ? null : type
+        })
+    } catch (err) {
+        console.error(err)
+        res.status(500).json({ error: "Erreur serveur" })
+    }
+})
+
 // Ajouter un commentaire (AJAX)
 router.post("/post/:id/comment", requireAuth, requireNotRestricted("messages"), async (req, res) => {
     try {

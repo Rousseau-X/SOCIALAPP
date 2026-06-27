@@ -20,6 +20,10 @@ const postSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: "User"
     }],
+    reactions: [{
+        user: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+        type: { type: String, enum: ["heart", "haha", "wow", "sad", "clap", "grr"], default: "heart" }
+    }],
     commentaires: [{
         auteur: {
             type: mongoose.Schema.Types.ObjectId,

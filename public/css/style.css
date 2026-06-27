@@ -927,6 +927,88 @@ a {
     color: #ef4444;
 }
 
+/* ===== REACTION WRAPPER & PICKER ===== */
+.reaction-wrapper {
+    position: relative;
+    flex: 1;
+    display: flex;
+}
+
+.reaction-wrapper .like-btn {
+    flex: 1;
+}
+
+.reaction-emoji-display {
+    font-size: 18px;
+    line-height: 1;
+}
+
+.reaction-picker {
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%) scale(0.7);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 40px;
+    padding: 6px 10px;
+    display: flex;
+    gap: 4px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.18);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.18s ease, transform 0.18s ease;
+    z-index: 200;
+    white-space: nowrap;
+}
+
+.reaction-picker.visible {
+    opacity: 1;
+    pointer-events: all;
+    transform: translateX(-50%) scale(1);
+}
+
+.reaction-opt {
+    background: none !important;
+    border: none !important;
+    font-size: 24px !important;
+    cursor: pointer !important;
+    padding: 4px 5px !important;
+    border-radius: 50% !important;
+    transition: transform 0.15s ease, background 0.15s ease !important;
+    flex: none !important;
+    line-height: 1 !important;
+}
+
+.reaction-opt:hover {
+    transform: scale(1.4) translateY(-4px) !important;
+    background: var(--background) !important;
+}
+
+.reaction-opt.active-reaction {
+    transform: scale(1.15);
+    filter: drop-shadow(0 0 4px rgba(0,0,0,0.25));
+}
+
+/* Tooltip label sous chaque emoji */
+.reaction-opt::after {
+    content: attr(title);
+    position: absolute;
+    bottom: -20px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 10px;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    opacity: 0;
+    transition: opacity 0.15s;
+    pointer-events: none;
+}
+
+.reaction-opt:hover::after {
+    opacity: 1;
+}
+
 .comments-section {
     margin-top: 12px;
     padding-top: 12px;

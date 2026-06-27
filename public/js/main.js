@@ -328,13 +328,140 @@ function initSocketNotifications() {
 // 10. INTERACTIONS — EVENT DELEGATION (survit au AJAX)
 // =====================================================
 
+// ===== REACTIONS =====
+const REACTION_EMOJIS = { heart: '❤️', haha: '😂', wow: '😮', sad: '😢', clap: '👏', grr: '😠' };
+
+let _pressTimer = null;
+let _isLongPress = false;
+let _openPicker = null;
+
+function _showPicker(postId) {
+    if (_openPicker && _openPicker !== postId) _hidePicker(_openPicker);
+    const picker = document.getElementById('picker-' + postId);
+    if (picker) picker.classList.add('visible');
+    _openPicker = postId;
+}
+
+function _hidePicker(postId) {
+    const picker = document.getElementById('picker-' + postId);
+    if (picker) picker.classList.remove('visible');
+    if (_openPicker === postId) _openPicker = null;
+}
+
+function _updateLikeBtn(btn, reactionType) {
+    const iconSlot = btn.querySelector('i, .reaction-emoji-display');
+    if (reactionType) {
+        btn.classList.add('liked');
+        btn.dataset.reaction = reactionType;
+        if (iconSlot) {
+            iconSlot.outerHTML = `<span class="reaction-emoji-display">${REACTION_EMOJIS[reactionType]}</span>`;
+        }
+    } else {
+        btn.classList.remove('liked');
+        btn.dataset.reaction = '';
+        const slot = btn.querySelector('i, .reaction-emoji-display');
+        if (slot) slot.outerHTML = `<i class="fa-solid fa-heart"></i>`;
+    }
+}
+
+async function handleReaction(optBtn) {
+    const type = optBtn.dataset.type;
+    const postId = optBtn.dataset.post;
+    if (!type || !postId) return;
+
+    _hidePicker(postId);
+
+    const likeBtn = document.querySelector(`.like-btn[data-id="${postId}"]`);
+    const prevReaction = likeBtn ? likeBtn.dataset.reaction : '';
+    const newReaction = prevReaction === type ? null : type;
+
+    if (likeBtn) _updateLikeBtn(likeBtn, newReaction);
+
+    try {
+        const res = await fetch(`/post/${postId}/react`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ type })
+        });
+        const data = await res.json();
+        if (data.success) {
+            if (likeBtn) {
+                const countSpan = likeBtn.querySelector('.likes-count');
+                if (countSpan) countSpan.textContent = data.reactionsCount;
+                // Sync active state on picker options
+                const picker = document.getElementById('picker-' + postId);
+                if (picker) {
+                    picker.querySelectorAll('.reaction-opt').forEach(o => {
+                        o.classList.toggle('active-reaction', o.dataset.type === data.userReaction);
+                    });
+                }
+            }
+        } else {
+            if (likeBtn) _updateLikeBtn(likeBtn, prevReaction || null);
+        }
+    } catch (err) {
+        if (likeBtn) _updateLikeBtn(likeBtn, prevReaction || null);
+        console.error('❌ Erreur réaction:', err);
+    }
+}
+
 // Appelée une seule fois au chargement initial — les délégations
 // sur document fonctionnent même après remplacement AJAX du DOM.
 function initDelegation() {
+    // --- LONG PRESS sur le bouton like (mousedown / touchstart) ---
+    document.addEventListener('mousedown', function(e) {
+        const likeBtn = e.target.closest('.like-btn');
+        if (!likeBtn) return;
+        _isLongPress = false;
+        const postId = likeBtn.dataset.id;
+        _pressTimer = setTimeout(() => {
+            _isLongPress = true;
+            _showPicker(postId);
+        }, 480);
+    });
+
+    document.addEventListener('touchstart', function(e) {
+        const likeBtn = e.target.closest('.like-btn');
+        if (!likeBtn) return;
+        _isLongPress = false;
+        const postId = likeBtn.dataset.id;
+        _pressTimer = setTimeout(() => {
+            _isLongPress = true;
+            _showPicker(postId);
+        }, 480);
+    }, { passive: true });
+
+    document.addEventListener('mouseup', function(e) {
+        clearTimeout(_pressTimer);
+    });
+
+    document.addEventListener('touchend', function(e) {
+        clearTimeout(_pressTimer);
+    });
+
     // --- CLICKS ---
     document.addEventListener('click', function(e) {
-        const likeBtn = e.target.closest('.like-btn, [data-like-btn]');
-        if (likeBtn) { e.stopPropagation(); handleLike(likeBtn); return; }
+        // Reaction option picked from picker
+        const reactionOpt = e.target.closest('.reaction-opt');
+        if (reactionOpt) { e.stopPropagation(); handleReaction(reactionOpt); return; }
+
+        // Like button short-click → toggle heart
+        const likeBtn = e.target.closest('.like-btn');
+        if (likeBtn) {
+            e.stopPropagation();
+            if (_isLongPress) { _isLongPress = false; return; }
+            // Short click = toggle heart reaction
+            const postId = likeBtn.dataset.id;
+            const fakeOpt = { dataset: { type: 'heart', post: postId } };
+            handleReaction(fakeOpt);
+            return;
+        }
+
+        // Close open picker on outside click
+        if (_openPicker) {
+            const wrapper = e.target.closest('.reaction-wrapper');
+            if (!wrapper) _hidePicker(_openPicker);
+        }
 
         const deleteBtn = e.target.closest('.delete-post, [data-delete-post]');
         if (deleteBtn) { handleDelete(deleteBtn); return; }
@@ -355,28 +482,6 @@ function initDelegation() {
 
 // Garde la compatibilité : initInteractions() ne fait plus rien (délégation active)
 function initInteractions() {}
-
-// === GESTIONNAIRES — reçoivent l'élément directement ===
-
-async function handleLike(btn) {
-    const postId = btn.dataset.id || btn.getAttribute('data-post-id');
-    if (!postId) return;
-    // Feedback immédiat
-    btn.classList.toggle('liked');
-    try {
-        const res = await fetch(`/post/${postId}/like`, { method: 'POST' });
-        const data = await res.json();
-        if (data.success) {
-            const countSpan = btn.querySelector('.likes-count, [data-likes-count]');
-            if (countSpan) countSpan.textContent = data.likesCount;
-        } else {
-            btn.classList.toggle('liked'); // Annuler si erreur
-        }
-    } catch (err) {
-        btn.classList.toggle('liked');
-        console.error('❌ Erreur like:', err);
-    }
-}
 
 async function handleComment(form) {
     const postId = form.dataset.id || form.getAttribute('data-post-id');
