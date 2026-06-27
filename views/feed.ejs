@@ -1197,6 +1197,20 @@
             setTimeout(() => toast.remove(), 4000);
         });
     })();
+    // ── Téléchargement photo au clic ──────────────────────────────────────
+    document.addEventListener('click', function(e) {
+        const img = e.target.closest('.post-image')
+        if (!img) return
+        e.preventDefault()
+        const src = img.src
+        if (!src) return
+        const a = document.createElement('a')
+        a.href = '/api/download-image?url=' + encodeURIComponent(src)
+        a.download = ''
+        document.body.appendChild(a)
+        a.click()
+        a.remove()
+    })
     </script>
 </body>
 </html>

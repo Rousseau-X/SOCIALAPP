@@ -404,6 +404,10 @@ router.get("/login", redirectIfAuth, (req, res) => {
 router.post("/login", async (req, res) => {
     try {
         const { email, motDePasse } = req.body
+        if (!email || !motDePasse) {
+            req.flash("error", "Email et mot de passe requis.")
+            return res.redirect("/login")
+        }
         const user = await User.findOne({ email: email.toLowerCase() })
 
         if (!user) {

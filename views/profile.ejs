@@ -600,5 +600,50 @@
         </div>
     </div>
     <% } %>
+
+<!-- ── Lightbox photo de profil ─────────────────────────────────── -->
+<div id="avatarLightbox" style="
+    display:none; position:fixed; inset:0; z-index:9999;
+    background:rgba(0,0,0,0.88); backdrop-filter:blur(6px);
+    align-items:center; justify-content:center; cursor:zoom-out;
+" onclick="closeLightbox()">
+    <img id="avatarLightboxImg" src="" alt="" style="
+        max-width:90vw; max-height:90vh; border-radius:16px;
+        object-fit:contain; box-shadow:0 32px 80px rgba(0,0,0,0.6);
+        animation:lbIn .22s cubic-bezier(.34,1.56,.64,1) both;
+    ">
+    <button onclick="closeLightbox()" style="
+        position:fixed; top:20px; right:24px; background:rgba(255,255,255,0.12);
+        border:none; border-radius:50%; width:44px; height:44px; cursor:pointer;
+        font-size:20px; color:#fff; display:flex; align-items:center; justify-content:center;
+        transition:background .2s;
+    " onmouseover="this.style.background='rgba(255,255,255,0.22)'"
+       onmouseout="this.style.background='rgba(255,255,255,0.12)'">
+        <i class="fa-solid fa-xmark"></i>
+    </button>
+</div>
+<style>
+    @keyframes lbIn {
+        from { opacity:0; transform:scale(.88); }
+        to   { opacity:1; transform:scale(1); }
+    }
+    .profile-avatar { cursor: zoom-in; }
+</style>
+<script>
+    function openLightbox(src) {
+        const lb = document.getElementById('avatarLightbox')
+        document.getElementById('avatarLightboxImg').src = src
+        lb.style.display = 'flex'
+        document.body.style.overflow = 'hidden'
+    }
+    function closeLightbox() {
+        document.getElementById('avatarLightbox').style.display = 'none'
+        document.body.style.overflow = ''
+    }
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') closeLightbox() })
+    document.querySelector('.profile-avatar')?.addEventListener('click', function() {
+        openLightbox(this.src)
+    })
+</script>
 </body>
 </html>

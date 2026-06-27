@@ -348,4 +348,21 @@ router.get("/feed", requireAuth, async (req, res) => {
     }
 })
 
+router.get("/api/download-image", requireAuth, async (req, res) => {
+    const { url } = req.query
+    if (!url) return res.status(400).send("URL manquante")
+    try {
+        const response = await fetch(url, { signal: AbortSignal.timeout(15000) })
+        if (!response.ok) return res.status(502).send("Impossible de récupérer l'image")
+        const contentType = response.headers.get("content-type") || "image/jpeg"
+        const ext = contentType.includes("png") ? "png" : contentType.includes("gif") ? "gif" : contentType.includes("webp") ? "webp" : "jpg"
+        const buffer = Buffer.from(await response.arrayBuffer())
+        res.setHeader("Content-Disposition", `attachment; filename="socialapp-${Date.now()}.${ext}"`)
+        res.setHeader("Content-Type", contentType)
+        res.send(buffer)
+    } catch (e) {
+        res.status(500).send("Erreur lors du téléchargement")
+    }
+})
+
 module.exports = router
