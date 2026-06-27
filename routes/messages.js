@@ -91,15 +91,19 @@ router.get("/messages/:id", requireAuth, async (req, res) => {
 
         const currentUser = await User.findById(currentUserId);
         const isLocked = currentUser.vaultedChats?.has(otherId) || false;
+        const isBlocked = (currentUser.blockedUsers || []).map(b => b.toString()).includes(otherId);
+        const chatNickname = currentUser.chatNicknames?.get(otherId) || null;
 
         res.render("chat", {
-            title: otherUser.nom,
+            title: chatNickname || otherUser.nom,
             currentPage: "messages",
             otherUser,
             messages,
             currentUserId,
             isLocked,
-            isIncognito: currentUser.isIncognitoInput || false
+            isIncognito: currentUser.isIncognitoInput || false,
+            isBlocked,
+            chatNickname
         });
     } catch (err) {
         console.error(err);
@@ -215,6 +219,67 @@ router.post("/messages/audio", requireAuth, uploadAudio.single("audio"), async (
     } catch (err) {
         console.error("Erreur upload audio:", err);
         res.status(500).json({ error: err.message || "Erreur lors de l'envoi du message vocal." });
+    }
+});
+
+// Bloquer / Débloquer un utilisateur
+router.post("/api/chat/:id/block", requireAuth, async (req, res) => {
+    try {
+        const currentUserId = req.session.user.id;
+        const targetId = req.params.id;
+        const currentUser = await User.findById(currentUserId);
+        const isBlocked = currentUser.blockedUsers.map(b => b.toString()).includes(targetId);
+        if (isBlocked) {
+            await User.findByIdAndUpdate(currentUserId, { $pull: { blockedUsers: targetId } });
+            res.json({ success: true, blocked: false });
+        } else {
+            await User.findByIdAndUpdate(currentUserId, { $addToSet: { blockedUsers: targetId } });
+            res.json({ success: true, blocked: true });
+        }
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: "Erreur serveur." });
+    }
+});
+
+// Définir un pseudo de conversation
+router.post("/api/chat/:id/nickname", requireAuth, async (req, res) => {
+    try {
+        const currentUserId = req.session.user.id;
+        const targetId = req.params.id;
+        const { nickname } = req.body;
+        const currentUser = await User.findById(currentUserId);
+        if (!currentUser.chatNicknames) currentUser.chatNicknames = new Map();
+        if (nickname && nickname.trim()) {
+            currentUser.chatNicknames.set(targetId, nickname.trim().slice(0, 30));
+        } else {
+            currentUser.chatNicknames.delete(targetId);
+        }
+        currentUser.markModified("chatNicknames");
+        await currentUser.save();
+        res.json({ success: true, nickname: nickname ? nickname.trim() : null });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: "Erreur serveur." });
+    }
+});
+
+// Supprimer la conversation (côté courant uniquement)
+router.post("/api/chat/:id/clear", requireAuth, async (req, res) => {
+    try {
+        const currentUserId = req.session.user.id;
+        const targetId = req.params.id;
+        await Message.deleteMany({
+            groupe: null,
+            $or: [
+                { expediteur: currentUserId, destinataire: targetId },
+                { expediteur: targetId, destinataire: currentUserId }
+            ]
+        });
+        res.json({ success: true });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: "Erreur serveur." });
     }
 });
 

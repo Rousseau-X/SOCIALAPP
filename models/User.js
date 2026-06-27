@@ -121,7 +121,11 @@ const userSchema = new mongoose.Schema({
     // === PARAMÈTRES DE CONFIDENTIALITÉ ===
     hideOnlineStatus: { type: Boolean, default: false },
     allowMessagesFrom: { type: String, enum: ["all", "friends", "none"], default: "all" },
-    showInSearch: { type: Boolean, default: true }
+    showInSearch: { type: Boolean, default: true },
+
+    // === BLOCAGE & PSEUDOS DE CONVERSATION ===
+    blockedUsers: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+    chatNicknames: { type: Map, of: String, default: {} }
 
 }, { timestamps: true })
 
