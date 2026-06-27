@@ -941,19 +941,20 @@ a {
     border: 1px solid var(--border);
     border-radius: 40px;
     padding: 7px 12px;
-    display: none;
+    display: flex;
     gap: 2px;
     align-items: center;
     box-shadow: 0 8px 28px rgba(0,0,0,0.2);
     white-space: nowrap;
-    transform: translateY(4px);
+    transform: translateY(6px);
     opacity: 0;
-    transition: opacity 0.15s ease, transform 0.15s ease;
+    pointer-events: none;
+    transition: opacity 0.18s ease, transform 0.18s ease;
 }
 
 #reaction-picker-global.visible {
-    display: flex;
     opacity: 1;
+    pointer-events: all;
     transform: translateY(0);
 }
 

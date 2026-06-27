@@ -389,17 +389,19 @@ function _showPicker(postId, anchorBtn) {
         o.dataset.post = postId;
         o.classList.toggle('active-reaction', o.dataset.type === userReaction);
     });
-    // Positionnement au-dessus du bouton
-    _picker.style.display = 'flex';
+    // Positionner d'abord (sans la classe visible) pour mesurer correctement
+    _picker.classList.remove('visible');
     const rect = anchorBtn.getBoundingClientRect();
-    const pickerW = _picker.offsetWidth || 280;
+    const pickerW = _picker.offsetWidth || 300;
+    const pickerH = _picker.offsetHeight || 52;
     let left = rect.left + rect.width / 2 - pickerW / 2;
     left = Math.max(8, Math.min(left, window.innerWidth - pickerW - 8));
-    const top = rect.top - _picker.offsetHeight - 12;
+    const topAbove = rect.top - pickerH - 10;
     _picker.style.left = left + 'px';
-    _picker.style.top = (top < 8 ? rect.bottom + 12 : top) + 'px';
-    // Animation
-    requestAnimationFrame(() => _picker.classList.add('visible'));
+    _picker.style.top = (topAbove < 8 ? rect.bottom + 10 : topAbove) + 'px';
+    // Forcer le reflow puis animer
+    void _picker.offsetWidth;
+    _picker.classList.add('visible');
 }
 
 function _hidePicker() {
