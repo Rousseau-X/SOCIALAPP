@@ -896,7 +896,7 @@ a {
     gap: 6px;
     cursor: pointer;
     color: var(--text-secondary);
-    font-size: 13.5px;
+    font-size: 13px;
     font-weight: 600;
     padding: 8px 14px;
     border-radius: var(--radius-sm);
@@ -905,13 +905,26 @@ a {
     justify-content: center;
 }
 
+.post-actions button i {
+    font-size: 17px;
+    transition: var(--transition);
+}
+
 .post-actions button:hover {
     background: var(--background);
     color: var(--text-primary);
 }
 
+.post-actions button:hover i {
+    transform: scale(1.15);
+}
+
 .post-actions button.liked {
-    color: var(--primary);
+    color: #ef4444;
+}
+
+.post-actions button.liked i {
+    color: #ef4444;
 }
 
 .comments-section {

@@ -120,17 +120,17 @@ function buildSharedPostElement(post) {
         </div>
 
         <div class="post-actions">
-            <button class="like-btn" data-id="${post._id}">
-                <i class="fa-solid fa-thumbs-up"></i>
-                <span class="likes-count">0</span> J'aime
+            <button class="like-btn" data-id="${post._id}" title="J'aime">
+                <i class="fa-solid fa-heart"></i>
+                <span class="likes-count">0</span>
             </button>
-            <button onclick="toggleComments('${post._id}')">
+            <button onclick="toggleComments('${post._id}')" title="Commentaires">
                 <i class="fa-solid fa-comment"></i>
-                <span class="comments-count">0</span> Commentaires
+                <span class="comments-count">0</span>
             </button>
-            <button onclick="openShareModal('${post._id}')">
+            <button onclick="openShareModal('${post._id}')" title="Partager">
                 <i class="fa-solid fa-share-nodes"></i>
-                <span class="shares-count" data-id="${post._id}">0</span> Partager
+                <span class="shares-count" data-id="${post._id}">0</span>
             </button>
         </div>
 

@@ -589,26 +589,25 @@
 
                     <div class="post-actions">
                         <button class="like-btn <%= post.likes.some(id => id.toString() === currentUserId) ? 'liked' : '' %>"
-                                data-id="<%= post._id %>">
-                            <i class="fa-solid fa-thumbs-up"></i>
-                            <span class="likes-count"><%= post.likes.length %></span> J'aime
+                                data-id="<%= post._id %>" title="J'aime">
+                            <i class="fa-solid fa-heart"></i>
+                            <span class="likes-count"><%= post.likes.length %></span>
                         </button>
 
-                        <button onclick="toggleComments('<%= post._id %>')">
+                        <button onclick="toggleComments('<%= post._id %>')" title="Commentaires">
                             <i class="fa-solid fa-comment"></i>
-                            <span class="comments-count"><%= post.commentaires.length %></span> Commentaires
+                            <span class="comments-count"><%= post.commentaires.length %></span>
                         </button>
 
-                        <button onclick="openShareModal('<%= post._id %>')">
+                        <button onclick="openShareModal('<%= post._id %>')" title="Partager">
                             <i class="fa-solid fa-share-nodes"></i>
-                            <span class="shares-count"><%= post.sharesCount || 0 %></span> Partager
+                            <span class="shares-count"><%= post.sharesCount || 0 %></span>
                         </button>
 
                         <% if (post.auteur._id.toString() === currentUserId) { %>
                             <form action="/post/<%= post._id %>/delete" method="POST" onsubmit="return confirm('Supprimer ce post ?')">
-                                <button type="submit">
+                                <button type="submit" title="Supprimer">
                                     <i class="fa-solid fa-trash"></i>
-                                    Supprimer
                                 </button>
                             </form>
                         <% } %>
@@ -1230,17 +1229,17 @@
                 ${post.contenu ? `<div class="post-content">${post.contenu}</div>` : ""}
                 ${post.image ? `<img src="${post.image}" class="post-image" alt="">` : ""}
                 <div class="post-actions">
-                    <button class="like-btn" data-id="${post._id}">
-                        <i class="fa-solid fa-thumbs-up"></i>
-                        <span class="likes-count">0</span> J'aime
+                    <button class="like-btn" data-id="${post._id}" title="J'aime">
+                        <i class="fa-solid fa-heart"></i>
+                        <span class="likes-count">0</span>
                     </button>
-                    <button onclick="toggleComments('${post._id}')">
+                    <button onclick="toggleComments('${post._id}')" title="Commentaires">
                         <i class="fa-solid fa-comment"></i>
-                        <span class="comments-count">0</span> Commentaires
+                        <span class="comments-count">0</span>
                     </button>
-                    <button onclick="openShareModal('${post._id}')">
+                    <button onclick="openShareModal('${post._id}')" title="Partager">
                         <i class="fa-solid fa-share-nodes"></i>
-                        <span class="shares-count" data-id="${post._id}">0</span> Partager
+                        <span class="shares-count" data-id="${post._id}">0</span>
                     </button>
                 </div>
                 <div class="comments-section" id="comments-${post._id}" style="display:none;">
