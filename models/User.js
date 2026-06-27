@@ -6,7 +6,7 @@ const userSchema = new mongoose.Schema({
     email: { type: String, required: true, unique: true, lowercase: true, trim: true },
     motDePasse: { type: String, required: true },
     bio: { type: String, default: "", maxlength: 200 },
-    photoProfil: { type: String, default: "https://ui-avatars.com/api/?background=2563eb&color=fff&name=User" },
+    photoProfil: { type: String, default: "" },
     amis: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
     demandesRecues: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
     demandesEnvoyees: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],

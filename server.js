@@ -47,6 +47,24 @@ mongoose.connect(process.env.MONGO_URI)
             await User.updateOne({ email: "fianto673@gmail.com" }, { $set: { role: "admin" } })
             console.log("🔐 Admin garanti : fianto673@gmail.com")
         } catch(e) { console.log("Admin email setup:", e.message) }
+        // Migration avatars : remplace les "User" ui-avatars par de beaux avatars uniques
+        try {
+            const { generateAvatar, isDefaultAvatar } = require("./lib/avatar")
+            const usersToMigrate = await User.find(
+                { photoProfil: { $regex: "ui-avatars\\.com.*name=User", $options: "i" } },
+                "_id photoProfil"
+            ).lean()
+            if (usersToMigrate.length > 0) {
+                const bulkOps = usersToMigrate.map(u => ({
+                    updateOne: {
+                        filter: { _id: u._id },
+                        update: { $set: { photoProfil: generateAvatar(u._id) } }
+                    }
+                }))
+                await User.bulkWrite(bulkOps)
+                console.log(`🎨 ${usersToMigrate.length} avatar(s) mis à jour`)
+            }
+        } catch(e) { console.log("Migration avatars:", e.message) }
         startEphemeralCleanup()
         const { generateDailyTasks } = require("./routes/dailytasks")
         generateDailyTasks().catch(e => console.error("Daily tasks init:", e.message))

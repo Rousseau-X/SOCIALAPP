@@ -8,6 +8,7 @@ const { redirectIfAuth, isAuth } = require("../middleware/auth")
 const { nomValide } = require("../lib/validation")
 const assistant = require("../lib/assistant")
 const { track } = require("../lib/analytics")
+const { generateAvatar } = require("../lib/avatar")
 
 const SECURITY_QUESTIONS = [
     "Quel est le prénom de votre père ?",
@@ -480,6 +481,7 @@ router.post("/register", redirectIfAuth, async (req, res) => {
             securityAnswer: await hashAnswer(securityAnswer),
             recoveryCodes: hashedCodes
         })
+        newUser.photoProfil = generateAvatar(newUser._id)
         await newUser.save()
 
         await assistant.sendWelcomeMessage(newUser._id)
