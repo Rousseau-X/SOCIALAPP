@@ -4,6 +4,7 @@ const http = require("http")
 const { Server } = require("socket.io")
 const mongoose = require("mongoose")
 const session = require("express-session")
+const MongoStore = require("connect-mongo")
 const flash = require("connect-flash")
 const path = require("path")
 const compression = require("compression")
@@ -129,11 +130,25 @@ app.use(express.static(path.join(__dirname, "public"), {
     }
 }))
 
+const TWO_MONTHS = 1000 * 60 * 60 * 24 * 60
+
 app.use(session({
     secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
-    cookie: { maxAge: 1000 * 60 * 60 * 24 * 7, secure: false, sameSite: 'lax', httpOnly: true }
+    rolling: true,
+    store: MongoStore.create({
+        mongoUrl: process.env.MONGO_URI,
+        ttl: 60 * 60 * 24 * 60,
+        autoRemove: 'native',
+        touchAfter: 24 * 3600
+    }),
+    cookie: {
+        maxAge: TWO_MONTHS,
+        secure: false,
+        sameSite: 'lax',
+        httpOnly: true
+    }
 }))
 app.use(flash())
 
