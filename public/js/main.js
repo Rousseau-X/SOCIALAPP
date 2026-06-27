@@ -328,6 +328,40 @@ function initSocketNotifications() {
 // 10. INTERACTIONS — EVENT DELEGATION (survit au AJAX)
 // =====================================================
 
+// ===== TOOLTIP RÉSUMÉ RÉACTIONS =====
+const _tooltip = document.createElement('div');
+_tooltip.id = 'reaction-summary-tooltip';
+document.body.appendChild(_tooltip);
+
+function _showReactionSummary(countSpan) {
+    let counts = {};
+    try { counts = JSON.parse(countSpan.dataset.reactions || '{}'); } catch(e) {}
+    const order = ['heart','haha','wow','sad','clap','grr'];
+    const labels = { heart:'❤️', haha:'😂', wow:'😮', sad:'😢', clap:'👏', grr:'😠' };
+    const items = order.filter(t => counts[t] > 0);
+    if (items.length === 0) return;
+    _tooltip.innerHTML = items.map(t =>
+        `<div class="tip-item">${labels[t]} <span class="tip-count">${counts[t]}</span></div>`
+    ).join('');
+    const rect = countSpan.getBoundingClientRect();
+    _tooltip.style.left = (rect.left + rect.width / 2) + 'px';
+    _tooltip.style.top = (rect.top - 48) + 'px';
+    _tooltip.style.transform = 'translateX(-50%)';
+    _tooltip.classList.add('visible');
+}
+
+function _hideReactionSummary() {
+    _tooltip.classList.remove('visible');
+}
+
+document.addEventListener('mouseover', function(e) {
+    const span = e.target.closest('.likes-count[data-reactions]');
+    if (span) _showReactionSummary(span);
+});
+document.addEventListener('mouseout', function(e) {
+    if (e.target.closest('.likes-count[data-reactions]')) _hideReactionSummary();
+});
+
 // ===== REACTIONS =====
 const REACTION_EMOJIS = { heart: '❤️', haha: '😂', wow: '😮', sad: '😢', clap: '👏', grr: '😠' };
 
@@ -387,7 +421,17 @@ async function handleReaction(optBtn) {
         if (data.success) {
             if (likeBtn) {
                 const countSpan = likeBtn.querySelector('.likes-count');
-                if (countSpan) countSpan.textContent = data.reactionsCount;
+                if (countSpan) {
+                    countSpan.textContent = data.reactionsCount;
+                    // Mise à jour du résumé des réactions
+                    let counts = {};
+                    try { counts = JSON.parse(countSpan.dataset.reactions || '{}'); } catch(e) {}
+                    if (prevReaction && prevReaction !== type) counts[prevReaction] = Math.max(0, (counts[prevReaction] || 1) - 1);
+                    if (data.userReaction) counts[data.userReaction] = (counts[data.userReaction] || 0) + 1;
+                    else if (prevReaction === type) counts[type] = Math.max(0, (counts[type] || 1) - 1);
+                    Object.keys(counts).forEach(k => { if (counts[k] <= 0) delete counts[k]; });
+                    countSpan.dataset.reactions = JSON.stringify(counts);
+                }
                 // Sync active state on picker options
                 const picker = document.getElementById('picker-' + postId);
                 if (picker) {

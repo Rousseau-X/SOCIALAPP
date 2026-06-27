@@ -593,6 +593,8 @@
                         const userReactionType = userReaction ? userReaction.type : null;
                         const hasReacted = userReactionType || post.likes.some(id => id.toString() === currentUserId);
                         const totalReactions = (post.reactions && post.reactions.length > 0) ? post.reactions.length : post.likes.length;
+                        const reactionCounts = {};
+                        (post.reactions || []).forEach(r => { reactionCounts[r.type] = (reactionCounts[r.type] || 0) + 1; });
                     %>
                     <div class="post-actions">
                         <div class="reaction-wrapper">
@@ -605,7 +607,7 @@
                                 <% } else { %>
                                     <i class="fa-solid fa-heart"></i>
                                 <% } %>
-                                <span class="likes-count"><%= totalReactions %></span>
+                                <span class="likes-count" data-reactions="<%= JSON.stringify(reactionCounts) %>"><%= totalReactions %></span>
                             </button>
                             <div class="reaction-picker" id="picker-<%= post._id %>">
                                 <button class="reaction-opt <%= userReactionType === 'heart' ? 'active-reaction' : '' %>" data-type="heart" data-post="<%= post._id %>" title="J'aime">❤️</button>
@@ -1255,7 +1257,7 @@
                     <div class="reaction-wrapper">
                         <button class="like-btn" data-id="${post._id}" data-reaction="" title="J'aime">
                             <i class="fa-solid fa-heart"></i>
-                            <span class="likes-count">0</span>
+                            <span class="likes-count" data-reactions="{}">0</span>
                         </button>
                         <div class="reaction-picker" id="picker-${post._id}">
                             <button class="reaction-opt" data-type="heart" data-post="${post._id}" title="J'aime">❤️</button>

@@ -123,7 +123,7 @@ function buildSharedPostElement(post) {
             <div class="reaction-wrapper">
                 <button class="like-btn" data-id="${post._id}" data-reaction="" title="J'aime">
                     <i class="fa-solid fa-heart"></i>
-                    <span class="likes-count">0</span>
+                    <span class="likes-count" data-reactions="{}">0</span>
                 </button>
                 <div class="reaction-picker" id="picker-${post._id}">
                     <button class="reaction-opt" data-type="heart" data-post="${post._id}" title="J'aime">❤️</button>
