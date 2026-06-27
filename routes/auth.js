@@ -5,6 +5,7 @@ const crypto = require("crypto")
 const User = require("../models/User")
 const Group = require("../models/Group")
 const { redirectIfAuth, isAuth } = require("../middleware/auth")
+const { uploadProfile } = require("../lib/cloudinary")
 const { nomValide } = require("../lib/validation")
 const assistant = require("../lib/assistant")
 const { track } = require("../lib/analytics")
@@ -355,6 +356,45 @@ router.get("/register/codes", redirectIfAuth, (req, res) => {
 })
 
 // =============================================
+// ÉTAPE PHOTO DE PROFIL (POST-INSCRIPTION)
+// =============================================
+router.get("/register/photo", (req, res) => {
+    if (!req.session.newUserId && !(req.session.user)) {
+        return res.redirect("/login")
+    }
+    const userId = req.session.newUserId || req.session.user.id
+    const currentAvatar = generateAvatar(userId)
+    res.render("register-photo", {
+        title: "Ta photo de profil",
+        currentAvatar
+    })
+})
+
+router.get("/register/photo/skip", async (req, res) => {
+    if (!req.session.newUserId) {
+        return res.redirect("/login")
+    }
+    req.session.newUserId = null
+    res.redirect("/login")
+})
+
+router.post("/register/photo", uploadProfile.single("photoProfil"), async (req, res) => {
+    const userId = req.session.newUserId || (req.session.user && req.session.user.id)
+    if (!userId) return res.redirect("/login")
+
+    try {
+        if (req.file) {
+            await User.findByIdAndUpdate(userId, { photoProfil: req.file.path })
+        }
+    } catch (e) {
+        console.error("Erreur upload photo profil:", e.message)
+    }
+
+    req.session.newUserId = null
+    res.redirect("/login")
+})
+
+// =============================================
 // PAGE DE CONNEXION
 // =============================================
 router.get("/login", redirectIfAuth, (req, res) => {
@@ -495,6 +535,7 @@ router.post("/register", redirectIfAuth, async (req, res) => {
         await track(newUser._id, 'REGISTER')
 
         req.session.newUserCodes = plainCodes
+        req.session.newUserId = newUser._id.toString()
 
         res.redirect("/register/codes")
     } catch (err) {
