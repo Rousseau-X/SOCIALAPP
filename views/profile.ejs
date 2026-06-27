@@ -32,7 +32,15 @@
                     <i class="fa-solid fa-gear"></i>
                 </a>
                 <% } %>
-                <div class="profile-cover" id="profileCoverBg" style="<%= profileUser.profileCover ? 'background-image:url(' + profileUser.profileCover + ');background-size:cover;background-position:center;background-color:transparent;' : '' %>">
+                <div class="profile-cover" id="profileCoverBg" style="<%
+                    if (profileUser.profileCover) {
+                        const c = profileUser.profileCover;
+                        const isCss = c.startsWith('linear-gradient') || c.startsWith('radial-gradient');
+                        const isSolid = /^#[0-9a-fA-F]{3,6}$/.test(c);
+                        if (isCss || isSolid) { %>background:<%= c %>;background-color:transparent;<% }
+                        else { %>background-image:url(<%= c %>);background-size:cover;background-position:center;background-color:transparent;<% }
+                    }
+                %>">
                     <% if (isOwnProfile) { %>
                     <button onclick="openCoverPicker()" id="coverCameraBtn" title="Changer le fond">
                         <i class="fa-solid fa-camera"></i>
@@ -509,63 +517,170 @@
         }
 
         // ===== COVER PICKER =====
-        const COVER_IMAGES = [
-            { url: 'https://picsum.photos/id/237/800/300', label: 'Chien', cat: '🐾 Animaux' },
-            { url: 'https://picsum.photos/id/582/800/300', label: 'Chat', cat: '🐾 Animaux' },
-            { url: 'https://picsum.photos/id/593/800/300', label: 'Chien 2', cat: '🐾 Animaux' },
-            { url: 'https://picsum.photos/id/169/800/300', label: 'Cheval', cat: '🐾 Animaux' },
-            { url: 'https://picsum.photos/id/582/800/300', label: 'Animal', cat: '🐾 Animaux' },
-            { url: 'https://picsum.photos/id/783/800/300', label: 'Personnes', cat: '👤 Personnes' },
-            { url: 'https://picsum.photos/id/1074/800/300', label: 'Portrait', cat: '👤 Personnes' },
-            { url: 'https://picsum.photos/id/1056/800/300', label: 'Voyage', cat: '👤 Personnes' },
-            { url: 'https://picsum.photos/id/15/800/300', label: 'Montagne', cat: '🌿 Nature' },
-            { url: 'https://picsum.photos/id/29/800/300', label: 'Forêt', cat: '🌿 Nature' },
-            { url: 'https://picsum.photos/id/10/800/300', label: 'Fleurs', cat: '🌿 Nature' },
-            { url: 'https://picsum.photos/id/547/800/300', label: 'Plage', cat: '🌿 Nature' },
-            { url: 'https://picsum.photos/id/164/800/300', label: 'Ville', cat: '🏙️ Villes' },
-            { url: 'https://picsum.photos/id/325/800/300', label: 'Nuit', cat: '🏙️ Villes' },
-            { url: 'https://picsum.photos/id/358/800/300', label: 'Architecture', cat: '🏙️ Villes' },
-            { url: 'https://picsum.photos/id/1016/800/300', label: 'Espace', cat: '✨ Abstrait' },
-            { url: 'https://picsum.photos/id/1022/800/300', label: 'Cosmos', cat: '✨ Abstrait' },
-            { url: 'https://picsum.photos/id/1076/800/300', label: 'Lumières', cat: '✨ Abstrait' },
+        const NATURE_IDS    = [10,15,20,28,29,37,39,40,43,56,57,61,65,66,75,76,84,85,92,95,100,101,102,103,106,108,111,112,114,116,117,119,120,128,131,142,143,145,152,153,162,163,165,167,168,172,174,175,177,188,190,192,193,195,198,203,204,206,207,208,209]
+        const VILLE_IDS     = [164,186,200,218,222,223,224,225,230,232,240,244,248,250,254,258,266,267,270,274,278,280,281,282,283,287,292,293,300,308,313,314,315,317,325,326,329,333,338,358,366,367,368,369,370,371,372,373]
+        const MER_IDS       = [231,327,342,357,374,375,376,378,379,384,387,392,398,399,400,401,407,412,416,417,418,420,421,424,430,479,480,481,482,483,484,485,486,487,488]
+        const ANIMAL_IDS    = [237,247,268,287,315,366,374,400,412,430,449,464,482,488,490,502,504,509,582,593,594,595,596,597,598,599,600,601,602,603]
+        const MONTAGNE_IDS  = [29,37,56,95,101,114,128,142,162,167,172,175,188,190,206,208,230,244,258,270,282,292,308,317,329,338,358,366,379,387,392,398]
+        const COUCHER_IDS   = [430,431,432,433,434,435,436,437,438,439,440,441,442,443,444,445,446,447,448,449,450,451,452,453,454,455,456,457,458,459,460]
+        const ABSTRACT_IDS  = [1016,1019,1022,1025,1028,1031,1034,1037,1040,1043,1046,1049,1052,1055,1058,1061,1064,1067,1070,1073,1076,1079,1082,1084,700,701,702,703,704,705,706,707,708,709,710]
+
+        const GRADIENT_PRESETS = [
+            'linear-gradient(135deg,#667eea,#764ba2)','linear-gradient(135deg,#f093fb,#f5576c)',
+            'linear-gradient(135deg,#4facfe,#00f2fe)','linear-gradient(135deg,#43e97b,#38f9d7)',
+            'linear-gradient(135deg,#fa709a,#fee140)','linear-gradient(135deg,#a18cd1,#fbc2eb)',
+            'linear-gradient(135deg,#ffecd2,#fcb69f)','linear-gradient(135deg,#a1c4fd,#c2e9fb)',
+            'linear-gradient(135deg,#d4fc79,#96e6a1)','linear-gradient(135deg,#f6d365,#fda085)',
+            'linear-gradient(135deg,#89f7fe,#66a6ff)','linear-gradient(135deg,#e0c3fc,#8ec5fc)',
+            'linear-gradient(135deg,#f77062,#fe5196)','linear-gradient(135deg,#2193b0,#6dd5ed)',
+            'linear-gradient(135deg,#cc2b5e,#753a88)','linear-gradient(135deg,#ee0979,#ff6a00)',
+            'linear-gradient(135deg,#0f0c29,#302b63)','linear-gradient(135deg,#1a1a2e,#16213e)',
+            'linear-gradient(135deg,#ff9a9e,#fecfef)','linear-gradient(135deg,#96fbc4,#f9f586)',
+            'linear-gradient(135deg,#fbc2eb,#a6c1ee)','linear-gradient(135deg,#fddb92,#d1fdff)',
+            'linear-gradient(135deg,#a8edea,#fed6e3)','linear-gradient(135deg,#5ee7df,#b490ca)',
+            'linear-gradient(135deg,#d299c2,#fef9d7)','linear-gradient(135deg,#30cfd0,#330867)',
+            'linear-gradient(135deg,#f8ff00,#3ad59f)','linear-gradient(135deg,#c471f5,#fa71cd)',
+            'linear-gradient(135deg,#12c2e9,#c471ed,#f64f59)','linear-gradient(135deg,#f79d00,#64f38c)',
+            'linear-gradient(135deg,#4568dc,#b06ab3)','linear-gradient(135deg,#11998e,#38ef7d)',
+            'linear-gradient(135deg,#fc5c7d,#6a3093)','linear-gradient(135deg,#c94b4b,#4b134f)',
+            'linear-gradient(135deg,#42275a,#734b6d)','linear-gradient(135deg,#1f4037,#99f2c8)',
+            'linear-gradient(135deg,#373b44,#4286f4)','linear-gradient(135deg,#3a1c71,#d76d77,#ffaf7b)',
+            'linear-gradient(90deg,#667eea,#764ba2)','linear-gradient(90deg,#f093fb,#f5576c)',
+            'linear-gradient(90deg,#4facfe,#00f2fe)','linear-gradient(90deg,#43e97b,#38f9d7)',
+            'linear-gradient(90deg,#fa709a,#fee140)','linear-gradient(90deg,#a18cd1,#fbc2eb)',
+            'linear-gradient(90deg,#ffecd2,#fcb69f)','linear-gradient(90deg,#a1c4fd,#c2e9fb)',
+            'linear-gradient(90deg,#d4fc79,#96e6a1)','linear-gradient(90deg,#f6d365,#fda085)',
+            'linear-gradient(90deg,#89f7fe,#66a6ff)','linear-gradient(90deg,#e0c3fc,#8ec5fc)',
+            'linear-gradient(90deg,#f77062,#fe5196)','linear-gradient(90deg,#2193b0,#6dd5ed)',
+            'linear-gradient(90deg,#cc2b5e,#753a88)','linear-gradient(90deg,#ee0979,#ff6a00)',
+            'linear-gradient(90deg,#11998e,#38ef7d)','linear-gradient(90deg,#fc5c7d,#6a3093)',
+            'linear-gradient(90deg,#373b44,#4286f4)','linear-gradient(90deg,#3a1c71,#d76d77,#ffaf7b)',
+            'linear-gradient(45deg,#667eea,#764ba2)','linear-gradient(45deg,#f093fb,#f5576c)',
+            'linear-gradient(45deg,#4facfe,#00f2fe)','linear-gradient(45deg,#43e97b,#38f9d7)',
+            'linear-gradient(45deg,#fa709a,#fee140)','linear-gradient(45deg,#a18cd1,#fbc2eb)',
+            'linear-gradient(45deg,#ffecd2,#fcb69f)','linear-gradient(45deg,#a1c4fd,#c2e9fb)',
+            'linear-gradient(45deg,#d4fc79,#96e6a1)','linear-gradient(45deg,#f6d365,#fda085)',
+            'linear-gradient(45deg,#89f7fe,#66a6ff)','linear-gradient(45deg,#e0c3fc,#8ec5fc)',
+            'linear-gradient(45deg,#f77062,#fe5196)','linear-gradient(45deg,#2193b0,#6dd5ed)',
+            'linear-gradient(45deg,#cc2b5e,#753a88)','linear-gradient(45deg,#ee0979,#ff6a00)',
+            'linear-gradient(45deg,#11998e,#38ef7d)','linear-gradient(45deg,#fc5c7d,#6a3093)',
+            'linear-gradient(45deg,#373b44,#4286f4)','linear-gradient(45deg,#c94b4b,#4b134f)',
+            'linear-gradient(160deg,#667eea,#764ba2)','linear-gradient(160deg,#f093fb,#f5576c)',
+            'linear-gradient(160deg,#4facfe,#00f2fe)','linear-gradient(160deg,#43e97b,#38f9d7)',
+            'linear-gradient(160deg,#fa709a,#fee140)','linear-gradient(160deg,#a18cd1,#fbc2eb)',
+            'linear-gradient(160deg,#ffecd2,#fcb69f)','linear-gradient(160deg,#a1c4fd,#c2e9fb)',
+            'linear-gradient(160deg,#d4fc79,#96e6a1)','linear-gradient(160deg,#f6d365,#fda085)',
+            'linear-gradient(160deg,#89f7fe,#66a6ff)','linear-gradient(160deg,#e0c3fc,#8ec5fc)',
+            'linear-gradient(160deg,#11998e,#38ef7d)','linear-gradient(160deg,#3a1c71,#d76d77,#ffaf7b)',
+            'linear-gradient(135deg,#667eea,#764ba2,#f093fb)','linear-gradient(135deg,#4facfe,#00f2fe,#43e97b)',
+            'linear-gradient(135deg,#fa709a,#fee140,#f093fb)','linear-gradient(135deg,#89f7fe,#66a6ff,#764ba2)',
+            'linear-gradient(135deg,#ee0979,#ff6a00,#fee140)','linear-gradient(135deg,#f093fb,#f5576c,#fee140)',
+            'linear-gradient(135deg,#96fbc4,#f9f586,#fbc2eb)','linear-gradient(135deg,#43e97b,#38f9d7,#4facfe)',
+            'linear-gradient(135deg,#c471f5,#fa71cd,#f5576c)','linear-gradient(135deg,#30cfd0,#667eea,#764ba2)',
+            'radial-gradient(circle,#667eea,#764ba2)','radial-gradient(circle,#f093fb,#f5576c)',
+            'radial-gradient(circle,#4facfe,#00f2fe)','radial-gradient(circle,#43e97b,#38f9d7)',
+            'radial-gradient(circle,#fa709a,#fee140)','radial-gradient(circle,#a18cd1,#fbc2eb)',
+            'radial-gradient(circle,#89f7fe,#66a6ff)','radial-gradient(circle,#e0c3fc,#8ec5fc)',
+            'radial-gradient(ellipse at top,#667eea,#764ba2)','radial-gradient(ellipse at top,#4facfe,#00f2fe)',
+            'radial-gradient(ellipse at bottom,#fa709a,#fee140)','radial-gradient(ellipse at bottom,#f093fb,#f5576c)',
+            '#2c3e50','#34495e','#8e44ad','#2980b9','#27ae60','#e74c3c','#e67e22','#f39c12',
+            '#1abc9c','#3498db','#9b59b6','#e91e63','#673ab7','#3f51b5','#2196f3','#00bcd4',
+            '#009688','#4caf50','#8bc34a','#ffc107','#ff9800','#ff5722','#795548','#607d8b',
+            '#1a1a2e','#16213e','#0f3460','#533483','#e94560','#0d0d0d','#141414','#1e1e2e',
+            '#2d1b69','#11262d','#0a3d62','#1e3799','#6a89cc','#82ccdd','#b8e994','#f8c291',
         ]
 
-        function buildCoverPicker() {
-            const modal = document.getElementById('coverPickerModal')
-            if (!modal || modal.dataset.built) return
-            modal.dataset.built = '1'
-            const sheet = modal.querySelector('.cover-picker-sheet')
-            const cats = [...new Set(COVER_IMAGES.map(i => i.cat))]
-            let html = ''
-            cats.forEach(cat => {
-                html += `<div class="cover-cat-label">${cat}</div><div class="cover-grid">`
-                COVER_IMAGES.filter(i => i.cat === cat).forEach(img => {
-                    html += `<img src="${img.url}" class="cover-thumb" loading="lazy" alt="${img.label}" onclick="selectCover('${img.url}', this)">`
-                })
-                html += '</div>'
-            })
-            sheet.insertAdjacentHTML('beforeend', html)
+        const ALL_PICSUM_IDS = Array.from({length: 1084}, (_, i) => i + 1)
+        let coverPage = 0
+        const PAGE_SIZE = 60
+
+        const COVER_TABS = [
+            { id: 'tous',      label: '✨ Tous',          ids: null },
+            { id: 'nature',    label: '🌿 Nature',         ids: NATURE_IDS },
+            { id: 'villes',    label: '🏙️ Villes',         ids: VILLE_IDS },
+            { id: 'mer',       label: '🌊 Mer',            ids: MER_IDS },
+            { id: 'montagne',  label: '🏔️ Montagne',       ids: MONTAGNE_IDS },
+            { id: 'animaux',   label: '🐾 Animaux',        ids: ANIMAL_IDS },
+            { id: 'coucher',   label: '🌅 Coucher de soleil', ids: COUCHER_IDS },
+            { id: 'abstract',  label: '🎨 Abstrait',       ids: ABSTRACT_IDS },
+            { id: 'degrade',   label: '🎨 Dégradés',       ids: 'gradients' },
+        ]
+
+        let activeCoverTab = 'tous'
+
+        function picsumThumb(id) { return `https://picsum.photos/id/${id}/320/120` }
+        function picsumFull(id)  { return `https://picsum.photos/id/${id}/1200/450` }
+
+        function coverItemHtml(value, isGradient) {
+            const esc = value.replace(/"/g, '&quot;')
+            if (isGradient) {
+                return `<div class="cv-item" style="background:${value}" onclick="selectCover('${esc}',this,true)" title="${value}"></div>`
+            }
+            return `<div class="cv-item cv-photo" onclick="selectCover('${esc}',this,false)">
+                        <img src="${value}" loading="lazy" alt="" onerror="this.closest('.cv-item').style.display='none'">
+                    </div>`
         }
 
-        async function selectCover(url, el) {
-            document.querySelectorAll('.cover-thumb').forEach(t => t.classList.remove('selected'))
+        function renderCoverTab(tabId) {
+            activeCoverTab = tabId
+            coverPage = 0
+            const grid = document.getElementById('coverGrid')
+            const loadMoreBtn = document.getElementById('coverLoadMore')
+            const tab = COVER_TABS.find(t => t.id === tabId)
+
+            document.querySelectorAll('.cv-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tabId))
+
+            if (tab.ids === 'gradients') {
+                grid.innerHTML = GRADIENT_PRESETS.map(g => coverItemHtml(g, true)).join('')
+                loadMoreBtn.style.display = 'none'
+                return
+            }
+
+            const ids = tab.ids || ALL_PICSUM_IDS
+            const page = ids.slice(0, PAGE_SIZE)
+            grid.innerHTML = page.map(id => coverItemHtml(picsumThumb(id), false)).join('')
+            coverPage = 1
+            loadMoreBtn.style.display = ids.length > PAGE_SIZE ? 'flex' : 'none'
+            loadMoreBtn.dataset.source = tabId
+        }
+
+        function loadMoreCovers() {
+            const tab = COVER_TABS.find(t => t.id === activeCoverTab)
+            const ids = tab.ids || ALL_PICSUM_IDS
+            const page = ids.slice(coverPage * PAGE_SIZE, (coverPage + 1) * PAGE_SIZE)
+            if (!page.length) { document.getElementById('coverLoadMore').style.display = 'none'; return }
+            const grid = document.getElementById('coverGrid')
+            grid.insertAdjacentHTML('beforeend', page.map(id => coverItemHtml(picsumThumb(id), false)).join(''))
+            coverPage++
+            if ((coverPage) * PAGE_SIZE >= ids.length) document.getElementById('coverLoadMore').style.display = 'none'
+        }
+
+        async function selectCover(value, el, isGradient) {
+            document.querySelectorAll('.cv-item').forEach(t => t.classList.remove('selected'))
             el.classList.add('selected')
+            const coverUrl = isGradient ? value : picsumFull(value.match(/\/id\/(\d+)\//)?.[1] || 1)
             try {
                 const res = await fetch('/api/profile/cover', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ coverUrl: url })
+                    body: JSON.stringify({ coverUrl })
                 })
                 const data = await res.json()
                 if (data.success) {
                     const bg = document.getElementById('profileCoverBg')
                     if (bg) {
-                        bg.style.backgroundImage = `url(${url})`
-                        bg.style.backgroundSize = 'cover'
-                        bg.style.backgroundPosition = 'center'
+                        if (isGradient) {
+                            bg.style.backgroundImage = ''
+                            bg.style.background = coverUrl
+                        } else {
+                            bg.style.background = ''
+                            bg.style.backgroundImage = `url(${coverUrl})`
+                            bg.style.backgroundSize = 'cover'
+                            bg.style.backgroundPosition = 'center'
+                        }
                         bg.style.backgroundColor = 'transparent'
                     }
-                    setTimeout(() => { document.getElementById('coverPickerModal').style.display = 'none' }, 400)
+                    setTimeout(() => closeCoverPicker(), 350)
                 }
             } catch(e) {
                 el.classList.remove('selected')
@@ -573,32 +688,155 @@
         }
 
         function openCoverPicker() {
-            buildCoverPicker()
             const modal = document.getElementById('coverPickerModal')
-            if (modal) modal.style.display = 'flex'
+            if (!modal) return
+            modal.style.display = 'flex'
+            document.body.style.overflow = 'hidden'
+            if (!modal.dataset.built) {
+                modal.dataset.built = '1'
+                renderCoverTab('tous')
+            }
+        }
+
+        function closeCoverPicker() {
+            const modal = document.getElementById('coverPickerModal')
+            if (modal) { modal.style.display = 'none'; document.body.style.overflow = '' }
         }
 
         document.addEventListener('DOMContentLoaded', () => {
             const modal = document.getElementById('coverPickerModal')
-            if (modal) modal.addEventListener('click', e => { if (e.target === modal) modal.style.display = 'none' })
+            if (modal) modal.addEventListener('click', e => { if (e.target === modal) closeCoverPicker() })
+            document.addEventListener('keydown', e => { if (e.key === 'Escape') closeCoverPicker() })
         })
     </script>
 
-    <!-- Modal sélection fond de profil -->
+    <!-- ═══════════════════════════════════════════════════
+         COVER PICKER MODAL — 1400+ fonds
+    ════════════════════════════════════════════════════ -->
     <% if (isOwnProfile) { %>
-    <div id="coverPickerModal">
-        <div class="cover-picker-sheet">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+    <div id="coverPickerModal" style="
+        display:none; position:fixed; inset:0; z-index:9999;
+        background:rgba(0,0,0,0.65); backdrop-filter:blur(5px);
+        align-items:center; justify-content:center; padding:16px;
+    ">
+        <div style="
+            background:var(--card-bg); border-radius:20px;
+            width:100%; max-width:780px; max-height:88vh;
+            display:flex; flex-direction:column;
+            box-shadow:0 32px 80px rgba(0,0,0,0.4);
+            overflow:hidden;
+            animation:cpIn .25s cubic-bezier(.34,1.56,.64,1) both;
+        ">
+            <!-- Header -->
+            <div style="
+                display:flex; align-items:center; justify-content:space-between;
+                padding:20px 24px 14px; border-bottom:1px solid var(--border); flex-shrink:0;
+            ">
                 <div>
-                    <h3><i class="fa-solid fa-image" style="color:var(--primary);margin-right:6px;"></i>Choisir un fond</h3>
-                    <p>Clique sur une photo pour l'appliquer immédiatement</p>
+                    <div style="font-size:17px; font-weight:700; color:var(--text-primary);">
+                        <i class="fa-solid fa-image" style="color:var(--primary); margin-right:8px;"></i>
+                        Choisir un fond
+                    </div>
+                    <div style="font-size:13px; color:var(--text-muted); margin-top:2px;">
+                        1 400+ fonds disponibles — clique pour appliquer
+                    </div>
                 </div>
-                <button onclick="document.getElementById('coverPickerModal').style.display='none'" style="background:var(--bg-secondary);border:none;border-radius:50%;width:32px;height:32px;cursor:pointer;font-size:16px;color:var(--text-secondary);display:flex;align-items:center;justify-content:center;">
+                <button onclick="closeCoverPicker()" style="
+                    background:var(--background); border:none; border-radius:50%;
+                    width:36px; height:36px; cursor:pointer; font-size:16px;
+                    color:var(--text-muted); display:flex; align-items:center; justify-content:center;
+                    transition:background .15s;
+                " onmouseover="this.style.background='var(--border)'" onmouseout="this.style.background='var(--background)'">
                     <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <!-- Tabs -->
+            <div id="coverTabs" style="
+                display:flex; gap:6px; padding:12px 24px;
+                border-bottom:1px solid var(--border); flex-shrink:0;
+                overflow-x:auto; scrollbar-width:none;
+            ">
+                <% const coverTabDefs = [
+                    {id:'tous',     label:'✨ Tous'},
+                    {id:'nature',   label:'🌿 Nature'},
+                    {id:'villes',   label:'🏙️ Villes'},
+                    {id:'mer',      label:'🌊 Mer'},
+                    {id:'montagne', label:'🏔️ Montagne'},
+                    {id:'animaux',  label:'🐾 Animaux'},
+                    {id:'coucher',  label:'🌅 Coucher'},
+                    {id:'abstract', label:'🎨 Abstrait'},
+                    {id:'degrade',  label:'🌈 Dégradés'},
+                ]; %>
+                <% coverTabDefs.forEach(t => { %>
+                <button class="cv-tab<%= t.id === 'tous' ? ' active' : '' %>"
+                        data-tab="<%= t.id %>"
+                        onclick="renderCoverTab('<%= t.id %>')"><%= t.label %></button>
+                <% }) %>
+            </div>
+
+            <!-- Grid -->
+            <div id="coverGrid" style="
+                flex:1; min-height:0; overflow-y:auto; padding:16px 24px;
+                display:grid;
+                grid-template-columns:repeat(auto-fill, minmax(150px, 1fr));
+                grid-auto-rows:64px;
+                gap:10px;
+                align-content:start;
+                scrollbar-width:thin;
+            ">
+                <div style="grid-column:1/-1; text-align:center; padding:40px; color:var(--text-muted);">
+                    <i class="fa-solid fa-spinner fa-spin" style="font-size:22px; display:block; margin-bottom:8px;"></i>
+                    Chargement...
+                </div>
+            </div>
+
+            <!-- Load more -->
+            <div style="padding:12px 24px; border-top:1px solid var(--border); flex-shrink:0; display:flex; justify-content:center;">
+                <button id="coverLoadMore" onclick="loadMoreCovers()" style="
+                    display:none; align-items:center; gap:6px;
+                    padding:9px 22px; border-radius:20px; font-size:13px; font-weight:600;
+                    border:1.5px solid var(--border); background:var(--background);
+                    color:var(--text-secondary); cursor:pointer; transition:all .15s;
+                " onmouseover="this.style.borderColor='var(--primary)';this.style.color='var(--primary)'"
+                   onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text-secondary)'">
+                    <i class="fa-solid fa-chevron-down"></i> Charger 60 de plus
                 </button>
             </div>
         </div>
     </div>
+
+    <style>
+    @keyframes cpIn {
+        from { opacity:0; transform:scale(.93) translateY(10px); }
+        to   { opacity:1; transform:scale(1) translateY(0); }
+    }
+    .cv-tab {
+        flex-shrink:0; padding:6px 14px; border-radius:20px; font-size:13px;
+        font-weight:600; cursor:pointer; border:1.5px solid var(--border);
+        background:var(--background); color:var(--text-secondary);
+        white-space:nowrap; transition:all .15s;
+    }
+    .cv-tab:hover { border-color:var(--primary); color:var(--primary); }
+    .cv-tab.active { background:var(--primary); color:#fff; border-color:var(--primary); }
+    .cv-item {
+        border-radius:10px; overflow:hidden; cursor:pointer;
+        border:2.5px solid transparent; transition:all .15s;
+        position:relative; background:var(--background);
+    }
+    .cv-item:hover { border-color:var(--primary); transform:scale(1.04); z-index:1; }
+    .cv-item.selected { border-color:var(--primary); box-shadow:0 0 0 3px var(--primary-light); }
+    .cv-item.selected::after {
+        content:'✓'; position:absolute; top:4px; right:5px;
+        background:var(--primary); color:#fff; border-radius:50%;
+        width:18px; height:18px; font-size:10px; font-weight:700;
+        display:flex; align-items:center; justify-content:center; line-height:18px; text-align:center;
+    }
+    .cv-photo img { width:100%; height:100%; object-fit:cover; display:block; }
+    #coverTabs::-webkit-scrollbar { display:none; }
+    #coverGrid::-webkit-scrollbar { width:4px; }
+    #coverGrid::-webkit-scrollbar-thumb { background:var(--border); border-radius:2px; }
+    </style>
     <% } %>
 
 <!-- ── Lightbox photo de profil ─────────────────────────────────── -->

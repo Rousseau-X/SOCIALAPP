@@ -116,9 +116,13 @@ router.post("/api/profile/cover", requireAuth, async (req, res) => {
     try {
         const { coverUrl } = req.body
         if (!coverUrl || typeof coverUrl !== "string") return res.status(400).json({ error: "URL invalide." })
-        const allowed = ["picsum.photos", "images.unsplash.com"]
-        let isAllowed = false
-        try { const u = new URL(coverUrl); isAllowed = allowed.some(d => u.hostname.includes(d)) } catch {}
+        const isCssBackground = /^(linear-gradient|radial-gradient)\(/.test(coverUrl)
+        const isSolidColor = /^#[0-9a-fA-F]{3,6}$/.test(coverUrl)
+        let isAllowed = isCssBackground || isSolidColor
+        if (!isAllowed) {
+            const allowed = ["picsum.photos", "images.unsplash.com"]
+            try { const u = new URL(coverUrl); isAllowed = allowed.some(d => u.hostname.includes(d)) } catch {}
+        }
         if (!isAllowed) return res.status(400).json({ error: "Source non autorisée." })
         await User.findByIdAndUpdate(req.session.user.id, { profileCover: coverUrl })
         res.json({ success: true })
