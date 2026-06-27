@@ -1326,23 +1326,26 @@ a {
 .chat-header-actions {
     display: flex;
     align-items: center;
-    gap: 2px;
+    gap: 4px;
     flex-shrink: 0;
     margin-left: auto;
+    padding-left: 6px;
 }
 
 .chat-header-btn {
     background: none;
     border: none;
     cursor: pointer;
-    font-size: 16px;
+    font-size: 18px;
     color: var(--text-secondary);
-    padding: 6px 7px;
+    width: 36px;
+    height: 36px;
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 8px;
+    border-radius: 50%;
     transition: background 0.15s;
+    flex-shrink: 0;
 }
 
 .chat-header-btn:hover {
@@ -2770,8 +2773,9 @@ body {
         font-size: 13px !important;
     }
     .chat-header-btn {
-        font-size: 15px !important;
-        padding: 5px 6px !important;
+        font-size: 16px !important;
+        width: 32px !important;
+        height: 32px !important;
     }
     .chat-messages {
         padding: 8px !important;
