@@ -1250,25 +1250,55 @@ a {
 
 .chat-header {
     flex-shrink: 0;
-    padding: 14px 18px;
+    padding: 8px 14px;
     border-bottom: 1px solid var(--border);
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 10px;
+    min-height: 0;
 }
 
 .chat-back {
     color: var(--text-primary);
-    font-size: 18px;
-    margin-right: 4px;
+    font-size: 17px;
+    flex-shrink: 0;
 }
 
 .chat-header img {
-    width: 40px;
-    height: 40px;
+    width: 34px;
+    height: 34px;
     border-radius: 50%;
     object-fit: cover;
     border: 1px solid var(--border);
+    flex-shrink: 0;
+}
+
+.chat-header-info {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-width: 0;
+    flex: 1;
+}
+
+.chat-header-name {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.chat-header-status {
+    font-size: 11px;
+    font-weight: 400;
+    color: var(--text-secondary);
+    line-height: 1.2;
+    white-space: nowrap;
 }
 
 .chat-messages {
@@ -2680,15 +2710,15 @@ body {
         height: 26px !important;
     }
     .chat-header {
-        padding: 8px 10px !important;
+        padding: 7px 10px !important;
         gap: 8px !important;
     }
     .chat-header img {
-        width: 32px !important;
-        height: 32px !important;
+        width: 30px !important;
+        height: 30px !important;
     }
-    .chat-header div {
-        font-size: 14px !important;
+    .chat-header-name {
+        font-size: 13px !important;
     }
     .chat-messages {
         padding: 8px !important;
