@@ -31,11 +31,23 @@ const postSchema = new mongoose.Schema({
         },
         texte: {
             type: String,
-            maxlength: 300
+            maxlength: 500
         },
         date: {
             type: Date,
             default: Date.now
+        },
+        likes: [{
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "User"
+        }],
+        reactions: [{
+            user: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+            type: { type: String, enum: ["heart","haha","wow","sad","clap","grr"], default: "heart" }
+        }],
+        replyTo: {
+            userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+            nom: String
         }
     }],
 

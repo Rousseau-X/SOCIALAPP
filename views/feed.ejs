@@ -632,28 +632,53 @@
                     <div class="comments-section" id="comments-<%= post._id %>" style="display:none;">
                         <div class="comments-list">
                             <% post.commentaires.forEach(comment => { %>
-                                <div class="comment">
+                                <%
+                                    const CEMOJI = {heart:'❤️',haha:'😂',wow:'😮',sad:'😢',clap:'👏',grr:'😠'};
+                                    const cUserReaction = (comment.reactions||[]).find(r=>r.user&&r.user.toString()===currentUserId);
+                                    const cUserReactionType = cUserReaction ? cUserReaction.type : null;
+                                    const cTotalLikes = (comment.likes||[]).length;
+                                %>
+                                <div class="comment" data-comment-id="<%= comment._id %>" data-post-id="<%= post._id %>">
                                     <a href="/profile/<%= comment.auteur._id %>" class="ajax-link">
                                         <img src="<%= comment.auteur.photoProfil %>" class="comment-avatar" alt="">
                                     </a>
-                                    <div class="comment-bubble">
-                                        <div class="comment-author">
-                                            <a href="/profile/<%= comment.auteur._id %>" class="ajax-link" style="color:inherit;text-decoration:none;font-weight:inherit;">
-                                                <%= comment.auteur.nom %>
-                                            </a>
-                                            <%- include('partials/badges', { badges: comment.auteur.badges || [] }) %>
+                                    <div class="comment-right">
+                                        <div class="comment-bubble">
+                                            <div class="comment-author">
+                                                <a href="/profile/<%= comment.auteur._id %>" class="ajax-link" style="color:inherit;text-decoration:none;font-weight:inherit;"><%= comment.auteur.nom %></a>
+                                                <%- include('partials/badges', { badges: comment.auteur.badges || [] }) %>
+                                            </div>
+                                            <% if (comment.replyTo && comment.replyTo.nom) { %><span class="comment-reply-tag">↩ @<%= comment.replyTo.nom %></span><% } %>
+                                            <div class="comment-text"><%= comment.texte %></div>
                                         </div>
-                                        <div><%= comment.texte %></div>
+                                        <div class="comment-actions">
+                                            <button class="comment-like-btn <%= cUserReactionType ? 'liked' : '' %>"
+                                                    data-post="<%= post._id %>"
+                                                    data-comment="<%= comment._id %>"
+                                                    data-reaction="<%= cUserReactionType || '' %>">
+                                                <% if (cUserReactionType) { %><span class="c-reaction-emoji"><%= CEMOJI[cUserReactionType] %></span><% } else { %><i class="fa-regular fa-heart"></i><% } %>
+                                                <% if (cTotalLikes > 0) { %><span class="comment-likes-count"><%= cTotalLikes %></span><% } %>
+                                            </button>
+                                            <button class="comment-reply-btn"
+                                                    data-post="<%= post._id %>"
+                                                    data-comment-author="<%= comment.auteur.nom %>"
+                                                    data-comment-author-id="<%= comment.auteur._id %>">Répondre</button>
+                                        </div>
                                     </div>
                                 </div>
                             <% }) %>
                         </div>
-                        <form class="comment-form ajax-comment-form" data-id="<%= post._id %>">
-                            <input type="text" name="texte" placeholder="Écrire un commentaire..." required>
-                            <button type="submit">
-                                <i class="fa-solid fa-paper-plane"></i>
-                            </button>
-                        </form>
+                        <div class="comment-form-wrap">
+                            <div class="reply-indicator" style="display:none;">
+                                <span>↩ <strong class="reply-to-name"></strong></span>
+                                <button type="button" class="cancel-reply"><i class="fa-solid fa-xmark"></i></button>
+                            </div>
+                            <div class="mention-dropdown" style="display:none;"></div>
+                            <form class="comment-form ajax-comment-form" data-id="<%= post._id %>">
+                                <input type="text" name="texte" placeholder="Écrire un commentaire…" required autocomplete="off">
+                                <button type="submit"><i class="fa-solid fa-paper-plane"></i></button>
+                            </form>
+                        </div>
                     </div>
                 </div>
             <% }) %>

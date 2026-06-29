@@ -234,7 +234,7 @@ router.post("/post/:id/react", requireAuth, requireNotRestricted("likes"), async
 // Ajouter un commentaire (AJAX)
 router.post("/post/:id/comment", requireAuth, requireNotRestricted("messages"), async (req, res) => {
     try {
-        const { texte } = req.body
+        const { texte, replyTo, mentionIds } = req.body
         if (!texte || texte.trim().length === 0) {
             return res.status(400).json({ error: "Commentaire vide" })
         }
@@ -242,21 +242,34 @@ router.post("/post/:id/comment", requireAuth, requireNotRestricted("messages"), 
         const post = await Post.findById(req.params.id)
         if (!post) return res.status(404).json({ error: "Post introuvable" })
 
-        post.commentaires.push({
-            auteur: req.session.user.id,
-            texte: texte.trim()
-        })
+        const userId = req.session.user.id
+        const commentData = { auteur: userId, texte: texte.trim() }
+        if (replyTo && replyTo.userId && replyTo.nom) {
+            commentData.replyTo = { userId: replyTo.userId, nom: replyTo.nom }
+        }
 
+        post.commentaires.push(commentData)
         await post.save()
 
-        const currentUser = await User.findById(req.session.user.id)
+        const currentUser = await User.findById(userId)
+        const newComment = post.commentaires[post.commentaires.length - 1]
 
-        if (post.auteur.toString() !== req.session.user.id) {
+        // Notif: réponse à un commentaire
+        if (replyTo && replyTo.userId && replyTo.userId !== userId) {
+            const notif = await Notification.create({
+                destinataire: replyTo.userId, expediteur: userId, type: "reponse", lien: "/"
+            })
+            if (global.io) {
+                const n = await Notification.findById(notif._id).populate("expediteur", "nom photoProfil")
+                global.io.to(replyTo.userId.toString()).emit("notification", n)
+            }
+        }
+
+        // Notif: auteur du post (si pas déjà notifié via réponse)
+        const alreadyNotified = replyTo && replyTo.userId && replyTo.userId === post.auteur.toString()
+        if (post.auteur.toString() !== userId && !alreadyNotified) {
             const notification = await Notification.create({
-                destinataire: post.auteur,
-                expediteur: req.session.user.id,
-                type: "commentaire",
-                lien: "/"
+                destinataire: post.auteur, expediteur: userId, type: "commentaire", lien: "/"
             })
             if (global.io) {
                 const notifComplete = await Notification.findById(notification._id)
@@ -265,31 +278,84 @@ router.post("/post/:id/comment", requireAuth, requireNotRestricted("messages"), 
             }
             sendPushToUser(post.auteur.toString(), buildPayload("comment", {
                 senderName: currentUser?.nom || "Quelqu'un",
-                senderId: req.session.user.id,
+                senderId: userId,
                 content: texte.trim()
             })).catch(() => {})
         }
 
-        // =============================================
-        // === ORACLE / ANALYTICS : tracker COMMENT ===
-        // =============================================
-        await track(req.session.user.id, 'COMMENT')
+        // Notif: mentions @
+        if (Array.isArray(mentionIds)) {
+            for (const mId of mentionIds) {
+                if (mId === userId) continue
+                await Notification.create({
+                    destinataire: mId, expediteur: userId, type: "mention", lien: "/"
+                }).catch(() => {})
+            }
+        }
+
+        await track(userId, 'COMMENT')
 
         res.json({
             success: true,
             commentsCount: post.commentaires.length,
             comment: {
-                auteur: {
-                    nom: currentUser.nom,
-                    photoProfil: currentUser.photoProfil
-                },
-                texte: texte.trim()
+                _id: newComment._id,
+                auteur: { _id: currentUser._id, nom: currentUser.nom, photoProfil: currentUser.photoProfil },
+                texte: texte.trim(),
+                replyTo: commentData.replyTo || null
             }
         })
     } catch (err) {
         console.error(err)
         res.status(500).json({ error: "Erreur serveur" })
     }
+})
+
+// Réagir à un commentaire
+router.post("/post/:postId/comment/:commentId/react", requireAuth, async (req, res) => {
+    try {
+        const { type } = req.body
+        const validTypes = ["heart","haha","wow","sad","clap","grr"]
+        if (!validTypes.includes(type)) return res.status(400).json({ error: "Type invalide" })
+
+        const post = await Post.findById(req.params.postId)
+        if (!post) return res.status(404).json({ error: "Post introuvable" })
+
+        const comment = post.commentaires.id(req.params.commentId)
+        if (!comment) return res.status(404).json({ error: "Commentaire introuvable" })
+
+        const userId = req.session.user.id
+        if (!comment.likes) comment.likes = []
+        if (!comment.reactions) comment.reactions = []
+
+        const existingIdx = comment.reactions.findIndex(r => r.user && r.user.toString() === userId)
+        const existingType = existingIdx !== -1 ? comment.reactions[existingIdx].type : null
+
+        if (existingType === type) {
+            comment.reactions.splice(existingIdx, 1)
+            comment.likes = comment.likes.filter(id => id.toString() !== userId)
+        } else {
+            if (existingIdx !== -1) comment.reactions.splice(existingIdx, 1)
+            comment.reactions.push({ user: userId, type })
+            if (!comment.likes.some(id => id.toString() === userId)) comment.likes.push(userId)
+        }
+
+        await post.save()
+        res.json({ success: true, likesCount: comment.likes.length, userReaction: existingType === type ? null : type })
+    } catch (err) {
+        console.error(err)
+        res.status(500).json({ error: "Erreur serveur" })
+    }
+})
+
+// Suggestions @mention
+router.get("/users/suggest", requireAuth, async (req, res) => {
+    try {
+        const q = (req.query.q || '').trim()
+        if (!q) return res.json([])
+        const users = await User.find({ nom: new RegExp(q, 'i') }).select('_id nom photoProfil').limit(5)
+        res.json(users)
+    } catch (err) { res.json([]) }
 })
 
 // Partager un post (AJAX)

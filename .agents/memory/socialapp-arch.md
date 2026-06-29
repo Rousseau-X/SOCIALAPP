@@ -122,3 +122,24 @@ description: Key decisions and constraints for SocialApp Node.js/Express/MongoDB
 - opacity: 0.026-0.028, rotated text rows with user._id, pointer-events:none, z-index:9997
 
 **Why:** No Replit branding/advertising anywhere in code or UI — explicit user constraint.
+
+## Comment Likes + Réactions (picker global réutilisé)
+- Schéma `commentaires[]` étendu : `likes[]`, `reactions[{user,type}]`, `replyTo:{userId,nom}`
+- POST `/post/:postId/comment/:commentId/react` — même logique que post/react (toggle)
+- Le picker global `#reaction-picker-global` est réutilisé pour les commentaires : quand `data-comment` est défini sur les `.reaction-opt`, `handleCommentReact()` est appelé au lieu de `handleReaction()`
+- `_showCommentPicker()` set `data-comment` sur les boutons du picker ; `_hidePicker()` les efface systématiquement
+- Variables séparées : `_commentPressTimer`, `_isCommentLongPress` (mirror des vars post)
+
+## Reply-to-Comment + @Mention
+- GET `/users/suggest?q=` → suggestions (max 5 users par regex)
+- Formulaire commentaire dans `.comment-form-wrap` : `.reply-indicator` (masqué par défaut) + `.mention-dropdown` (position:absolute, bottom:100%) + `.ajax-comment-form`
+- `_setReplyMode(postId, authorId, authorName)` — affiche l'indicateur et mémorise `form.dataset.replyToUserId/Nom`
+- `_clearReplyMode(form)` — reset après soumission ou annulation
+- `_handleMentionInput(input)` : détecte `/@(\w*)$/` avant le curseur → `_fetchMentions()` → `_showMentionDropdown()`
+- `_insertMention()` : remplace `@query` par `@nom ` et stocke l'id dans `form.dataset.mentionIds` (JSON)
+- `handleComment()` envoie `{ texte, replyTo?, mentionIds? }` et reconstruit le DOM commentaire avec les boutons like/répondre
+
+## Notifications de commentaires
+- Types ajoutés au modèle : `"reponse"` et `"mention"` (enum Notification.js)
+- Route POST /comment : envoie "reponse" à la personne répondue, "commentaire" à l'auteur du post (sauf si déjà notifié via réponse), "mention" pour chaque userId dans mentionIds
+- Toast + getNotificationMessage() mis à jour pour les deux nouveaux types

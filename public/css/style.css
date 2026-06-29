@@ -1084,7 +1084,6 @@ a {
     background: var(--background);
     border-radius: var(--radius-sm);
     padding: 10px 14px;
-    flex: 1;
 }
 
 .comment-author {
@@ -1123,6 +1122,130 @@ a {
     border-radius: 50%;
     cursor: pointer;
 }
+
+/* ===== COMMENTAIRES — actions like / répondre / @mention ===== */
+.comment-right {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex: 1;
+    min-width: 0;
+}
+
+.comment-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 2px 6px;
+}
+
+.comment-like-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 12px;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    padding: 2px 5px;
+    border-radius: 20px;
+    transition: color 0.15s;
+    -webkit-touch-callout: none;
+    user-select: none;
+    touch-action: manipulation;
+}
+
+.comment-like-btn i { font-size: 13px; }
+.comment-like-btn.liked, .comment-like-btn.liked i { color: #ef4444; }
+.comment-likes-count { font-size: 12px; font-weight: 700; }
+.c-reaction-emoji { font-size: 14px; line-height: 1; }
+
+.comment-reply-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 12px;
+    color: var(--text-secondary);
+    padding: 2px 4px;
+    font-weight: 700;
+    transition: color 0.15s;
+}
+.comment-reply-btn:hover { color: var(--primary); }
+
+.comment-reply-tag {
+    font-size: 11.5px;
+    color: var(--primary);
+    font-weight: 700;
+    display: block;
+    margin-bottom: 2px;
+}
+
+.comment-form-wrap {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 12px;
+}
+
+.comment-form-wrap .comment-form { margin-top: 0; }
+
+.reply-indicator {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--background);
+    border-radius: 8px;
+    padding: 5px 10px;
+    font-size: 12px;
+    color: var(--text-secondary);
+    border-left: 3px solid var(--primary);
+}
+
+.reply-indicator .cancel-reply {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--text-secondary);
+    padding: 2px 5px;
+    font-size: 12px;
+    border-radius: 4px;
+}
+
+.mention-dropdown {
+    position: absolute;
+    bottom: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    z-index: 9999;
+    overflow: hidden;
+}
+
+.mention-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    cursor: pointer;
+    transition: background 0.12s;
+}
+
+.mention-item:hover { background: var(--background); }
+
+.mention-item img {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    object-fit: cover;
+    flex-shrink: 0;
+}
+
+.mention-item span { font-size: 13px; font-weight: 600; }
 
 /* ========== PROFIL ========== */
 .profile-header {

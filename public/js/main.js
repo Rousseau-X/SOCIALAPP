@@ -164,6 +164,8 @@ function showNotificationToast(notif) {
     switch (notif.type) {
         case 'like': text = `${expediteurNom} a aimé votre publication.`; break;
         case 'commentaire': text = `${expediteurNom} a commenté votre publication.`; break;
+        case 'reponse': text = `${expediteurNom} a répondu à votre commentaire.`; break;
+        case 'mention': text = `${expediteurNom} vous a mentionné dans un commentaire.`; break;
         case 'demande_ami': text = `${expediteurNom} vous a envoyé une demande d'ami.`; break;
         case 'ami_accepte': text = `${expediteurNom} a accepté votre demande d'ami.`; break;
         case 'message': text = `Nouveau message de ${expediteurNom}`; break;
@@ -231,6 +233,8 @@ function getNotificationMessage(notif) {
     switch (notif.type) {
         case 'like': return `${expediteurNom} a aimé votre publication.`;
         case 'commentaire': return `${expediteurNom} a commenté votre publication.`;
+        case 'reponse': return `${expediteurNom} a répondu à votre commentaire.`;
+        case 'mention': return `${expediteurNom} vous a mentionné dans un commentaire.`;
         case 'demande_ami': return `${expediteurNom} vous a envoyé une demande d'ami.`;
         case 'ami_accepte': return `${expediteurNom} a accepté votre demande d'ami.`;
         case 'message': return `Nouveau message de ${expediteurNom}`;
@@ -393,6 +397,8 @@ document.body.appendChild(_picker);
 let _pressTimer = null;
 let _isLongPress = false;
 let _currentPickerPostId = null;
+let _commentPressTimer = null;
+let _isCommentLongPress = false;
 
 function _showPicker(postId, anchorBtn) {
     _currentPickerPostId = postId;
@@ -420,6 +426,28 @@ function _showPicker(postId, anchorBtn) {
 function _hidePicker() {
     _picker.classList.remove('visible');
     _currentPickerPostId = null;
+    // Reset comment data on picker buttons
+    _picker.querySelectorAll('.reaction-opt').forEach(o => delete o.dataset.comment);
+}
+
+function _showCommentPicker(postId, commentId, anchorBtn) {
+    const userReaction = anchorBtn.dataset.reaction || '';
+    _picker.querySelectorAll('.reaction-opt').forEach(o => {
+        o.dataset.post = postId;
+        o.dataset.comment = commentId;
+        o.classList.toggle('active-reaction', o.dataset.type === userReaction);
+    });
+    _picker.classList.remove('visible');
+    const rect = anchorBtn.getBoundingClientRect();
+    const pickerW = _picker.offsetWidth || 300;
+    const pickerH = _picker.offsetHeight || 52;
+    let left = rect.left + rect.width / 2 - pickerW / 2;
+    left = Math.max(8, Math.min(left, window.innerWidth - pickerW - 8));
+    const topAbove = rect.top - pickerH - 10;
+    _picker.style.left = left + 'px';
+    _picker.style.top = (topAbove < 8 ? rect.bottom + 10 : topAbove) + 'px';
+    void _picker.offsetWidth;
+    _picker.classList.add('visible');
 }
 
 function _updateLikeBtn(btn, reactionType) {
@@ -478,46 +506,144 @@ async function handleReaction(type, postId) {
     }
 }
 
+async function handleCommentReact(type, postId, commentId) {
+    if (!type || !postId || !commentId) return;
+    _hidePicker();
+
+    const btn = document.querySelector(`.comment-like-btn[data-post="${postId}"][data-comment="${commentId}"]`);
+    const prevReaction = btn ? btn.dataset.reaction : '';
+    const newReaction = prevReaction === type ? null : type;
+    const CEMOJI = {heart:'❤️',haha:'😂',wow:'😮',sad:'😢',clap:'👏',grr:'😠'};
+
+    if (btn) {
+        btn.classList.toggle('liked', !!newReaction);
+        btn.dataset.reaction = newReaction || '';
+        const iconSlot = btn.querySelector('i, .c-reaction-emoji');
+        if (newReaction) {
+            if (iconSlot) iconSlot.outerHTML = `<span class="c-reaction-emoji">${CEMOJI[newReaction]}</span>`;
+            else btn.insertAdjacentHTML('afterbegin', `<span class="c-reaction-emoji">${CEMOJI[newReaction]}</span>`);
+        } else {
+            if (iconSlot) iconSlot.outerHTML = `<i class="fa-regular fa-heart"></i>`;
+        }
+    }
+
+    try {
+        const res = await fetch(`/post/${postId}/comment/${commentId}/react`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ type })
+        });
+        const data = await res.json();
+        if (data.success && btn) {
+            let countSpan = btn.querySelector('.comment-likes-count');
+            if (data.likesCount > 0) {
+                if (!countSpan) {
+                    countSpan = document.createElement('span');
+                    countSpan.className = 'comment-likes-count';
+                    btn.appendChild(countSpan);
+                }
+                countSpan.textContent = data.likesCount;
+            } else if (countSpan) {
+                countSpan.remove();
+            }
+        } else if (!data.success && btn) {
+            btn.dataset.reaction = prevReaction;
+        }
+    } catch (err) {
+        if (btn) btn.dataset.reaction = prevReaction;
+        console.error('❌ Erreur réaction commentaire:', err);
+    }
+}
+
 // Appelée une seule fois au chargement initial — les délégations
 // sur document fonctionnent même après remplacement AJAX du DOM.
 function initDelegation() {
     // --- LONG PRESS — Pointer Events API (unifié souris + tactile + stylet) ---
     document.addEventListener('pointerdown', function(e) {
         const likeBtn = e.target.closest('.like-btn');
-        if (!likeBtn) return;
-        _isLongPress = false;
-        clearTimeout(_pressTimer);
-        _pressTimer = setTimeout(() => {
-            _isLongPress = true;
-            _showPicker(likeBtn.dataset.id, likeBtn);
-        }, 500);
+        if (likeBtn) {
+            _isLongPress = false;
+            clearTimeout(_pressTimer);
+            _pressTimer = setTimeout(() => {
+                _isLongPress = true;
+                _showPicker(likeBtn.dataset.id, likeBtn);
+            }, 500);
+            return;
+        }
+        const cLikeBtn = e.target.closest('.comment-like-btn');
+        if (cLikeBtn) {
+            _isCommentLongPress = false;
+            clearTimeout(_commentPressTimer);
+            _commentPressTimer = setTimeout(() => {
+                _isCommentLongPress = true;
+                _showCommentPicker(cLikeBtn.dataset.post, cLikeBtn.dataset.comment, cLikeBtn);
+            }, 500);
+        }
     });
 
-    // Annuler le timer si le doigt/souris est relâché ou annulé
-    document.addEventListener('pointerup', () => clearTimeout(_pressTimer));
-    document.addEventListener('pointercancel', () => { clearTimeout(_pressTimer); _isLongPress = false; });
+    document.addEventListener('pointerup', () => { clearTimeout(_pressTimer); clearTimeout(_commentPressTimer); });
+    document.addEventListener('pointercancel', () => {
+        clearTimeout(_pressTimer); _isLongPress = false;
+        clearTimeout(_commentPressTimer); _isCommentLongPress = false;
+    });
 
-    // Bloquer le menu contextuel natif sur le bouton like (iOS Safari / clic droit desktop)
+    // Bloquer le menu contextuel natif sur les boutons like (iOS Safari / clic droit desktop)
     document.addEventListener('contextmenu', function(e) {
-        if (e.target.closest('.like-btn')) e.preventDefault();
+        if (e.target.closest('.like-btn, .comment-like-btn')) e.preventDefault();
     });
 
     // --- CLICKS ---
     document.addEventListener('click', function(e) {
-        // Emoji du picker global
+        // Emoji du picker global (post ou commentaire)
         const reactionOpt = e.target.closest('#reaction-picker-global .reaction-opt');
         if (reactionOpt) {
             e.stopPropagation();
-            handleReaction(reactionOpt.dataset.type, reactionOpt.dataset.post);
+            const commentId = reactionOpt.dataset.comment;
+            if (commentId) handleCommentReact(reactionOpt.dataset.type, reactionOpt.dataset.post, commentId);
+            else handleReaction(reactionOpt.dataset.type, reactionOpt.dataset.post);
             return;
         }
 
-        // Clic court sur le bouton like → bascule ❤️
+        // Clic court sur le bouton like post → bascule ❤️
         const likeBtn = e.target.closest('.like-btn');
         if (likeBtn) {
             e.stopPropagation();
             if (_isLongPress) { _isLongPress = false; return; }
             handleReaction('heart', likeBtn.dataset.id);
+            return;
+        }
+
+        // Clic court sur le bouton like commentaire → bascule ❤️
+        const cLikeBtn = e.target.closest('.comment-like-btn');
+        if (cLikeBtn) {
+            e.stopPropagation();
+            if (_isCommentLongPress) { _isCommentLongPress = false; return; }
+            handleCommentReact('heart', cLikeBtn.dataset.post, cLikeBtn.dataset.comment);
+            return;
+        }
+
+        // Bouton Répondre
+        const replyBtn = e.target.closest('.comment-reply-btn');
+        if (replyBtn) {
+            e.stopPropagation();
+            _setReplyMode(replyBtn.dataset.post, replyBtn.dataset.commentAuthorId, replyBtn.dataset.commentAuthor);
+            return;
+        }
+
+        // Annuler la réponse
+        const cancelReply = e.target.closest('.cancel-reply');
+        if (cancelReply) {
+            e.stopPropagation();
+            const form = cancelReply.closest('.comment-form-wrap')?.querySelector('.ajax-comment-form');
+            _clearReplyMode(form);
+            return;
+        }
+
+        // Suggestion @mention
+        const mentionItem = e.target.closest('.mention-item');
+        if (mentionItem) {
+            e.stopPropagation();
+            _insertMention(mentionItem);
             return;
         }
 
@@ -536,6 +662,12 @@ function initDelegation() {
         if (toggleBtn) { toggleComments(toggleBtn); return; }
     });
 
+    // @mention detection on comment inputs
+    document.addEventListener('input', function(e) {
+        const input = e.target.closest('.ajax-comment-form input[name="texte"]');
+        if (input) _handleMentionInput(input);
+    });
+
     // --- SOUMISSIONS DE FORMULAIRES ---
     document.addEventListener('submit', function(e) {
         const commentForm = e.target.closest('.comment-form, [data-comment-form]');
@@ -545,6 +677,90 @@ function initDelegation() {
 
 // Garde la compatibilité : initInteractions() ne fait plus rien (délégation active)
 function initInteractions() {}
+
+// =====================================================
+// REPLY MODE & @MENTION HELPERS
+// =====================================================
+function _setReplyMode(postId, authorId, authorName) {
+    const section = document.getElementById(`comments-${postId}`);
+    if (!section) return;
+    const wrap = section.querySelector('.comment-form-wrap');
+    const form = wrap?.querySelector('.ajax-comment-form');
+    const indicator = wrap?.querySelector('.reply-indicator');
+    const input = form?.querySelector('input[name="texte"]');
+    if (!form || !indicator || !input) return;
+    form.dataset.replyToUserId = authorId || '';
+    form.dataset.replyToNom = authorName || '';
+    indicator.querySelector('.reply-to-name').textContent = authorName || '';
+    indicator.style.display = 'flex';
+    input.placeholder = `Répondre à @${authorName}…`;
+    input.focus();
+}
+
+function _clearReplyMode(form) {
+    if (!form) return;
+    const wrap = form.closest('.comment-form-wrap');
+    const indicator = wrap?.querySelector('.reply-indicator');
+    const input = form.querySelector('input[name="texte"]');
+    delete form.dataset.replyToUserId;
+    delete form.dataset.replyToNom;
+    if (indicator) indicator.style.display = 'none';
+    if (input) input.placeholder = 'Écrire un commentaire…';
+}
+
+function _handleMentionInput(input) {
+    const val = input.value;
+    const cursor = input.selectionStart || val.length;
+    const textBefore = val.slice(0, cursor);
+    const match = textBefore.match(/@(\w*)$/);
+    const wrap = input.closest('.comment-form-wrap');
+    const dropdown = wrap?.querySelector('.mention-dropdown');
+    if (!match || match[1].length < 1) {
+        if (dropdown) dropdown.style.display = 'none';
+        return;
+    }
+    _fetchMentions(match[1], input);
+}
+
+async function _fetchMentions(q, input) {
+    try {
+        const res = await fetch(`/users/suggest?q=${encodeURIComponent(q)}`);
+        const users = await res.json();
+        const wrap = input.closest('.comment-form-wrap');
+        const dropdown = wrap?.querySelector('.mention-dropdown');
+        if (!dropdown) return;
+        if (!users.length) { dropdown.style.display = 'none'; return; }
+        dropdown.innerHTML = users.map(u =>
+            `<div class="mention-item" data-id="${u._id}" data-nom="${u.nom}">` +
+            `<img src="${u.photoProfil}" alt=""><span>${u.nom}</span></div>`
+        ).join('');
+        dropdown.style.display = 'block';
+    } catch(e) {}
+}
+
+function _insertMention(mentionItem) {
+    const nom = mentionItem.dataset.nom;
+    const userId = mentionItem.dataset.id;
+    const wrap = mentionItem.closest('.comment-form-wrap');
+    const input = wrap?.querySelector('input[name="texte"]');
+    const form = wrap?.querySelector('.ajax-comment-form');
+    const dropdown = wrap?.querySelector('.mention-dropdown');
+    if (!input) return;
+    const val = input.value;
+    const cursor = input.selectionStart || val.length;
+    const newText = val.slice(0, cursor).replace(/@\w*$/, `@${nom} `) + val.slice(cursor);
+    input.value = newText;
+    if (form) {
+        let ids = [];
+        try { ids = JSON.parse(form.dataset.mentionIds || '[]'); } catch(e) {}
+        if (!ids.includes(userId)) ids.push(userId);
+        form.dataset.mentionIds = JSON.stringify(ids);
+    }
+    if (dropdown) dropdown.style.display = 'none';
+    input.focus();
+    const pos = newText.indexOf(nom) + nom.length + 2;
+    input.setSelectionRange(pos, pos);
+}
 
 async function handleComment(form) {
     const postId = form.dataset.id || form.getAttribute('data-post-id');
@@ -558,32 +774,61 @@ async function handleComment(form) {
     const submitBtn = form.querySelector('button[type="submit"], button');
     if (submitBtn) submitBtn.disabled = true;
 
+    const replyToUserId = form.dataset.replyToUserId || null;
+    const replyToNom = form.dataset.replyToNom || null;
+    let mentionIds = [];
+    try { mentionIds = JSON.parse(form.dataset.mentionIds || '[]'); } catch(e) {}
+
     try {
+        const body = { texte };
+        if (replyToUserId && replyToNom) body.replyTo = { userId: replyToUserId, nom: replyToNom };
+        if (mentionIds.length) body.mentionIds = mentionIds;
+
         const res = await fetch(`/post/${postId}/comment`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ texte })
+            body: JSON.stringify(body)
         });
         const data = await res.json();
         if (data.success) {
             const commentsSection = document.getElementById(`comments-${postId}`);
             if (commentsSection) {
                 const commentsList = commentsSection.querySelector('.comments-list');
+                const replyTag = data.comment.replyTo ? `<span class="comment-reply-tag">↩ @${data.comment.replyTo.nom}</span>` : '';
                 const commentDiv = document.createElement('div');
                 commentDiv.className = 'comment';
+                commentDiv.dataset.commentId = data.comment._id;
+                commentDiv.dataset.postId = postId;
                 commentDiv.innerHTML = `
                     <img src="${data.comment.auteur.photoProfil}" class="comment-avatar" alt="">
-                    <div class="comment-bubble">
-                        <div class="comment-author">${data.comment.auteur.nom}</div>
-                        <div>${data.comment.texte}</div>
+                    <div class="comment-right">
+                        <div class="comment-bubble">
+                            <div class="comment-author">${data.comment.auteur.nom}</div>
+                            ${replyTag}
+                            <div class="comment-text">${data.comment.texte}</div>
+                        </div>
+                        <div class="comment-actions">
+                            <button class="comment-like-btn"
+                                    data-post="${postId}"
+                                    data-comment="${data.comment._id}"
+                                    data-reaction="">
+                                <i class="fa-regular fa-heart"></i>
+                            </button>
+                            <button class="comment-reply-btn"
+                                    data-post="${postId}"
+                                    data-comment-author="${data.comment.auteur.nom}"
+                                    data-comment-author-id="${data.comment.auteur._id}">Répondre</button>
+                        </div>
                     </div>
                 `;
                 if (commentsList) commentsList.appendChild(commentDiv);
-                else commentsSection.insertBefore(commentDiv, commentsSection.querySelector('form'));
+                else commentsSection.insertBefore(commentDiv, commentsSection.querySelector('.comment-form-wrap'));
                 const countSpan = form.closest('.post')?.querySelector('.comments-count');
                 if (countSpan) countSpan.textContent = data.commentsCount;
             }
             input.value = '';
+            form.dataset.mentionIds = '[]';
+            _clearReplyMode(form);
         }
     } catch (err) {
         console.error('❌ Erreur commentaire:', err);
