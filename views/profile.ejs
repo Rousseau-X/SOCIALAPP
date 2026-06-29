@@ -396,7 +396,7 @@
                         const userReaction = (post.reactions || []).find(r => r.user && r.user.toString() === currentUserId);
                         const userReactionType = userReaction ? userReaction.type : null;
                         const hasReacted = userReactionType || post.likes.some(id => id.toString() === currentUserId);
-                        const totalReactions = (post.reactions && post.reactions.length > 0) ? post.reactions.length : post.likes.length;
+                        const totalReactions = post.likes.length;
                         const reactionCounts = {};
                         (post.reactions || []).forEach(r => { reactionCounts[r.type] = (reactionCounts[r.type] || 0) + 1; });
                         const _topEmojis = Object.entries(reactionCounts).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([t])=>REACTION_EMOJIS[t]||'').join('');

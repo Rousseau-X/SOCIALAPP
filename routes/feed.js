@@ -222,7 +222,7 @@ router.post("/post/:id/react", requireAuth, requireNotRestricted("likes"), async
 
         res.json({
             success: true,
-            reactionsCount: post.reactions.length,
+            reactionsCount: post.likes.length,
             userReaction: existingType === type ? null : type
         })
     } catch (err) {
