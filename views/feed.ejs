@@ -631,12 +631,24 @@
 
                     <div class="comments-section" id="comments-<%= post._id %>" style="display:none;">
                         <div class="comments-list">
-                            <% post.commentaires.forEach(comment => { %>
+                            <%
+                                const CEMOJI = {heart:'❤️',haha:'😂',wow:'😮',sad:'😢',clap:'👏',grr:'😠'};
+                                const cTopLevel = post.commentaires.filter(c => !c.replyTo || !c.replyTo.commentId);
+                                const cRepliesMap = {};
+                                post.commentaires.forEach(c => {
+                                    if (c.replyTo && c.replyTo.commentId) {
+                                        const pid = c.replyTo.commentId.toString();
+                                        if (!cRepliesMap[pid]) cRepliesMap[pid] = [];
+                                        cRepliesMap[pid].push(c);
+                                    }
+                                });
+                            %>
+                            <% cTopLevel.forEach(comment => { %>
                                 <%
-                                    const CEMOJI = {heart:'❤️',haha:'😂',wow:'😮',sad:'😢',clap:'👏',grr:'😠'};
                                     const cUserReaction = (comment.reactions||[]).find(r=>r.user&&r.user.toString()===currentUserId);
                                     const cUserReactionType = cUserReaction ? cUserReaction.type : null;
                                     const cTotalLikes = (comment.likes||[]).length;
+                                    const cReplies = cRepliesMap[comment._id.toString()] || [];
                                 %>
                                 <div class="comment" data-comment-id="<%= comment._id %>" data-post-id="<%= post._id %>">
                                     <a href="/profile/<%= comment.auteur._id %>" class="ajax-link">
@@ -648,7 +660,6 @@
                                                 <a href="/profile/<%= comment.auteur._id %>" class="ajax-link" style="color:inherit;text-decoration:none;font-weight:inherit;"><%= comment.auteur.nom %></a>
                                                 <%- include('partials/badges', { badges: comment.auteur.badges || [] }) %>
                                             </div>
-                                            <% if (comment.replyTo && comment.replyTo.nom) { %><span class="comment-reply-tag">↩ @<%= comment.replyTo.nom %></span><% } %>
                                             <div class="comment-text"><%= comment.texte %></div>
                                         </div>
                                         <div class="comment-actions">
@@ -661,11 +672,57 @@
                                             </button>
                                             <button class="comment-reply-btn"
                                                     data-post="<%= post._id %>"
+                                                    data-comment-id="<%= comment._id %>"
                                                     data-comment-author="<%= comment.auteur.nom %>"
                                                     data-comment-author-id="<%= comment.auteur._id %>">Répondre</button>
+                                            <% if (cReplies.length > 0) { %>
+                                                <button class="show-replies-btn" data-comment="<%= comment._id %>">
+                                                    <i class="fa-solid fa-comment-dots"></i> <%= cReplies.length %> réponse<%= cReplies.length > 1 ? 's' : '' %>
+                                                </button>
+                                            <% } %>
                                         </div>
                                     </div>
                                 </div>
+                                <% if (cReplies.length > 0) { %>
+                                    <div class="replies-wrap" id="replies-<%= comment._id %>" style="display:none;">
+                                        <% cReplies.forEach(reply => { %>
+                                            <%
+                                                const rUserReaction = (reply.reactions||[]).find(r=>r.user&&r.user.toString()===currentUserId);
+                                                const rUserReactionType = rUserReaction ? rUserReaction.type : null;
+                                                const rTotalLikes = (reply.likes||[]).length;
+                                            %>
+                                            <div class="comment comment-reply-item" data-comment-id="<%= reply._id %>" data-post-id="<%= post._id %>">
+                                                <a href="/profile/<%= reply.auteur._id %>" class="ajax-link">
+                                                    <img src="<%= reply.auteur.photoProfil %>" class="comment-avatar" alt="">
+                                                </a>
+                                                <div class="comment-right">
+                                                    <div class="comment-bubble">
+                                                        <div class="comment-author">
+                                                            <a href="/profile/<%= reply.auteur._id %>" class="ajax-link" style="color:inherit;text-decoration:none;font-weight:inherit;"><%= reply.auteur.nom %></a>
+                                                            <%- include('partials/badges', { badges: reply.auteur.badges || [] }) %>
+                                                        </div>
+                                                        <% if (reply.replyTo && reply.replyTo.nom) { %><span class="comment-reply-tag">↩ @<%= reply.replyTo.nom %></span><% } %>
+                                                        <div class="comment-text"><%= reply.texte %></div>
+                                                    </div>
+                                                    <div class="comment-actions">
+                                                        <button class="comment-like-btn <%= rUserReactionType ? 'liked' : '' %>"
+                                                                data-post="<%= post._id %>"
+                                                                data-comment="<%= reply._id %>"
+                                                                data-reaction="<%= rUserReactionType || '' %>">
+                                                            <% if (rUserReactionType) { %><span class="c-reaction-emoji"><%= CEMOJI[rUserReactionType] %></span><% } else { %><i class="fa-regular fa-heart"></i><% } %>
+                                                            <% if (rTotalLikes > 0) { %><span class="comment-likes-count"><%= rTotalLikes %></span><% } %>
+                                                        </button>
+                                                        <button class="comment-reply-btn"
+                                                                data-post="<%= post._id %>"
+                                                                data-comment-id="<%= comment._id %>"
+                                                                data-comment-author="<%= reply.auteur.nom %>"
+                                                                data-comment-author-id="<%= reply.auteur._id %>">Répondre</button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        <% }) %>
+                                    </div>
+                                <% } %>
                             <% }) %>
                         </div>
                         <div class="comment-form-wrap">

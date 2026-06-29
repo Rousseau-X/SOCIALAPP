@@ -47,7 +47,8 @@ const postSchema = new mongoose.Schema({
         }],
         replyTo: {
             userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-            nom: String
+            nom: String,
+            commentId: { type: mongoose.Schema.Types.ObjectId }
         }
     }],
 

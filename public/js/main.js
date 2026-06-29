@@ -626,7 +626,7 @@ function initDelegation() {
         const replyBtn = e.target.closest('.comment-reply-btn');
         if (replyBtn) {
             e.stopPropagation();
-            _setReplyMode(replyBtn.dataset.post, replyBtn.dataset.commentAuthorId, replyBtn.dataset.commentAuthor);
+            _setReplyMode(replyBtn.dataset.post, replyBtn.dataset.commentAuthorId, replyBtn.dataset.commentAuthor, replyBtn.dataset.commentId);
             return;
         }
 
@@ -636,6 +636,23 @@ function initDelegation() {
             e.stopPropagation();
             const form = cancelReply.closest('.comment-form-wrap')?.querySelector('.ajax-comment-form');
             _clearReplyMode(form);
+            return;
+        }
+
+        // Afficher / masquer les réponses imbriquées
+        const showRepliesBtn = e.target.closest('.show-replies-btn');
+        if (showRepliesBtn) {
+            e.stopPropagation();
+            const cId = showRepliesBtn.dataset.comment;
+            const wrap = document.getElementById(`replies-${cId}`);
+            if (wrap) {
+                const isOpen = wrap.style.display !== 'none';
+                wrap.style.display = isOpen ? 'none' : 'block';
+                const count = wrap.querySelectorAll('.comment').length;
+                showRepliesBtn.innerHTML = isOpen
+                    ? `<i class="fa-solid fa-comment-dots"></i> ${count} réponse${count !== 1 ? 's' : ''}`
+                    : `<i class="fa-solid fa-chevron-up"></i> Masquer`;
+            }
             return;
         }
 
